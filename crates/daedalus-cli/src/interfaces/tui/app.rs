@@ -1,14 +1,134 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::domain::Result;
-use crate::infrastructure::state_toml;
+use crate::infrastructure::{state_toml, workspace_fs};
+
+const WORKSPACE_BUCKETS: [&str; 3] = ["02-learning", "03-completed", "04-abandoned"];
+
+/// TUI 当前页面。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TuiView {
+    /// workspace 任务选择页。
+    TaskSelector,
+    /// 单个学习任务详情页。
+    TaskOverview,
+}
+
+/// TUI 只读应用状态。
+#[derive(Debug, Clone)]
+pub struct TuiApp {
+    /// 当前页面。
+    pub view: TuiView,
+    /// 选择页任务列表。
+    pub tasks: Vec<TuiTaskSummary>,
+    /// 当前选择的任务索引。
+    pub selected_task: usize,
+    /// 当前展示的任务详情。
+    pub overview: Option<TuiOverview>,
+    /// 是否允许从详情返回选择页。
+    pub can_return_to_selector: bool,
+}
+
+impl TuiApp {
+    /// 根据当前目录和可选显式任务目录创建 TUI 状态。
+    pub fn from_launch_context(
+        repo_root: &Path,
+        cwd: &Path,
+        explicit: Option<PathBuf>,
+    ) -> Result<Self> {
+        if let Some(task_dir) = explicit {
+            let overview = load_overview(&task_dir)?;
+            return Ok(Self::single_task(overview));
+        }
+
+        if let Some(task_dir) = enclosing_task_dir(cwd, repo_root) {
+            let overview = load_overview(&task_dir)?;
+            return Ok(Self::single_task(overview));
+        }
+
+        let tasks = scan_task_summaries(repo_root)?;
+        Ok(Self {
+            view: TuiView::TaskSelector,
+            tasks,
+            selected_task: 0,
+            overview: None,
+            can_return_to_selector: true,
+        })
+    }
+
+    fn single_task(overview: TuiOverview) -> Self {
+        Self {
+            view: TuiView::TaskOverview,
+            tasks: Vec::new(),
+            selected_task: 0,
+            overview: Some(overview),
+            can_return_to_selector: false,
+        }
+    }
+
+    /// 将选择游标向上移动一项。
+    pub fn select_previous(&mut self) {
+        if self.tasks.is_empty() {
+            return;
+        }
+        self.selected_task = self.selected_task.saturating_sub(1);
+    }
+
+    /// 将选择游标向下移动一项。
+    pub fn select_next(&mut self) {
+        if self.tasks.is_empty() {
+            return;
+        }
+        self.selected_task = (self.selected_task + 1).min(self.tasks.len() - 1);
+    }
+
+    /// 进入当前选择的任务详情页。
+    pub fn open_selected_task(&mut self) -> Result<()> {
+        if let Some(task) = self.tasks.get(self.selected_task) {
+            self.overview = Some(load_overview(&task.path)?);
+            self.view = TuiView::TaskOverview;
+        }
+        Ok(())
+    }
+
+    /// 从任务详情页返回选择页。
+    pub fn return_to_selector(&mut self) {
+        if self.can_return_to_selector {
+            self.view = TuiView::TaskSelector;
+            self.overview = None;
+        }
+    }
+}
+
+/// 选择页展示的学习任务摘要。
+#[derive(Debug, Clone)]
+pub struct TuiTaskSummary {
+    /// 学习任务名称。
+    pub task_name: String,
+    /// 学习任务目录。
+    pub path: PathBuf,
+    /// 实际所在 workspace bucket。
+    pub bucket: String,
+    /// 生命周期。
+    pub lifecycle: String,
+    /// 当前阶段。
+    pub current_phase: String,
+    /// 当前阶段状态。
+    pub current_status: String,
+    /// 已完成阶段数量。
+    pub done_stage_count: usize,
+    /// 阶段总数。
+    pub total_stage_count: usize,
+}
 
 /// TUI 只读总览所需的数据。
 #[derive(Debug, Clone)]
 pub struct TuiOverview {
     /// 学习任务名称。
     pub task_name: String,
+    /// 学习任务目录。
+    pub task_dir: PathBuf,
     /// 任务生命周期状态。
     pub lifecycle: String,
     /// workspace bucket。
@@ -29,6 +149,8 @@ pub struct TuiOverview {
     pub todo_summary: Vec<String>,
     /// 最近几条状态流转摘要。
     pub recent_transitions: Vec<String>,
+    /// 任务关闭信息摘要。
+    pub closure_summary: Vec<String>,
 }
 
 /// 从学习任务目录加载 TUI 只读总览数据。
@@ -43,12 +165,8 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         .unwrap_or_else(|| "unknown".to_owned());
     let done_stage_count = stages.iter().filter(|stage| stage.status == "done").count();
     let total_stage_count = stages.len();
-    let lifecycle = state_toml::task_lifecycle(&doc)
-        .map(|lifecycle| lifecycle.as_str().to_owned())
-        .unwrap_or_else(|_| "unknown".to_owned());
-    let workspace_bucket = state_toml::workspace_bucket(&doc)
-        .map(|bucket| bucket.as_str().to_owned())
-        .unwrap_or_else(|_| "unknown".to_owned());
+    let lifecycle = task_field(&doc, "lifecycle").unwrap_or_else(|| "unknown".to_owned());
+    let workspace_bucket = actual_bucket(task_dir);
 
     let mut missing_artifacts = Vec::new();
     for stage in stages {
@@ -83,8 +201,17 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         })
         .collect();
 
+    let mut closure_summary = Vec::new();
+    if let Some(closed_at) = state_toml::closed_at(&doc) {
+        closure_summary.push(format!("closed_at: {closed_at}"));
+    }
+    if let Some(close_reason) = state_toml::close_reason(&doc) {
+        closure_summary.push(format!("reason: {close_reason}"));
+    }
+
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
+        task_dir: task_dir.to_path_buf(),
         lifecycle,
         workspace_bucket,
         current_phase,
@@ -95,5 +222,100 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         missing_artifacts,
         todo_summary,
         recent_transitions,
+        closure_summary,
     })
+}
+
+/// 查找当前目录是否处于某个学习任务目录或其子目录下。
+pub fn enclosing_task_dir(cwd: &Path, repo_root: &Path) -> Option<PathBuf> {
+    let mut current = cwd.to_path_buf();
+    loop {
+        if current.join(".daedalus").join("state.toml").exists() {
+            return Some(current);
+        }
+        if current.file_name().and_then(|name| name.to_str()) == Some(".daedalus")
+            && current.join("state.toml").exists()
+        {
+            return current.parent().map(Path::to_path_buf);
+        }
+        if current == repo_root || !current.pop() {
+            return None;
+        }
+    }
+}
+
+/// 扫描当前已具备明确 lifecycle 语义的 workspace bucket。
+pub fn scan_task_summaries(repo_root: &Path) -> Result<Vec<TuiTaskSummary>> {
+    let mut tasks = Vec::new();
+    for bucket in WORKSPACE_BUCKETS {
+        let root = repo_root.join("workspaces").join(bucket);
+        if !root.exists() {
+            continue;
+        }
+        let entries = fs::read_dir(&root).map_err(|source| crate::domain::DaedalusError::Io {
+            path: root.clone(),
+            source,
+        })?;
+        for entry in entries {
+            let entry = entry.map_err(|source| crate::domain::DaedalusError::Io {
+                path: root.clone(),
+                source,
+            })?;
+            let path = entry.path();
+            if path.is_dir() && path.join(".daedalus").join("state.toml").exists() {
+                tasks.push(summary_from_task_dir(&path, bucket)?);
+            }
+        }
+    }
+    tasks.sort_by(|left, right| {
+        bucket_order(&left.bucket)
+            .cmp(&bucket_order(&right.bucket))
+            .then_with(|| left.task_name.cmp(&right.task_name))
+    });
+    Ok(tasks)
+}
+
+fn summary_from_task_dir(task_dir: &Path, bucket: &str) -> Result<TuiTaskSummary> {
+    let doc = state_toml::load_state_doc(&state_toml::state_path(task_dir))?;
+    let current_phase = state_toml::current_phase(&doc).unwrap_or_else(|| "unknown".to_owned());
+    let stages = state_toml::stages(&doc);
+    let current_status = stages
+        .iter()
+        .find(|stage| stage.id == current_phase)
+        .map(|stage| stage.status.clone())
+        .unwrap_or_else(|| "unknown".to_owned());
+    Ok(TuiTaskSummary {
+        task_name: state_toml::task_name(&doc),
+        path: task_dir.to_path_buf(),
+        bucket: bucket.to_owned(),
+        lifecycle: task_field(&doc, "lifecycle").unwrap_or_else(|| "unknown".to_owned()),
+        current_phase,
+        current_status,
+        done_stage_count: stages.iter().filter(|stage| stage.status == "done").count(),
+        total_stage_count: stages.len(),
+    })
+}
+
+fn task_field(doc: &toml_edit::DocumentMut, field: &str) -> Option<String> {
+    doc["task"][field].as_str().map(ToOwned::to_owned)
+}
+
+fn actual_bucket(task_dir: &Path) -> String {
+    workspace_fs::bucket_from_task_dir(task_dir)
+        .map(|bucket| bucket.as_str().to_owned())
+        .unwrap_or_else(|_| {
+            task_dir
+                .parent()
+                .and_then(Path::file_name)
+                .and_then(|value| value.to_str())
+                .unwrap_or("unknown")
+                .to_owned()
+        })
+}
+
+fn bucket_order(bucket: &str) -> usize {
+    WORKSPACE_BUCKETS
+        .iter()
+        .position(|candidate| *candidate == bucket)
+        .unwrap_or(WORKSPACE_BUCKETS.len())
 }

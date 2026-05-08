@@ -44,7 +44,7 @@ flowchart LR
 `crates/daedalus-cli` 提供两个可执行文件：
 
 - `daedalus`：Agent-friendly CLI，负责初始化任务、确定性更新 `state.toml`、渲染 `state.md`、校验 workspace、关闭任务 lifecycle。
-- `daedalus-tui`：human-friendly 只读 TUI，用 dashboard 方式查看当前学习任务状态、缺失产物、todo、最近 transition 和阶段进度。
+- `daedalus-tui`：human-friendly 只读 TUI。位于具体学习任务目录时直接展示任务 dashboard；位于 daedalus 其他子目录时扫描 `02-learning` / `03-completed` / `04-abandoned` 并进入任务选择页。
 
 常用命令：
 
@@ -58,10 +58,12 @@ daedalus state resume 01-goal-aligner --task-dir <task-dir> --reason "<reason>"
 daedalus state complete 01-goal-aligner --task-dir <task-dir> --reason "<reason>"
 daedalus task complete <task-dir> --reason "<reason>"
 daedalus task abandon <task-dir> --reason "<reason>"
+daedalus-tui
 daedalus-tui <task-dir>
 ```
 
 `daedalus` 只能在 daedalus 项目根目录或其子目录下运行。它会动态推导 repo root 和 task path；在非法目录运行时会拒绝服务并给出下一步建议。
+`daedalus-tui` 也遵循同样的目录边界，并会根据任务所在 bucket 调整 UI 侧重点：进行中任务关注下一步，已完成任务关注归档复用，已放弃任务关注恢复判断。`01-backlog` 的任务语义尚未固化，暂不纳入 TUI 选择页。
 
 ## Workspace Lifecycle
 

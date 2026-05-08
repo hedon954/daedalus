@@ -1,13 +1,65 @@
 use ratatui::layout::{Alignment, Constraint, Direction, Layout};
 use ratatui::prelude::{Color, Frame, Line, Modifier, Rect, Span, Style};
 use ratatui::widgets::{
-    Block, BorderType, Borders, Gauge, List, ListItem, Padding, Paragraph, Wrap,
+    Block, BorderType, Borders, Gauge, List, ListItem, ListState, Padding, Paragraph, Wrap,
 };
 
-use crate::interfaces::tui::app::TuiOverview;
+use crate::interfaces::tui::app::{TuiOverview, TuiTaskSummary};
+
+/// 绘制 workspace 任务选择页。
+pub fn draw_selector(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary], selected: usize) {
+    frame.render_widget(
+        Block::default().style(Style::default().bg(Color::Rgb(9, 12, 22))),
+        area,
+    );
+
+    let root = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Length(4),
+            Constraint::Min(10),
+            Constraint::Length(3),
+        ])
+        .margin(1)
+        .split(area);
+
+    let header = Paragraph::new(Line::from(vec![
+        Span::styled(
+            "DAEDALUS",
+            Style::default()
+                .fg(Color::Rgb(80, 250, 123))
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw("  workspace radar"),
+    ]))
+    .alignment(Alignment::Center)
+    .block(chrome_block(
+        " Select Learning Task ",
+        Color::Rgb(80, 250, 123),
+    ));
+    frame.render_widget(header, root[0]);
+
+    let counts = bucket_count_line(tasks);
+    let summary = Paragraph::new(counts)
+        .alignment(Alignment::Center)
+        .block(chrome_block(
+            " 02 / 03 / 04 Scan ",
+            Color::Rgb(139, 233, 253),
+        ));
+    frame.render_widget(summary, root[1]);
+
+    render_task_list(frame, root[2], tasks, selected);
+    render_selector_footer(frame, root[3]);
+}
 
 /// 绘制 TUI 只读总览页面。
-pub fn draw_overview(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
+pub fn draw_overview(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    overview: &TuiOverview,
+    can_return_to_selector: bool,
+) {
     frame.render_widget(
         Block::default().style(Style::default().bg(Color::Rgb(9, 12, 22))),
         area,
@@ -43,30 +95,38 @@ pub fn draw_overview(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) 
     render_list(
         frame,
         left[0],
-        "Missing Artifacts",
+        bucket_missing_title(&overview.workspace_bucket),
         &overview.missing_artifacts,
-        Color::Rgb(255, 184, 108),
-        "All required artifacts are present.",
+        bucket_accent(&overview.workspace_bucket),
+        bucket_missing_empty(&overview.workspace_bucket),
     );
     render_next_action(frame, left[1], overview);
     render_list(
         frame,
         right[0],
-        "Todo Focus",
+        bucket_todo_title(&overview.workspace_bucket),
         &overview.todo_summary,
         Color::Rgb(139, 233, 253),
-        "No open todo items.",
+        bucket_todo_empty(&overview.workspace_bucket),
     );
+    let transitions_title = bucket_transition_title(&overview.workspace_bucket);
+    let transitions = if overview.closure_summary.is_empty() {
+        overview.recent_transitions.clone()
+    } else {
+        let mut values = overview.closure_summary.clone();
+        values.extend(overview.recent_transitions.clone());
+        values
+    };
     render_list(
         frame,
         right[1],
-        "Recent Transitions",
-        &overview.recent_transitions,
+        transitions_title,
+        &transitions,
         Color::Rgb(189, 147, 249),
-        "No transition history.",
+        "No transition history yet.",
     );
 
-    render_footer(frame, root[3]);
+    render_footer(frame, root[3], can_return_to_selector);
 }
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
@@ -74,10 +134,13 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
         Span::styled(
             "DAEDALUS",
             Style::default()
-                .fg(Color::Rgb(80, 250, 123))
+                .fg(bucket_accent(&overview.workspace_bucket))
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw("  learning cockpit  "),
+        Span::styled(
+            format!("  {}  ", bucket_label(&overview.workspace_bucket)),
+            Style::default().fg(Color::Rgb(248, 248, 242)),
+        ),
         Span::styled(
             format!("[{}]", overview.lifecycle),
             Style::default()
@@ -87,7 +150,10 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
     ]);
     let header = Paragraph::new(title)
         .alignment(Alignment::Center)
-        .block(chrome_block("  system online  ", Color::Rgb(80, 250, 123)));
+        .block(chrome_block(
+            bucket_header_title(&overview.workspace_bucket),
+            bucket_accent(&overview.workspace_bucket),
+        ));
     frame.render_widget(header, area);
 }
 
@@ -109,6 +175,12 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
             Style::default()
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw("    "),
+        Span::styled("Path  ", muted()),
+        Span::styled(
+            overview.task_dir.display().to_string(),
+            Style::default().fg(Color::Rgb(98, 114, 164)),
         ),
         Span::raw("    "),
         Span::styled("Phase  ", muted()),
@@ -133,14 +205,20 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
     ]);
     let current = Paragraph::new(vec![Line::raw(""), status])
         .alignment(Alignment::Center)
-        .block(chrome_block(" Current Vector ", Color::Rgb(139, 233, 253)));
+        .block(chrome_block(
+            bucket_current_title(&overview.workspace_bucket),
+            Color::Rgb(139, 233, 253),
+        ));
     frame.render_widget(current, chunks[0]);
 
     let gauge = Gauge::default()
-        .block(chrome_block(" Stage Progress ", Color::Rgb(80, 250, 123)))
+        .block(chrome_block(
+            bucket_progress_title(&overview.workspace_bucket),
+            bucket_accent(&overview.workspace_bucket),
+        ))
         .gauge_style(
             Style::default()
-                .fg(Color::Rgb(80, 250, 123))
+                .fg(bucket_accent(&overview.workspace_bucket))
                 .bg(Color::Rgb(40, 42, 54))
                 .add_modifier(Modifier::BOLD),
         )
@@ -156,7 +234,10 @@ fn render_next_action(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview)
     let paragraph = Paragraph::new(overview.next_action.as_str())
         .style(Style::default().fg(Color::Rgb(248, 248, 242)))
         .wrap(Wrap { trim: true })
-        .block(chrome_block(" Next Action ", Color::Rgb(80, 250, 123)));
+        .block(chrome_block(
+            bucket_next_title(&overview.workspace_bucket),
+            bucket_accent(&overview.workspace_bucket),
+        ));
     frame.render_widget(paragraph, area);
 }
 
@@ -191,16 +272,91 @@ fn render_list(
     frame.render_widget(list, area);
 }
 
-fn render_footer(frame: &mut Frame<'_>, area: Rect) {
+fn render_task_list(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary], selected: usize) {
+    let items: Vec<ListItem<'_>> = tasks
+        .iter()
+        .map(|task| {
+            let progress = if task.total_stage_count == 0 {
+                "0/0".to_owned()
+            } else {
+                format!("{}/{}", task.done_stage_count, task.total_stage_count)
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(
+                    format!("{:<13}", task.bucket),
+                    Style::default()
+                        .fg(bucket_accent(&task.bucket))
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!("{:<28}", task.task_name),
+                    Style::default().fg(Color::Rgb(248, 248, 242)),
+                ),
+                Span::styled(format!("{:<11}", task.lifecycle), muted()),
+                Span::styled(
+                    format!("{:<18}", task.current_phase),
+                    Style::default().fg(Color::Cyan),
+                ),
+                Span::styled(
+                    format!("{:<8}", task.current_status),
+                    Style::default().fg(status_color(&task.current_status)),
+                ),
+                Span::styled(progress, Style::default().fg(Color::Rgb(255, 184, 108))),
+            ]))
+        })
+        .collect();
+    let list = List::new(items)
+        .block(chrome_block(" Learning Tasks ", Color::Rgb(189, 147, 249)))
+        .highlight_symbol(">> ")
+        .highlight_style(
+            Style::default()
+                .fg(Color::Rgb(9, 12, 22))
+                .bg(Color::Rgb(80, 250, 123))
+                .add_modifier(Modifier::BOLD),
+        );
+    let mut state = ListState::default();
+    if !tasks.is_empty() {
+        state.select(Some(selected.min(tasks.len() - 1)));
+    }
+    frame.render_stateful_widget(list, area, &mut state);
+}
+
+fn render_selector_footer(frame: &mut Frame<'_>, area: Rect) {
     let footer = Paragraph::new(Line::from(vec![
+        Span::styled("↑/↓ j/k", Style::default().fg(Color::Rgb(255, 184, 108))),
+        Span::raw(" select    "),
+        Span::styled("enter", Style::default().fg(Color::Rgb(80, 250, 123))),
+        Span::raw(" open    "),
         Span::styled("q / esc", Style::default().fg(Color::Rgb(255, 184, 108))),
-        Span::raw(" quit    "),
-        Span::styled("readonly", Style::default().fg(Color::Rgb(139, 233, 253))),
-        Span::raw(" view    "),
-        Span::styled("state changes go through daedalus CLI", muted()),
+        Span::raw(" quit"),
     ]))
     .alignment(Alignment::Center)
     .block(chrome_block(" Controls ", Color::Rgb(98, 114, 164)));
+    frame.render_widget(footer, area);
+}
+
+fn render_footer(frame: &mut Frame<'_>, area: Rect, can_return_to_selector: bool) {
+    let mut spans = vec![
+        Span::styled("q / esc", Style::default().fg(Color::Rgb(255, 184, 108))),
+        Span::raw(" quit    "),
+    ];
+    if can_return_to_selector {
+        spans.extend([
+            Span::styled(
+                "b / backspace",
+                Style::default().fg(Color::Rgb(80, 250, 123)),
+            ),
+            Span::raw(" back    "),
+        ]);
+    }
+    spans.extend([
+        Span::styled("readonly", Style::default().fg(Color::Rgb(139, 233, 253))),
+        Span::raw(" view    "),
+        Span::styled("state changes go through daedalus CLI", muted()),
+    ]);
+    let footer = Paragraph::new(Line::from(spans))
+        .alignment(Alignment::Center)
+        .block(chrome_block(" Controls ", Color::Rgb(98, 114, 164)));
     frame.render_widget(footer, area);
 }
 
@@ -228,5 +384,119 @@ fn status_color(status: &str) -> Color {
         "blocked" | "abandoned" => Color::Rgb(255, 85, 85),
         "paused" => Color::Rgb(255, 184, 108),
         _ => Color::Rgb(248, 248, 242),
+    }
+}
+
+fn bucket_count_line(tasks: &[TuiTaskSummary]) -> Line<'_> {
+    let mut spans = Vec::new();
+    for bucket in ["02-learning", "03-completed", "04-abandoned"] {
+        let count = tasks.iter().filter(|task| task.bucket == bucket).count();
+        spans.push(Span::styled(
+            format!(" {bucket} "),
+            Style::default()
+                .fg(bucket_accent(bucket))
+                .add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::styled(format!("{count}  "), muted()));
+    }
+    Line::from(spans)
+}
+
+fn bucket_label(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => "learning cockpit",
+        "03-completed" => "archive vault",
+        "04-abandoned" => "recovery bay",
+        _ => "learning cockpit",
+    }
+}
+
+fn bucket_header_title(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => " System Online ",
+        "03-completed" => " Knowledge Archived ",
+        "04-abandoned" => " Recovery Review ",
+        _ => " System Online ",
+    }
+}
+
+fn bucket_current_title(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => " Current Vector ",
+        "03-completed" => " Closure Snapshot ",
+        "04-abandoned" => " Stop Point ",
+        _ => " Current Vector ",
+    }
+}
+
+fn bucket_progress_title(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => " Stage Progress ",
+        "03-completed" => " Completion Trace ",
+        "04-abandoned" => " Progress Before Stop ",
+        _ => " Stage Progress ",
+    }
+}
+
+fn bucket_missing_title(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => " Missing Artifacts ",
+        "03-completed" => " Archive Audit ",
+        "04-abandoned" => " Recovery Gaps ",
+        _ => " Missing Artifacts ",
+    }
+}
+
+fn bucket_missing_empty(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => "All required artifacts are present.",
+        "03-completed" => "Archive is structurally complete.",
+        "04-abandoned" => "No obvious recovery gaps.",
+        _ => "All required artifacts are present.",
+    }
+}
+
+fn bucket_next_title(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => " Next Action ",
+        "03-completed" => " Reuse / Knowledge Export ",
+        "04-abandoned" => " Revival Decision ",
+        _ => " Next Action ",
+    }
+}
+
+fn bucket_todo_title(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => " Todo Focus ",
+        "03-completed" => " Follow-up Ideas ",
+        "04-abandoned" => " Reactivation Todos ",
+        _ => " Todo Focus ",
+    }
+}
+
+fn bucket_todo_empty(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => "No open todo items.",
+        "03-completed" => "No follow-up ideas.",
+        "04-abandoned" => "No reactivation todos.",
+        _ => "No open todo items.",
+    }
+}
+
+fn bucket_transition_title(bucket: &str) -> &'static str {
+    match bucket {
+        "02-learning" => " Recent Transitions ",
+        "03-completed" => " Closure Trail ",
+        "04-abandoned" => " Abandon Trail ",
+        _ => " Recent Transitions ",
+    }
+}
+
+fn bucket_accent(bucket: &str) -> Color {
+    match bucket {
+        "02-learning" => Color::Rgb(80, 250, 123),
+        "03-completed" => Color::Rgb(139, 233, 253),
+        "04-abandoned" => Color::Rgb(255, 85, 85),
+        _ => Color::Rgb(189, 147, 249),
     }
 }

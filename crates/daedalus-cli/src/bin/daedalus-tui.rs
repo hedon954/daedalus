@@ -1,8 +1,8 @@
 use std::process::ExitCode;
 
 use daedalus_cli::infrastructure::workspace_fs;
-use daedalus_cli::interfaces::tui::app::load_overview;
-use daedalus_cli::interfaces::tui::presenter::run_readonly_overview;
+use daedalus_cli::interfaces::tui::app::TuiApp;
+use daedalus_cli::interfaces::tui::presenter::run_tui;
 
 fn main() -> ExitCode {
     match run() {
@@ -16,7 +16,13 @@ fn main() -> ExitCode {
 }
 
 fn run() -> daedalus_cli::domain::Result<()> {
-    let task_dir = workspace_fs::default_task_dir(std::env::args_os().nth(1).map(Into::into))?;
-    let overview = load_overview(&task_dir)?;
-    run_readonly_overview(overview)
+    let cwd =
+        std::env::current_dir().map_err(|source| daedalus_cli::domain::DaedalusError::Io {
+            path: ".".into(),
+            source,
+        })?;
+    let repo_root = workspace_fs::repo_root_from(&cwd)?;
+    let app =
+        TuiApp::from_launch_context(&repo_root, &cwd, std::env::args_os().nth(1).map(Into::into))?;
+    run_tui(app)
 }
