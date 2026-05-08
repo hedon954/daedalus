@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::{DaedalusError, Result};
+use crate::domain::{DaedalusError, Result, TaskLifecycle, WorkspaceBucket};
 use crate::infrastructure::{state_toml, workspace_fs};
 
 /// workspace 校验结果。
@@ -27,7 +27,7 @@ impl ValidationOutput {
 pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<ValidationOutput> {
     let mut issues = Vec::new();
     let required = [
-        ".daedalus/CLAUDE.md",
+        "CLAUDE.md",
         ".daedalus/task-card.md",
         ".daedalus/state.toml",
         ".daedalus/state.md",
@@ -35,6 +35,9 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         ".daedalus/long-context.md",
         ".daedalus/artifact-index.md",
         ".daedalus/decision-log.md",
+        "demo/.gitkeep",
+        "notes/.gitkeep",
+        "source/.gitkeep",
     ];
 
     for path in required {
@@ -69,6 +72,43 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         issues.push("current_phase is missing".to_owned());
     }
 
+    match (
+        state_toml::task_lifecycle(&doc),
+        state_toml::workspace_bucket(&doc),
+        workspace_fs::bucket_from_task_dir(task_dir),
+    ) {
+        (Ok(lifecycle), Ok(state_bucket), Ok(actual_bucket)) => {
+            let expected_bucket = expected_bucket_for_lifecycle(lifecycle);
+            if state_bucket != expected_bucket {
+                issues.push(format!(
+                    "task lifecycle `{}` expects workspace_bucket `{}`, got `{}`",
+                    lifecycle.as_str(),
+                    expected_bucket.as_str(),
+                    state_bucket.as_str()
+                ));
+            }
+            if actual_bucket != expected_bucket {
+                issues.push(format!(
+                    "task lifecycle `{}` expects directory bucket `{}`, got `{}`",
+                    lifecycle.as_str(),
+                    expected_bucket.as_str(),
+                    actual_bucket.as_str()
+                ));
+            }
+        }
+        (lifecycle, state_bucket, actual_bucket) => {
+            if let Err(error) = lifecycle {
+                issues.push(format!("invalid task lifecycle: {error}"));
+            }
+            if let Err(error) = state_bucket {
+                issues.push(format!("invalid workspace_bucket: {error}"));
+            }
+            if let Err(error) = actual_bucket {
+                issues.push(format!("invalid task directory bucket: {error}"));
+            }
+        }
+    }
+
     let state_md = state_toml::state_md_path(task_dir);
     if stale(&state_path, &state_md)? {
         issues.push("state.md is stale or missing".to_owned());
@@ -101,6 +141,14 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         task_dir: task_dir.to_path_buf(),
         issues,
     })
+}
+
+fn expected_bucket_for_lifecycle(lifecycle: TaskLifecycle) -> WorkspaceBucket {
+    match lifecycle {
+        TaskLifecycle::Active => WorkspaceBucket::Learning,
+        TaskLifecycle::Completed => WorkspaceBucket::Completed,
+        TaskLifecycle::Abandoned => WorkspaceBucket::Abandoned,
+    }
 }
 
 fn stale(source: &Path, generated: &Path) -> Result<bool> {

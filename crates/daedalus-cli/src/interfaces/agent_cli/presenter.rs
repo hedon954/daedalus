@@ -1,5 +1,6 @@
 use serde_json::json;
 
+use crate::application::close_task::CloseTaskOutput;
 use crate::application::init_task::InitTaskOutput;
 use crate::application::render::RenderedState;
 use crate::application::transition_stage::TransitionStageOutput;
@@ -47,6 +48,41 @@ pub fn print_transition(output: &TransitionStageOutput, format: OutputFormat) {
                 "stage": output.stage_id,
                 "task_dir": output.task_dir,
                 "state_md": output.state_md
+            })
+        ),
+    }
+}
+
+/// 输出任务生命周期关闭结果。
+pub fn print_close_task(output: &CloseTaskOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            let label = match output.action.as_str() {
+                "task-complete" => "completed",
+                "abandon" => "abandoned",
+                _ => output.action.as_str(),
+            };
+            println!("ok: task {label}");
+            println!("lifecycle: {}", output.lifecycle);
+            println!("moved: {}", output.moved);
+            println!("from_task_dir: {}", output.from_task_dir.display());
+            println!("to_task_dir: {}", output.to_task_dir.display());
+            println!("state_md: {}", output.state_md.display());
+            println!("decision_log: {}", output.decision_log.display());
+            println!("next: {}", output.next);
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "lifecycle": output.lifecycle,
+                "moved": output.moved,
+                "from_task_dir": output.from_task_dir,
+                "to_task_dir": output.to_task_dir,
+                "state_md": output.state_md,
+                "decision_log": output.decision_log,
+                "next": output.next
             })
         ),
     }
@@ -134,6 +170,31 @@ fn print_text_error(error: &DaedalusError) {
                 "next: complete or move the active task before initializing a new one; use --allow-existing-active --reason <reason> only with explicit approval"
             );
         }
+        DaedalusError::TaskMoveDestinationExists(path) => {
+            eprintln!("error: task move destination already exists");
+            eprintln!("to_task_dir: {}", path.display());
+            eprintln!(
+                "next: inspect the existing destination before retrying; never overwrite completed or abandoned learning history"
+            );
+        }
+        DaedalusError::TaskLifecycleReasonRequired => {
+            eprintln!("error: task lifecycle reason required");
+            eprintln!(
+                "next: rerun with --reason <specific reason> so future Agents understand why the task moved"
+            );
+        }
+        DaedalusError::InvalidTaskLifecycleTransition(message) => {
+            eprintln!("error: invalid task lifecycle transition");
+            eprintln!("detail: {message}");
+            eprintln!("next: inspect .daedalus/state.toml and run daedalus validate");
+        }
+        DaedalusError::TaskLifecycleLocationMismatch(message) => {
+            eprintln!("error: task lifecycle location mismatch");
+            eprintln!("detail: {message}");
+            eprintln!(
+                "next: keep task.lifecycle, task.workspace_bucket, and the workspace directory bucket consistent"
+            );
+        }
         DaedalusError::NotDaedalusProject(path) => {
             eprintln!("error: not a daedalus project directory");
             eprintln!("cwd: {}", path.display());
@@ -178,6 +239,29 @@ fn print_json_error(error: &DaedalusError) {
             "error": "task_already_active",
             "task_dir": path,
             "next": "complete or move the active task before initializing a new one; use --allow-existing-active --reason <reason> only with explicit approval"
+        }),
+        DaedalusError::TaskMoveDestinationExists(path) => json!({
+            "ok": false,
+            "error": "task_move_destination_exists",
+            "to_task_dir": path,
+            "next": "inspect the existing destination before retrying; never overwrite completed or abandoned learning history"
+        }),
+        DaedalusError::TaskLifecycleReasonRequired => json!({
+            "ok": false,
+            "error": "task_lifecycle_reason_required",
+            "next": "rerun with --reason <specific reason> so future Agents understand why the task moved"
+        }),
+        DaedalusError::InvalidTaskLifecycleTransition(message) => json!({
+            "ok": false,
+            "error": "invalid_task_lifecycle_transition",
+            "detail": message,
+            "next": "inspect .daedalus/state.toml and run daedalus validate"
+        }),
+        DaedalusError::TaskLifecycleLocationMismatch(message) => json!({
+            "ok": false,
+            "error": "task_lifecycle_location_mismatch",
+            "detail": message,
+            "next": "keep task.lifecycle, task.workspace_bucket, and the workspace directory bucket consistent"
         }),
         DaedalusError::NotDaedalusProject(path) => json!({
             "ok": false,

@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::{DaedalusError, Result};
+use crate::domain::{DaedalusError, Result, WorkspaceBucket};
 
 /// 从给定目录向上查找 daedalus 项目根目录。
 ///
@@ -33,6 +33,32 @@ fn is_daedalus_root(path: &Path) -> bool {
 /// 返回 repo learning 任务所在的 workspace 根目录。
 pub fn learning_root(repo_root: &Path) -> PathBuf {
     repo_root.join("workspaces").join("02-learning")
+}
+
+/// 返回已完成学习任务所在目录。
+pub fn completed_root(repo_root: &Path) -> PathBuf {
+    repo_root.join("workspaces").join("03-completed")
+}
+
+/// 返回已放弃学习任务所在目录。
+pub fn abandoned_root(repo_root: &Path) -> PathBuf {
+    repo_root.join("workspaces").join("04-abandoned")
+}
+
+/// 根据任务目录位置推导 workspace bucket。
+pub fn bucket_from_task_dir(task_dir: &Path) -> Result<WorkspaceBucket> {
+    let bucket = task_dir
+        .parent()
+        .and_then(Path::file_name)
+        .and_then(|value| value.to_str())
+        .and_then(WorkspaceBucket::parse)
+        .ok_or_else(|| {
+            DaedalusError::TaskLifecycleLocationMismatch(format!(
+                "cannot infer workspace bucket from {}",
+                task_dir.display()
+            ))
+        })?;
+    Ok(bucket)
 }
 
 /// 扫描 `workspaces/02-learning` 下已有的学习任务目录。
@@ -94,4 +120,22 @@ pub fn ensure_dir(path: &Path) -> Result<()> {
         path: path.to_path_buf(),
         source,
     })
+}
+
+/// 将学习任务目录移动到目标 bucket，拒绝覆盖已有目录。
+pub fn move_task(task_dir: &Path, destination_root: &Path) -> Result<PathBuf> {
+    ensure_dir(destination_root)?;
+    let task_name = task_dir
+        .file_name()
+        .map(ToOwned::to_owned)
+        .ok_or(DaedalusError::NoActiveWorkspace)?;
+    let destination = destination_root.join(task_name);
+    if destination.exists() {
+        return Err(DaedalusError::TaskMoveDestinationExists(destination));
+    }
+    fs::rename(task_dir, &destination).map_err(|source| DaedalusError::Io {
+        path: destination.clone(),
+        source,
+    })?;
+    Ok(destination)
 }

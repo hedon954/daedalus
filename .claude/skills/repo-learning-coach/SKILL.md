@@ -1,6 +1,6 @@
 ---
 name: repo-learning-coach
-description: Guides the full 10-stage daedalus code repo learning loop: clarify goal, explain first principles, select repo, ask roadmap questions, run/debug, analyze architecture, read core code, build mini demo, transfer to business, and archive knowledge. Use when the user starts, continues, resumes, summarizes, or closes a repository learning task.
+description: Guides the full 10-stage daedalus code repo learning loop: align goal, select repo, ask roadmap questions, run/debug, analyze architecture, read core code, design mini demo, implement mini demo, transfer to business, and archive knowledge. Use when the user starts, continues, resumes, summarizes, or closes a repository learning task.
 ---
 
 # Repo Learning Coach
@@ -13,25 +13,15 @@ Repo learning is a long-running, filesystem-first coaching process. Prefer promp
 
 ## 10-Stage Workflow
 
-### 1. Clarify Goal
+### 1. Align Repo Learning Goal
 
 Load:
 
-- `system/prompts/common/clarify-goal.md`
-- `system/prompts/common/gatekeeper.md`
 - `system/prompts/repo/phase1-exploration/01-goal-aligner.md`
 
 Confirm the real-world problem, current level, expected output, acceptance criteria, and whether the task deserves active learning.
 
-### 2. Explain First Principles
-
-Load:
-
-- `system/prompts/common/first-principles.md`
-
-Explain the target capability through reality constraints, causal chains, and trade-offs. Connect prior knowledge only when it helps the current goal.
-
-### 3. Select Repo
+### 2. Select Study Repo
 
 Load:
 
@@ -39,16 +29,15 @@ Load:
 
 Recommend or compare at most 3 repos. Select the one most suitable for deep reading, local running, and mini demo extraction.
 
-### 4. Build Question Roadmap
+### 3. Ask Repo Socratic Questions
 
 Load:
 
-- `system/prompts/common/question-roadmap.md`
 - `system/prompts/repo/phase1-exploration/03-socratic-coach.md`
 
 Generate layered questions before explaining answers. Use questions to drive hypotheses about production constraints, architecture, core path, and demo invariants.
 
-### 5. Run And Debug Repo
+### 4. Run And Debug Repo
 
 Load:
 
@@ -56,7 +45,7 @@ Load:
 
 Create a runbook, start the repo locally when possible, and trace the core path from an entry point with logs, tests, or debugger breakpoints.
 
-### 6. Analyze Architecture
+### 5. Analyze Architecture
 
 Load:
 
@@ -64,7 +53,7 @@ Load:
 
 Map boundaries, layers, data flow, control flow, extension points, and trade-offs. Prefer diagrams when they clarify the system.
 
-### 7. Read Core Code
+### 6. Read Core Code
 
 Load:
 
@@ -72,14 +61,21 @@ Load:
 
 Read only the code that serves the core path and key architecture questions. Extract invariants, design choices, and reusable implementation patterns.
 
-### 8. Build Mini Demo
+### 7. Design Mini Demo
 
 Load:
 
 - `system/prompts/repo/phase3-practice/07-demo-architecture.md`
+
+Design a focused mini demo that preserves the repo's core architectural decision. Define verification before coding.
+
+### 8. Implement Mini Demo
+
+Load:
+
 - `system/prompts/repo/phase3-practice/08-demo-coder.md`
 
-Design and implement a focused mini demo that preserves the repo's core architectural decision. Define verification before coding and run the smallest validation after meaningful steps.
+Implement the mini demo in small verified steps. Run the smallest validation after meaningful changes.
 
 ### 9. Transfer To Business
 
@@ -112,6 +108,7 @@ For long-running work:
 
 - Keep WIP = 1 in `workspaces/02-learning`.
 - Prefer filesystem state over chat memory.
+- Treat `.daedalus/state.toml` as the only lifecycle fact source; completed and abandoned directories are projections of `task.lifecycle` and `task.workspace_bucket`.
 - Ask at most 3 high-value questions at a time.
 - Tie every reading step to a future output artifact.
 - Do not mark the task complete until demo/business transfer/knowledge archival are addressed.

@@ -4,13 +4,17 @@ use clap::{Args, Subcommand};
 use enum_dispatch::enum_dispatch;
 use tracing::debug;
 
+use crate::application::close_task::CloseTaskAction;
 use crate::application::render::render_state;
 use crate::application::transition_stage::{StageAction, TransitionStageOptions, transition_stage};
 use crate::domain::{ApprovalSource, DaedalusError, Result};
 use crate::infrastructure::workspace_fs;
+use crate::interfaces::agent_cli::commands::task::execute_close_task;
 use crate::interfaces::agent_cli::context::AgentCliContext;
 use crate::interfaces::agent_cli::executor::CmdExecutor;
 use crate::interfaces::agent_cli::presenter::{print_render, print_transition};
+
+const FINAL_STAGE_ID: &str = "10-archivist";
 
 /// 状态命令。
 #[derive(Debug, Args)]
@@ -91,6 +95,10 @@ pub struct CompleteArgs {
 impl CmdExecutor for CompleteArgs {
     async fn execute(self, ctx: AgentCliContext) -> Result<()> {
         debug!(stage = %self.stage_id, force = self.force, "完成学习阶段");
+        let is_final_stage = self.stage_id == FINAL_STAGE_ID;
+        let task_dir = self.task_dir;
+        let stage_id = self.stage_id;
+        let reason = self.reason;
         let approval_source = self
             .approval_source
             .as_deref()
@@ -99,17 +107,35 @@ impl CmdExecutor for CompleteArgs {
                     .ok_or_else(|| DaedalusError::InvalidApprovalSource(value.to_owned()))
             })
             .transpose()?;
-        execute_transition(
-            ctx,
-            self.task_dir,
-            self.stage_id,
-            StageAction::Complete {
-                force: self.force,
+        if is_final_stage {
+            let close_reason = reason.clone().unwrap_or_default();
+            if close_reason.trim().is_empty() {
+                return Err(DaedalusError::TaskLifecycleReasonRequired);
+            }
+            execute_close_task(
+                ctx,
+                task_dir,
+                CloseTaskAction::Complete,
+                close_reason,
+                true,
+                self.force,
                 approval_source,
-            },
-            self.reason,
-        )
-        .await
+            )
+            .await?;
+        } else {
+            execute_transition(
+                ctx,
+                task_dir,
+                stage_id,
+                StageAction::Complete {
+                    force: self.force,
+                    approval_source,
+                },
+                reason,
+            )
+            .await?;
+        }
+        Ok(())
     }
 }
 

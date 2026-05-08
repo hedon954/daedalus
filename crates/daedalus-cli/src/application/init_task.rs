@@ -48,7 +48,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
     workspace_fs::ensure_dir(&task_dir.join("demo"))?;
     workspace_fs::ensure_dir(&task_dir.join("notes"))?;
 
-    let created_at = clock::now_rfc3339();
+    let created_at = clock::now_local_timestamp();
     let template_dir = options
         .repo_root
         .join("system")

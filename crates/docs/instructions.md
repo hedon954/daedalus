@@ -227,3 +227,51 @@ impl CmdExector for CsvOpts {
 1. 默认先支持 tokio async，即便我们现在可能不需要异步。
 2. 参考 rcli 使用 tracing 和 tracing-subscriber 进行日志记录。
 3. 注意，rcli 使用的依赖版本可能是过时了，你需要使用最新的版本来进行开发。
+
+---
+
+所以当学习任务完成的时候，是不是 cli 就需要自动将其移动到 completed 目录呢？放弃也是一样的。而且，cli 执行结果需要对移动情况进行说明，方便 agent 理解。
+
+---
+
+plan 用中文，再通过学习任务根目录 CLAUDE.md 记住这个规则，避免你重复再犯。
+
+---
+
+为什么都到 03-completed 目录下了， @workspaces/03-completed/pre-stage-one-dry-run/.daedalus/state.toml 的状态并没有同步更新？这里多个地方都可能修改状态，是不是可能存在不一致的情况？我们是不是需要一个唯一的事实中心？然后，执行命令 completed 的时候，是不是需要做前置校验？而不是无脑强制移动？前面所有 stage 的迁移，是不是都得有显式的强制校验？所以这里在实现的时候，是不是可以定义 trait，trait 里面包含一个方法 async pre_check() ?
+
+---
+
+这个 pre_check 不应该在 CmdExecutor，而应该在状态机的流转上。
+
+---
+
+几个点：
+
+1. 不要在 plan 里面写什么 **不要在 `[CmdExecutor](crates/daedalus-cli/src/interfaces/agent_cli/executor.rs)` 上增加 `pre_check()`。`CmdExecutor` 属于 CLI 分发层** 这种表述，你就当之前没有这么设计就行了，plan 要保持表达的精简，不要携带那么多的过渡描述。
+2. 我觉得状态机的流转还是需要定义 trait 的，然后呢，最好是利用 rust 的强类型能力，来强制约束不同的状态枚举怎么流转到哪几种状态上去。这样我们可以进一步保证状态机的正确性和稳定性。请你思考一下这一块要怎么设计？我记得 rust 有个最佳实践叫什么 state pattern：https://refactoring.guru/design-patterns/state/rust/example  请你评估是否适合这个场景（不一定适合，不要附和我，请严肃评估）。
+
+---
+
+init repo-learning 生成目录的时候有几个点需要跟正：
+
+1. CLAUDE.md 应该是位于当前 learning-xxx 目录下，而不是 learning-xxx/.daedalus/ 目录下。
+2. 给 demo/notes/source 都加一个 .gitkeep 文件。
+
+---
+
+现在请你走一个完整的流程，模拟用户使用 daedalus，看看现在是否已经具备进入正式的 01 阶段了。 @.cursor/plans/pre-stage-one_56282d74.plan.md
+
+---
+
+我看生成的决策日志的时间内容好像不太对，应该要对应用户当前的时区？我现在是 UTC+8，你是怎么获取时间的？
+
+---
+
+2026-05-09T03:01:29.026552+08:00 这一串有点不友好，就简单  2026-05-09 03:01:29 就行
+
+---
+
+感觉 tui 的样式有点丑啊，优化一下。
+
+![](https://hedonspace.oss-cn-beijing.aliyuncs.com/img/image-20260509030514624.png)

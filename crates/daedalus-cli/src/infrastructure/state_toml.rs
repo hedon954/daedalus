@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 use toml_edit::{Array, DocumentMut, Item, Table, value};
 
 use crate::domain::transition::Transition;
-use crate::domain::{DaedalusError, Result, StageSnapshot, StageStatus};
+use crate::domain::{
+    DaedalusError, Result, StageSnapshot, StageStatus, TaskLifecycle, WorkspaceBucket,
+};
 
 /// 返回学习任务的 `state.toml` 路径。
 pub fn state_path(task_dir: &Path) -> PathBuf {
@@ -48,9 +50,64 @@ pub fn current_phase(doc: &DocumentMut) -> Option<String> {
     doc["task"]["current_phase"].as_str().map(ToOwned::to_owned)
 }
 
+/// 读取任务生命周期。
+pub fn task_lifecycle(doc: &DocumentMut) -> Result<TaskLifecycle> {
+    let value = doc["task"]["lifecycle"]
+        .as_str()
+        .ok_or_else(|| DaedalusError::InvalidTaskLifecycleTransition("missing lifecycle".into()))?;
+    TaskLifecycle::parse(value)
+        .ok_or_else(|| DaedalusError::InvalidTaskLifecycleTransition(value.to_owned()))
+}
+
+/// 设置任务生命周期。
+pub fn set_task_lifecycle(doc: &mut DocumentMut, lifecycle: TaskLifecycle) {
+    doc["task"]["lifecycle"] = value(lifecycle.as_str());
+}
+
+/// 读取任务所在 workspace bucket。
+pub fn workspace_bucket(doc: &DocumentMut) -> Result<WorkspaceBucket> {
+    let value = doc["task"]["workspace_bucket"].as_str().ok_or_else(|| {
+        DaedalusError::TaskLifecycleLocationMismatch("missing workspace_bucket".into())
+    })?;
+    WorkspaceBucket::parse(value)
+        .ok_or_else(|| DaedalusError::TaskLifecycleLocationMismatch(value.to_owned()))
+}
+
+/// 设置任务所在 workspace bucket。
+pub fn set_workspace_bucket(doc: &mut DocumentMut, bucket: WorkspaceBucket) {
+    doc["task"]["workspace_bucket"] = value(bucket.as_str());
+}
+
+/// 设置任务关闭信息。
+pub fn set_task_close_info(doc: &mut DocumentMut, closed_at: &str, reason: &str) {
+    doc["task"]["closed_at"] = value(closed_at);
+    doc["task"]["close_reason"] = value(reason);
+}
+
+/// 读取任务关闭时间。
+pub fn closed_at(doc: &DocumentMut) -> Option<String> {
+    doc["task"]
+        .get("closed_at")
+        .and_then(|item| item.as_str())
+        .map(ToOwned::to_owned)
+}
+
+/// 读取任务关闭原因。
+pub fn close_reason(doc: &DocumentMut) -> Option<String> {
+    doc["task"]
+        .get("close_reason")
+        .and_then(|item| item.as_str())
+        .map(ToOwned::to_owned)
+}
+
 /// 设置当前阶段 ID。
 pub fn set_current_phase(doc: &mut DocumentMut, stage_id: &str) {
     doc["task"]["current_phase"] = value(stage_id);
+}
+
+/// 设置面向 Agent 的下一步动作提示。
+pub fn set_next_action(doc: &mut DocumentMut, next_action: &str) {
+    doc["task"]["next_action"] = value(next_action);
 }
 
 /// 读取所有阶段快照。
@@ -82,6 +139,20 @@ pub fn active_stage_count(doc: &DocumentMut) -> usize {
 /// 判断阶段 ID 是否存在。
 pub fn stage_exists(doc: &DocumentMut, stage_id: &str) -> bool {
     stages(doc).iter().any(|stage| stage.id == stage_id)
+}
+
+/// 查找某个阶段之后的下一个 pending 阶段。
+pub fn next_pending_stage_after(doc: &DocumentMut, stage_id: &str) -> Option<StageSnapshot> {
+    let mut seen_current = false;
+    for stage in stages(doc) {
+        if seen_current && stage.status == "pending" {
+            return Some(stage);
+        }
+        if stage.id == stage_id {
+            seen_current = true;
+        }
+    }
+    None
 }
 
 /// 读取某个阶段的必需产物列表。
@@ -116,6 +187,17 @@ pub fn set_other_active_to_blocked(doc: &mut DocumentMut, stage_id: &str) {
             if stage["id"].as_str() != Some(stage_id) && stage["status"].as_str() == Some("active")
             {
                 stage["status"] = value("blocked");
+            }
+        }
+    }
+}
+
+/// 关闭任务时将仍处于 active 的阶段标记为 paused，避免 closed task 继续呈现进行中状态。
+pub fn pause_active_stages(doc: &mut DocumentMut) {
+    if let Some(array) = doc["stages"].as_array_of_tables_mut() {
+        for stage in array.iter_mut() {
+            if stage["status"].as_str() == Some("active") {
+                stage["status"] = value(StageStatus::Paused.as_str());
             }
         }
     }

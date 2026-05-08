@@ -7,9 +7,12 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 - Use Chinese for project-facing learning artifacts unless the user asks otherwise.
 - Treat output as the driver of input. Every reading step should support a concrete artifact: a question roadmap, runbook, architecture note, code reading note, mini demo, business solution, or knowledge-base entry.
 - Keep WIP strict. `workspaces/02-learning` should contain at most one active learning task.
+- Completed learning tasks must move to `workspaces/03-completed`; abandoned tasks must move to `workspaces/04-abandoned`. Use the CLI lifecycle commands instead of leaving closed tasks in `workspaces/02-learning`.
+- Treat `.daedalus/state.toml` as the only source of truth for task lifecycle. The workspace directory bucket is a filesystem projection and must match `task.lifecycle` and `task.workspace_bucket`.
 - Prefer filesystem artifacts over hidden chat memory. Long-running learning state must be recoverable from files.
 - Do not turn summaries into chat logs. Preserve goals, decisions, open questions, todo state, and verified conclusions.
 - Emphasize first principles and trade-offs: reality needs X, constraints force Y, the repo chooses Z, and the choice has costs.
+- When validating templates or generated workspace artifacts, judge them against daedalus's purpose: filesystem-first, recoverable, teachable, and reviewable learning loops. Do not blindly align one file to another if the result weakens that purpose.
 
 ## Project Structure
 

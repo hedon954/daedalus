@@ -51,6 +51,18 @@ pub enum DaedalusError {
     /// WIP 约束阻止创建第二个 active task。
     #[error("task already active: {0}")]
     TaskAlreadyActive(PathBuf),
+    /// 任务移动目标目录已存在，拒绝覆盖。
+    #[error("task move destination already exists: {0}")]
+    TaskMoveDestinationExists(PathBuf),
+    /// 任务生命周期操作缺少具体原因。
+    #[error("task lifecycle operation requires a specific reason")]
+    TaskLifecycleReasonRequired,
+    /// 任务生命周期状态不允许当前流转。
+    #[error("invalid task lifecycle transition: {0}")]
+    InvalidTaskLifecycleTransition(String),
+    /// 任务 lifecycle 和所在 workspace bucket 不一致。
+    #[error("task lifecycle and workspace bucket mismatch: {0}")]
+    TaskLifecycleLocationMismatch(String),
     /// `.daedalus/state.toml` 不存在。
     #[error("state file missing: {0}")]
     StateFileMissing(PathBuf),

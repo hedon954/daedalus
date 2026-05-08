@@ -42,7 +42,7 @@ flowchart TD
     CLI --> StateMd[.daedalus/state.md]
     CLI --> Workspace[workspaces/02-learning/learning-xxx]
     StateToml -->|"渲染"| StateMd
-    Claude[.daedalus/CLAUDE.md] -->|"@state.md"| StateMd
+    Claude[CLAUDE.md] -->|"@.daedalus/state.md"| StateMd
 ```
 
 ## Crate 结构
@@ -151,7 +151,7 @@ v1 不使用 serde 对 `state.toml` 做完整反序列化再序列化，因为�
 在 `workspaces/02-learning/<name>` 下创建新的学习任务目录，并初始化：
 
 ```text
-.daedalus/CLAUDE.md
+CLAUDE.md
 .daedalus/task-card.md
 .daedalus/state.toml
 .daedalus/state.md
@@ -159,9 +159,9 @@ v1 不使用 serde 对 `state.toml` 做完整反序列化再序列化，因为�
 .daedalus/long-context.md
 .daedalus/artifact-index.md
 .daedalus/decision-log.md
-source/
-demo/
-notes/
+source/.gitkeep
+demo/.gitkeep
+notes/.gitkeep
 ```
 
 职责：
@@ -349,7 +349,7 @@ TUI 不应该绕过 application 层直接修改文件。任何写操作都必须
 - CLI 可以生成唯一任务目录。
 - CLI 可以稳定填充占位符。
 - CLI 可以初始化 `state.toml` 并立刻渲染 `state.md`。
-- CLI 可以校验生成的 `.daedalus/CLAUDE.md` 引用的是 `@state.md`，而不是 `@state.toml`。
+- CLI 可以校验生成的根目录 `CLAUDE.md` 引用的是 `@.daedalus/state.md`，而不是 `@.daedalus/state.toml`。
 
 第一版使用纯文本模板和简单占位符替换。没有真实需求前，不引入模板引擎。
 
@@ -460,7 +460,7 @@ daedalus-cli/tests/fixtures/
 
 - 可以用一条 CLI 命令初始化新的 repo learning task。
 - CLI 更新后，`.daedalus/state.toml` 仍保留注释并保持人类可读。
-- `.daedalus/state.md` 可以从 `state.toml` 生成，并可被 `.daedalus/CLAUDE.md` 通过 `@` 引入。
+- `.daedalus/state.md` 可以从 `state.toml` 生成，并可被根目录 `CLAUDE.md` 通过 `@` 引入。
 - 阶段流转是确定性的，并记录在 `[[transitions]]` 中。
 - `validate` 能发现 state 缺失、阶段引用错误、required artifacts 缺失和 WIP 违规。
 - `daedalus` 提供稳定的 Agent-friendly 文本输出，并预留 JSON 输出。

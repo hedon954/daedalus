@@ -1,8 +1,10 @@
 # daedalus 学习状态。保留注释；确定性字段由 CLI 更新。
 #
 # 枚举约束：
+# - task.lifecycle 只能是：active、completed、abandoned。
+# - task.workspace_bucket 只能是：02-learning、03-completed、04-abandoned。
 # - stage.status 只能是：pending、active、blocked、paused、done。
-# - transition.action 只能是：init、enter、complete、block、resume。
+# - transition.action 只能是：init、enter、complete、block、resume、task-complete、abandon。
 # - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
 
@@ -10,6 +12,8 @@
 name = "{{TASK_NAME}}"
 kind = "repo-learning"
 created_at = "{{CREATED_AT}}"
+lifecycle = "active"
+workspace_bucket = "02-learning"
 current_phase = "01-goal-aligner"
 next_action = "澄清学习目标，并填写 [`.daedalus/task-card.md`](task-card.md)。"
 

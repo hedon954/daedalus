@@ -45,6 +45,24 @@ pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Strin
     output.push_str("> 从 [`.daedalus/state.toml`](state.toml) 生成。不要手动编辑。\n\n");
     output.push_str("## 当前状态\n\n");
     output.push_str(&format!("- 任务：`{}`\n", state_toml::task_name(doc)));
+    output.push_str(&format!(
+        "- 生命周期：`{}`\n",
+        state_toml::task_lifecycle(doc)
+            .map(|lifecycle| lifecycle.as_str().to_owned())
+            .unwrap_or_else(|_| "unknown".to_owned())
+    ));
+    output.push_str(&format!(
+        "- Workspace Bucket：`{}`\n",
+        state_toml::workspace_bucket(doc)
+            .map(|bucket| bucket.as_str().to_owned())
+            .unwrap_or_else(|_| "unknown".to_owned())
+    ));
+    if let Some(closed_at) = state_toml::closed_at(doc) {
+        output.push_str(&format!("- 关闭时间：`{closed_at}`\n"));
+    }
+    if let Some(close_reason) = state_toml::close_reason(doc) {
+        output.push_str(&format!("- 关闭原因：{close_reason}\n"));
+    }
     output.push_str(&format!("- 当前阶段：`{}`\n", current_phase));
     output.push_str(&format!(
         "- 状态：`{}`\n",
@@ -55,11 +73,13 @@ pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Strin
     output.push_str(&format!("- 下一步：{}\n\n", state_toml::next_action(doc)));
 
     output.push_str("## 枚举约束\n\n");
+    output.push_str("- `task.lifecycle` 只能是：`active`、`completed`、`abandoned`。\n");
+    output.push_str(
+        "- `task.workspace_bucket` 只能是：`02-learning`、`03-completed`、`04-abandoned`。\n",
+    );
     output
         .push_str("- `stage.status` 只能是：`pending`、`active`、`blocked`、`paused`、`done`。\n");
-    output.push_str(
-        "- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`。\n",
-    );
+    output.push_str("- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`task-complete`、`abandon`。\n");
     output.push_str("- `transition.approval_source` 只能是：`user-confirmed`、`artifact-equivalent`、`stage-not-applicable`。\n");
     output.push_str("- Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。\n\n");
 
