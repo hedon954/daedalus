@@ -9,10 +9,20 @@ use crate::infrastructure::state_toml;
 pub struct TuiOverview {
     /// 学习任务名称。
     pub task_name: String,
+    /// 任务生命周期状态。
+    pub lifecycle: String,
+    /// workspace bucket。
+    pub workspace_bucket: String,
     /// 当前阶段 ID。
     pub current_phase: String,
     /// 当前阶段状态。
     pub current_status: String,
+    /// 面向 Agent 的下一步动作。
+    pub next_action: String,
+    /// 已完成阶段数量。
+    pub done_stage_count: usize,
+    /// 阶段总数。
+    pub total_stage_count: usize,
     /// 当前缺失的关键产物。
     pub missing_artifacts: Vec<String>,
     /// `todo.md` 中的待办摘要。
@@ -25,14 +35,23 @@ pub struct TuiOverview {
 pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
     let doc = state_toml::load_state_doc(&state_toml::state_path(task_dir))?;
     let current_phase = state_toml::current_phase(&doc).unwrap_or_else(|| "unknown".to_owned());
-    let current_status = state_toml::stages(&doc)
-        .into_iter()
+    let stages = state_toml::stages(&doc);
+    let current_status = stages
+        .iter()
         .find(|stage| stage.id == current_phase)
-        .map(|stage| stage.status)
+        .map(|stage| stage.status.clone())
         .unwrap_or_else(|| "unknown".to_owned());
+    let done_stage_count = stages.iter().filter(|stage| stage.status == "done").count();
+    let total_stage_count = stages.len();
+    let lifecycle = state_toml::task_lifecycle(&doc)
+        .map(|lifecycle| lifecycle.as_str().to_owned())
+        .unwrap_or_else(|_| "unknown".to_owned());
+    let workspace_bucket = state_toml::workspace_bucket(&doc)
+        .map(|bucket| bucket.as_str().to_owned())
+        .unwrap_or_else(|_| "unknown".to_owned());
 
     let mut missing_artifacts = Vec::new();
-    for stage in state_toml::stages(&doc) {
+    for stage in stages {
         for artifact in stage.required_artifacts {
             if !task_dir.join(&artifact).exists() {
                 missing_artifacts.push(format!("{artifact} ({})", stage.id));
@@ -47,7 +66,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
                 .lines()
                 .filter(|line| line.trim_start().starts_with("- [ ]"))
                 .take(6)
-                .map(ToOwned::to_owned)
+                .map(|line| line.trim().trim_start_matches("- [ ]").trim().to_owned())
                 .collect()
         })
         .unwrap_or_default();
@@ -58,7 +77,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         .iter()
         .map(|transition| {
             format!(
-                "{} {} {}",
+                "{}  {}  {}",
                 transition.timestamp, transition.action, transition.stage
             )
         })
@@ -66,8 +85,13 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
 
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
+        lifecycle,
+        workspace_bucket,
         current_phase,
         current_status,
+        next_action: state_toml::next_action(&doc),
+        done_stage_count,
+        total_stage_count,
         missing_artifacts,
         todo_summary,
         recent_transitions,
