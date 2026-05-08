@@ -1,0 +1,43 @@
+fail_fast: false
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-byte-order-marker
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        description: Format Rust files with rustfmt.
+        entry: make fmt-check
+        language: system
+        files: ^crates/.*\.rs$
+        pass_filenames: false
+      - id: cargo-check
+        name: cargo check
+        description: Check all Rust crates for errors.
+        entry: make check
+        language: system
+        files: ^crates/.*\.(rs|toml)$
+        pass_filenames: false
+      - id: cargo-clippy
+        name: cargo clippy
+        description: Lint all Rust crates.
+        entry: make clippy
+        language: system
+        files: ^crates/.*\.rs$
+        pass_filenames: false
+      - id: cargo-test
+        name: cargo test
+        description: Run Rust workspace tests.
+        entry: make test
+        language: system
+        files: ^crates/.*\.(rs|toml)$
+        pass_filenames: false

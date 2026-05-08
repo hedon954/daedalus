@@ -1,0 +1,81 @@
+# daedalus 学习状态。保留注释；确定性字段由 CLI 更新。
+#
+# 枚举约束：
+# - stage.status 只能是：pending、active、blocked、paused、done。
+# - transition.action 只能是：init、enter、complete、block、resume。
+# - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
+# Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+
+[task]
+name = "{{TASK_NAME}}"
+kind = "repo-learning"
+created_at = "{{CREATED_AT}}"
+current_phase = "01-goal-aligner"
+next_action = "澄清学习目标，并填写 [`.daedalus/task-card.md`](task-card.md)。"
+
+[[stages]]
+id = "01-goal-aligner"
+title = "对齐 Repo 学习目标"
+status = "active"
+required_artifacts = [".daedalus/task-card.md"]
+
+[[stages]]
+id = "02-repo-scout"
+title = "选择学习仓库"
+status = "pending"
+required_artifacts = ["notes/repo-selection.md"]
+
+[[stages]]
+id = "03-socratic-coach"
+title = "提出 Repo 递进问题"
+status = "pending"
+required_artifacts = ["notes/question-roadmap.md"]
+
+[[stages]]
+id = "04-debugger-guide"
+title = "运行并调试 Repo"
+status = "pending"
+required_artifacts = ["notes/runbook.md"]
+
+[[stages]]
+id = "05-arch-analyzer"
+title = "分析 Repo 架构"
+status = "pending"
+required_artifacts = ["notes/architecture.md"]
+
+[[stages]]
+id = "06-code-reader"
+title = "深读 Repo 核心代码"
+status = "pending"
+required_artifacts = ["notes/code-reading.md"]
+
+[[stages]]
+id = "07-demo-architecture"
+title = "设计 Repo Mini Demo"
+status = "pending"
+required_artifacts = ["demo/design.md"]
+
+[[stages]]
+id = "08-demo-coder"
+title = "实现 Repo Mini Demo"
+status = "pending"
+required_artifacts = ["demo/README.md"]
+
+[[stages]]
+id = "09-biz-solver"
+title = "将 Repo 学习迁移到业务问题"
+status = "pending"
+required_artifacts = ["notes/business-application.md"]
+
+[[stages]]
+id = "10-archivist"
+title = "闭环 Repo 学习任务"
+status = "pending"
+required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md"]
+
+[[transitions]]
+stage = "01-goal-aligner"
+action = "init"
+timestamp = "{{CREATED_AT}}"
+actor = "daedalus-cli"
+reason = "初始化 repo 学习任务。"
