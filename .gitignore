@@ -1,0 +1,45 @@
+# macOS
+.DS_Store
+._*
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Rust
+target/
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Generated artifacts
+coverage/
+tmp/
+temp/
+.cache/
