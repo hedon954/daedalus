@@ -61,3 +61,73 @@ common 应该要被引用到 repo 的不同 prompt 里面（按需），这样 r
 ---
 
 那我们目前的 .claude/skills 是不是只需要保留 repo-learning-coach 就可以了，而且应该尽可能包含我之前说的 repo 学习的全流程,，也就是要分 10 个阶段去进行叙述。
+
+---
+
+现在我们完成了初版的 prompt 和 skill 和目录的搭建，现在我要在实践过程中不断完善这 10 个阶段的 agent 教学引导能力。你觉得，在开启 01 阶段之前，我还需要做哪些事情？
+
+---
+
+在你的 plan 中，针对 What To Prepare，每一个单独起一个小标题进行详细展开叙述。
+
+---
+
+- 状态机维护 state.toml 吧，然后写一个 rust cli，用于逻辑确定性更新 state.toml 状态（使用 toml_edit crate，确保更新的时候能保留注释）。
+- todo.md 需要有层次性，而且相关的 prompt 要引导 todo list 不是一成不变的，是要灵活调整的。而且要引导其创建 todo list、更新 todo list、完成 todo。
+- 每一个模板你都给一个 demo 样例我看看。
+
+---
+
+我看 cursor 是默认会加载 CLAUDE.md 的。
+
+![](https://hedonspace.oss-cn-beijing.aliyuncs.com/img/image-20260509000738028.png)
+
+那我们是不是可以利用这个规则，通过维护 CLAUDE.md，来天然引导 Cursor、Claude Code、CodeX 这类 AI Agent 来跟踪当前学习进展，然后持续引导用户学习？我的初步想法是：
+
+1. 每一个 learning-xxx 下面都有一个 CLAUDE.md 文件。
+2. CLAUDE.md 文件的更新是极少的，当然，CLAUDE.md 也需要作为我们 templates 中的一个，每次自动化生成。
+3. 但是 CLAUDE.md 里面要通过 `@` 引用当前学习的各种进展（也是 templates 生成的那些文件），然后我们通过 skill 引导 agent 修改那些状态文件，这样天然就修改上下文了。当然，要放在最后，确保调用 llm api 能尽可能命中 kv cache。
+
+另外，这些 templates 每次要怎么自动生成的？是使用 cli 自动生成？还是使用 bash 进行 cp 然后由 Agent 按需修改呢？
+
+---
+
+每个学习任务的"大脑和状态中心"应该存放在那个项目下的 `.daedalus` 目录中，比如：
+
+```markdown
+workspaces/02-learning/learning-xxx/.daedalus
+  CLAUDE.md              # 当前学习任务的上下文入口，低频更新
+  task-card.md           # 学习目标与验收标准
+  state.toml             # 当前阶段状态，由 CLI 确定性更新
+  todo.md                # 分层动态 todo，由 Agent 维护
+  long-context.md        # 长期上下文压缩
+  artifact-index.md      # 产物索引
+  decision-log.md        # 关键决策记录
+```
+
+---
+
+还有一个问题就是我们的 state 是一个 toml 文件，那如何把这个 toml 文件转为 md 也 `@` 到 CLAUDE.md 中呢？这样 Agent 才能更准确追踪我们的学习状态。
+
+---
+
+非常好，现在新建一个 plan，用来做 daedalus-cli 的技术实现方案。
+
+---
+
+plan 不要中英混杂，都用中文。然后，cli 是不是可以用一些 ui 框架来进行美化？还是说不需要？因为这个 cli 好像大部分都是 agent 在执行，关键是要 Agent-friendly?
+
+---
+
+这个 cli 能不能做出两个可执行文件？主要是输出层不同，human 用 human-friendly ui（ratatui），agent 用 agent-friendly ui？有必要吗？
+
+---
+
+我的意思是，daedalus 使用 DDD 架构，我们就在一个 crate 里面搞 2 个 bin，一个 human-friendly ui（ratatui），一个 agent-friendly ui，二者只有输出层是不同的。
+
+---
+
+非常好，我看到你的 cli 里面做了一些强制校验和强制通过的 option，但是在引导 agent 调整 cli 命令时，应该让其克制执行强制通过 option，只有在跟用户的沟通过程中得到了可以明确强制通过的信息时，才允许调用强制通过。
+
+---
+
