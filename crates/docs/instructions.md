@@ -1,10 +1,10 @@
-daedalus 是一个以输出带动输入的深入学习教练 Agent，它依托于操作系统的文件系统，结合现代 AI IDE，如 cursor 来实现一整套 AI 驱动的深度学习过程。它既可以学习 github code repo，还可以学习 book, course, paper 等各种知识材料。第一个阶段我们先聚焦在 github repo 这个主题上，先把它跑通，在逐步迁移到更通用的其他场景下，在这个过程中，再不断提取、精炼、优化整个学习教练 agent 的过程。
+daedalus 是一个以输出带动输入的深入学习教练 Agent，它依托于操作系统的文件系统，结合现代 AI IDE，如 cursor 来实现一整套 AI 驱动的深度学习过程。它既可以学习 code repo（来源可以是 GitHub、GitLab、内部 Git 服务、压缩包或本地仓库），还可以学习 book, course, paper 等各种知识材料。第一个阶段我们先聚焦在 code repo 这个主题上，先把它跑通，在逐步迁移到更通用的其他场景下，在这个过程中，再不断提取、精炼、优化整个学习教练 agent 的过程。
 
-那我设想的 github repo 的学习流程是这样的：
+那我设想的 code repo 的学习流程是这样的：
 
 1. 用户说明要学习的东西，具体的学习目标，要解决的实际问题；
 2. agent 从第一性原理介绍这个目标背后的知识（如果之前已经学过，要进行关联，并简要带过即可）；
-3. agent 推荐好的 github repo 进行学习；
+3. agent 推荐好的 code repo 进行学习；
 4. agent 跟用户反复沟通，直到确定少数几个（最好是一个足够全且好的）要进行深度阅读和学习的 repo；
 5. agent 结合用户的目标和针对特定的 repo，提出最关键的问题（层层递进），引导用户思考；
 6. agent 制定用户需要构建的 mini demo 的目标，用于实现 repo 的最核心能力，并聚焦在 repo 最核心的架构决策上面，达到真正让用户成长的目的；
@@ -23,7 +23,7 @@ daedalus 是一个以输出带动输入的深入学习教练 Agent，它依托�
   - config: 用户个人偏好配置，待扩展。
   - prompts: AI IDE 在指导学习时，不同阶段需要依赖的上下文规则。
     - common: 不同学习材料的通用规则，应该尽可能精简，核心，要不断迭代。
-    - repo: 专门针对 （Github） Code Repo 学习的分阶段分步骤提示词。
+    - repo: 专门针对 Code Repo 学习的分阶段分步骤提示词。
   - templates: 不同的学习材料，在确定可以纳入学习任务时，都有一套需要在学习过程中不断更新的模板材料，可能包含最终学习目标记录、学习阶段状态机管理、 Agent TODO list 管理、长期上下文模版、等各种模板。
 - workspaces: 学习看板与实战战场 (The Kanban - 严格执行 WIP)
   - 01-backlog: 【待办区】技术雷达扫描到的猎物
@@ -57,3 +57,7 @@ common 里面不应该跟 repo 强绑定。而且知识归档的分类不应该�
 ---
 
 common 应该要被引用到 repo 的不同 prompt 里面（按需），这样 repo 里面的 prompt 就可以少掉很多的内容，因为 common 已经说了。后面我们引入 book, paper, course 的学习也是一样的道理，这些 prompts 的分层次的。然后，有没有办法是直接动态拼在里面？而不是引导 agent 再做一次文档阅读？我记得 claude code 是具备这样的能力的（使用 @ 符号）。
+
+---
+
+那我们目前的 .claude/skills 是不是只需要保留 repo-learning-coach 就可以了，而且应该尽可能包含我之前说的 repo 学习的全流程,，也就是要分 10 个阶段去进行叙述。

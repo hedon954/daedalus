@@ -1,6 +1,6 @@
 ---
 title: Align Repo Learning Goal
-description: 将 repo 学习意图收敛为可选仓库、可提问、可验收的任务卡。用于用户想通过 GitHub repo 学习但目标仍模糊时。
+description: 将 repo 学习意图收敛为可选仓库、可提问、可验收的任务卡。用于用户想通过代码仓库学习但目标仍模糊时。
 phase: repo.phase1-exploration
 ---
 
@@ -15,7 +15,7 @@ phase: repo.phase1-exploration
 
 ## Repo-Specific Trigger
 
-- 用户想通过 GitHub repo 学习某项能力。
+- 用户想通过代码仓库学习某项能力。
 - 用户给出了技术方向，但还没有明确现实问题。
 - 需要判断是否进入 repo learning flow。
 

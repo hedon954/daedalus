@@ -18,7 +18,7 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 - `system/bin/`: scripts for local setup, build, and execution.
 - `system/config/`: user preferences and future runtime configuration.
 - `system/prompts/common/`: reusable prompts shared by repo, book, course, and paper learning.
-- `system/prompts/repo/`: staged prompts for GitHub repo learning.
+- `system/prompts/repo/`: staged prompts for code repository learning.
 - `system/templates/`: future templates for task cards, long context, todo state, and learning boards.
 - `workspaces/`: backlog, active learning, completed, and abandoned tasks.
 
@@ -26,7 +26,7 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 
 1. Clarify the learning goal and real-world problem.
 2. Introduce the goal from first principles and connect prior knowledge when available.
-3. Recommend and narrow GitHub repos.
+3. Recommend and narrow code repositories.
 4. Generate a progressive question roadmap.
 5. Run the repo locally and debug the core path from an entry point.
 6. Analyze architecture, modules, patterns, algorithms, and trade-offs.

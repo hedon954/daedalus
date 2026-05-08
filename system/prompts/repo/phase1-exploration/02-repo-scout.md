@@ -1,6 +1,6 @@
 ---
 title: Select Study Repo
-description: 根据学习目标筛选并比较值得深读的 GitHub repo，收敛到首选仓库。用于 repo 未确定或多个候选需要取舍时。
+description: 根据学习目标筛选并比较值得深读的代码仓库，收敛到首选仓库。用于 repo 未确定或多个候选需要取舍时。
 phase: repo.phase1-exploration
 ---
 
@@ -11,7 +11,7 @@ phase: repo.phase1-exploration
 
 ## Layer Contract
 
-本 prompt 只定义 GitHub repo 的筛选标准。学习任务是否值得进入 active learning 由上方 `Gate Learning Task` 引用处理；现实约束和 trade-off 框架由上方 `Apply First Principles` 引用提供。
+本 prompt 只定义代码仓库的筛选标准。学习任务是否值得进入 active learning 由上方 `Gate Learning Task` 引用处理；现实约束和 trade-off 框架由上方 `Apply First Principles` 引用提供。
 
 ## Repo-Specific Trigger
 

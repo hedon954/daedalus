@@ -1,19 +1,112 @@
 ---
 name: repo-learning-coach
-description: Guides GitHub repository learning from goal clarification to repo selection, question roadmap, local running, architecture analysis, code reading, demo planning, business transfer, and archival. Use when the user starts or continues a repo learning task.
+description: Guides the full 10-stage daedalus code repo learning loop: clarify goal, explain first principles, select repo, ask roadmap questions, run/debug, analyze architecture, read core code, build mini demo, transfer to business, and archive knowledge. Use when the user starts, continues, resumes, summarizes, or closes a repository learning task.
 ---
 
 # Repo Learning Coach
 
-Use this skill when the user wants to learn a GitHub repo deeply.
+Use this skill when the user wants to learn a code repository deeply through daedalus. The repo can come from GitHub, GitLab, an internal Git service, an archive, or a local filesystem checkout.
 
-## Workflow
+## Core Rule
 
-1. Load `system/prompts/common/clarify-goal.md` and `system/prompts/repo/phase1-exploration/01-goal-aligner.md`.
-2. Confirm the learning goal, real-world problem, current level, output artifact, and acceptance criteria.
-3. If no repo is selected, use `system/prompts/repo/phase1-exploration/02-repo-scout.md`.
-4. After a repo is selected, use `03-socratic-coach.md` to build the question roadmap.
-5. Move through run/debug, architecture analysis, code reading, mini demo, business transfer, and archival in order.
+Repo learning is a long-running, filesystem-first coaching process. Prefer prompt files and workspace artifacts over hidden chat memory. Keep `workspaces/02-learning` WIP = 1.
+
+## 10-Stage Workflow
+
+### 1. Clarify Goal
+
+Load:
+
+- `system/prompts/common/clarify-goal.md`
+- `system/prompts/common/gatekeeper.md`
+- `system/prompts/repo/phase1-exploration/01-goal-aligner.md`
+
+Confirm the real-world problem, current level, expected output, acceptance criteria, and whether the task deserves active learning.
+
+### 2. Explain First Principles
+
+Load:
+
+- `system/prompts/common/first-principles.md`
+
+Explain the target capability through reality constraints, causal chains, and trade-offs. Connect prior knowledge only when it helps the current goal.
+
+### 3. Select Repo
+
+Load:
+
+- `system/prompts/repo/phase1-exploration/02-repo-scout.md`
+
+Recommend or compare at most 3 repos. Select the one most suitable for deep reading, local running, and mini demo extraction.
+
+### 4. Build Question Roadmap
+
+Load:
+
+- `system/prompts/common/question-roadmap.md`
+- `system/prompts/repo/phase1-exploration/03-socratic-coach.md`
+
+Generate layered questions before explaining answers. Use questions to drive hypotheses about production constraints, architecture, core path, and demo invariants.
+
+### 5. Run And Debug Repo
+
+Load:
+
+- `system/prompts/repo/phase2-learning/04-debugger-guide.md`
+
+Create a runbook, start the repo locally when possible, and trace the core path from an entry point with logs, tests, or debugger breakpoints.
+
+### 6. Analyze Architecture
+
+Load:
+
+- `system/prompts/repo/phase2-learning/05-arch-analyzer.md`
+
+Map boundaries, layers, data flow, control flow, extension points, and trade-offs. Prefer diagrams when they clarify the system.
+
+### 7. Read Core Code
+
+Load:
+
+- `system/prompts/repo/phase2-learning/06-code-reader.md`
+
+Read only the code that serves the core path and key architecture questions. Extract invariants, design choices, and reusable implementation patterns.
+
+### 8. Build Mini Demo
+
+Load:
+
+- `system/prompts/repo/phase3-practice/07-demo-architecture.md`
+- `system/prompts/repo/phase3-practice/08-demo-coder.md`
+
+Design and implement a focused mini demo that preserves the repo's core architectural decision. Define verification before coding and run the smallest validation after meaningful steps.
+
+### 9. Transfer To Business
+
+Load:
+
+- `system/prompts/repo/phase3-practice/09-biz-solver.md`
+
+Map the verified repo/demo pattern back to the user's original business or engineering problem. Re-check constraints before proposing an application plan.
+
+### 10. Archive And Close
+
+Load:
+
+- `system/prompts/common/summarize.md`
+- `system/prompts/common/export-knowledge.md`
+- `system/prompts/common/compress-context.md`
+- `system/prompts/repo/phase4-closing/10-archivist.md`
+
+Summarize verified learning, compress recoverable context, decide where knowledge belongs, and close the task as completed, paused, or abandoned.
+
+## Cross-Stage Context
+
+For long-running work:
+
+- Load `system/prompts/common/resume.md` when resuming.
+- Load `system/prompts/common/compress-context.md` before pausing or switching stages.
+- Keep `done`, `doing`, `next`, and `blocked` explicit.
 
 ## Rules
 
@@ -22,3 +115,4 @@ Use this skill when the user wants to learn a GitHub repo deeply.
 - Ask at most 3 high-value questions at a time.
 - Tie every reading step to a future output artifact.
 - Do not mark the task complete until demo/business transfer/knowledge archival are addressed.
+- Do not archive unverified summaries as knowledge.

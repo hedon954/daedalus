@@ -2,7 +2,7 @@
 
 daedalus 是一个以“输出带动输入”为核心的深入学习教练 Agent。它依托文件系统和现代 AI IDE，帮助用户围绕 repo、书、课程、论文等学习材料完成从目标澄清、深度阅读、实作验证到知识库沉淀的闭环。
 
-当前第一阶段聚焦 GitHub repo 学习：先把 repo 深度学习流程跑通，再迁移到更通用的知识材料。
+当前第一阶段聚焦代码仓库学习：先把 repo 深度学习流程跑通，再迁移到更通用的知识材料。repo 可以来自 GitHub、GitLab、内部 Git 服务、压缩包或本地文件系统。
 
 ## 核心理念
 
@@ -36,7 +36,7 @@ system/
   config/               用户偏好与运行配置
   prompts/
     common/             跨学习材料复用的通用提示词
-    repo/               GitHub repo 学习的分阶段提示词
+    repo/               代码仓库学习的分阶段提示词
   templates/            学习任务、上下文、看板等模板
 workspaces/
   01-backlog/           待学习候选任务
