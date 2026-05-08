@@ -165,4 +165,65 @@ build 生成 release 而不是 debug。
 
 ---
 
-到目前所有的工作都非常好，在进一步往下走之前，我想让你先简单
+到目前所有的工作都非常好，在进一步往下走之前，我想让你先简单重构一下 cli 工具，主要是因为我看你现在使用 match 表达式 case by case 处理命令，这后续非常不好维护。每次要写的代码也比较多，这很容易造成 LLM 幻觉，影响代码的生成质量。
+
+所以我想让你参考 /Users/hedon/rust/hedon-rust-road/rcli 这个项目的 CLI 实现方式，达到一个模板化构建 CLI 工具的效果，在简化代码架构的同时，减少 LLM 每次需要生成的代码量，减少幻觉概率。
+
+我先跟你简单讲一下这个 rcli 的一个实现思路：
+
+首先你看它的 main.rs，非常简单：
+
+```rust
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    let opts = cli::Opts::parse();
+    opts.cmd.execute().await?;
+    Ok(())
+}
+```
+
+那是因为它灵活使用了 trait 和 `enum_dispatch` 这个 crate。
+
+首先定义了 `CmdExector` trait：
+
+```rust
+#[allow(async_fn_in_trait)]
+#[enum_dispatch]
+pub trait CmdExector {
+    async fn execute(self) -> anyhow::Result<()>;
+}
+```
+
+然后派发给 SubCommand：
+
+```rust
+#[derive(Debug, Subcommand)]
+#[enum_dispatch(CmdExector)]
+pub enum SubCommand {
+    #[command(name = "csv", about = "Show CSV, or convert CSV to other formats")]
+    Csv(CsvOpts),
+```
+
+为每个 Opts 实现 CmdExecutor trait：
+
+```rust
+impl CmdExector for CsvOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let output = if let Some(output) = self.output {
+            output
+        } else {
+            format!("output.{}", self.format)
+        };
+        process::csv_convert::process_csv(&self.input, &output, self.format)
+    }
+}
+```
+
+这样就不用使用 match 去 case by case 处理了。简洁很多。
+
+另外，除此之外，你再做几件事情：
+
+1. 默认先支持 tokio async，即便我们现在可能不需要异步。
+2. 参考 rcli 使用 tracing 和 tracing-subscriber 进行日志记录。
+3. 注意，rcli 使用的依赖版本可能是过时了，你需要使用最新的版本来进行开发。

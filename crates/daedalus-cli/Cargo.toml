@@ -21,10 +21,14 @@ anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 clap = { version = "4", features = ["derive"] }
 crossterm = "0.29"
+enum_dispatch = "0.3.13"
 ratatui = "0.29"
 serde_json = "1"
 thiserror = "2"
+tokio = { version = "1.52.3", features = ["macros", "rt-multi-thread"] }
 toml_edit = "0.23"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 walkdir = "2"
 
 [dev-dependencies]

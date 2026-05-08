@@ -21,6 +21,15 @@ This crate implements the deterministic Rust tooling for daedalus. Its first res
 - `interfaces/agent_cli`: clap arguments, presenters, text/JSON output, and process-facing behavior.
 - `interfaces/tui`: ratatui screens, read-only overview, and terminal presentation.
 
+## Agent CLI Command Pattern
+
+- Keep `src/bin/daedalus.rs` thin: initialize tracing, parse `Cli`, build `AgentCliContext`, and call `execute`.
+- Add Agent CLI commands under `src/interfaces/agent_cli/commands/`.
+- Each command args struct should implement `CmdExecutor`; do not add a central match in `daedalus.rs`.
+- Register top-level or nested command enums with `#[enum_dispatch(CmdExecutor)]`.
+- Keep command implementations as orchestration only: resolve paths, call application use cases, and print through presenters.
+- Preserve Agent-friendly output stability when adding or changing presenters.
+
 ## Quality Checks
 
 Run these from the repository root before considering crate work complete:
