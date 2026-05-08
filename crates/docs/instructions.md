@@ -272,6 +272,10 @@ init repo-learning 生成目录的时候有几个点需要跟正：
 
 ---
 
-感觉 tui 的样式有点丑啊，优化一下。
+感觉 tui 的样式有点丑啊，优化一下，搞炫酷一点。
 
 ![](https://hedonspace.oss-cn-beijing.aliyuncs.com/img/image-20260509030514624.png)
+
+---
+
+根据当前进展修改一下 README.md 吧，可以适当加一些 mermaid 图进行演示（不要画得太复杂）。
