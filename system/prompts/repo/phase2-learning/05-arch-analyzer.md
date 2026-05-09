@@ -6,6 +6,8 @@ phase: repo.phase2-learning
 
 @system/prompts/common/first-principles.md
 @system/prompts/common/question-roadmap.md
+@system/prompts/common/coach-questioning.md
+@system/prompts/common/diagram-guidelines.md
 
 # Analyze Repo Architecture
 
@@ -30,9 +32,9 @@ phase: repo.phase2-learning
 ## Repo-Specific Workflow
 
 1. 从核心链路出发识别模块，不按目录机械枚举。
-2. 抽取关键数据结构和依赖方向。
+2. 先让用户说出当前架构假设，再抽取关键数据结构和依赖方向。
 3. 解释每个边界背后的现实约束。
-4. 标注可以画图的部分。
+4. 标注可以画图的部分，并优先生成简约、Typora 兼容的 Mermaid。
 
 ## Output Delta
 
@@ -51,3 +53,4 @@ phase: repo.phase2-learning
 - 需要画图时，优先生成 mermaid；复杂系统可再拆成多张小图。
 - 不要把目录树当架构分析。
 - 每个关键模块都要说明它保护的边界或不变量。
+- 不要在用户没有形成假设前直接写完整架构 notes；先用问题引导，再整理用户理解。

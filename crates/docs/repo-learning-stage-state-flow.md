@@ -45,7 +45,7 @@ flowchart LR
 每个 stage 都会声明它完成前需要存在的产物，例如：
 
 - `01-goal-aligner` 需要 [`.daedalus/task-card.md`](../../system/templates/repo/.daedalus/task-card.md)
-- `02-repo-scout` 需要 `notes/repo-selection.md`
+- `02-repo-scout` 需要 `guides/02-repo-selection-guide.md`
 - `08-demo-coder` 需要 `demo/README.md`
 - `10-archivist` 需要 `.daedalus/artifact-index.md` 和 `.daedalus/long-context.md`
 
@@ -115,7 +115,7 @@ flowchart TD
 sequenceDiagram
     participant User as 用户
     participant Agent as Agent
-    participant Cli as daedalus CLI
+    participant Cli as "daedalus CLI"
     participant State as state.toml
     participant Files as 学习产物
 
@@ -128,7 +128,7 @@ sequenceDiagram
     Cli->>State: 更新 next_action 指向 02-repo-scout
     Agent->>Cli: state enter 02-repo-scout
     Cli->>State: 标记 02 为 active
-    Agent->>Files: 产出 repo-selection.md
+    Agent->>Files: 产出 02-repo-selection-guide.md
     Agent->>Cli: state complete 02-repo-scout
     Cli->>State: 标记 02 为 done
     Agent->>Agent: 持续推进 03 到 09
@@ -224,6 +224,7 @@ learning-xxx/
 - Agent 不应该发明新的 `stage.status` 枚举值；如需新增，必须同步修改 Rust 领域模型、模板和测试。
 - `complete` 需要 required artifacts 存在；这些产物应尽量包含用户参与后的学习证据，而不只是 Agent 自动生成的文件。
 - Agent 应默认指导用户亲自实践，再协助验收和排障；不要把代跑命令、代写笔记伪装成用户已经掌握。
+- Agent 推测性的完整图示应优先放入 `guides/`；写入 `notes/` 的 Mermaid 图应来自用户已经验证过的链路，并遵守 Typora 兼容规则。
 - `--force` 只能在用户明确批准或存在等价证据时使用。
 - `task complete` 和 `state complete 10-archivist` 都必须遵守最终阶段状态机，不能从 `pending` 直接关闭任务。
 - `state.toml` 保留原始结构和注释，CLI 通过 `toml_edit` 更新，尽量避免破坏人工可读性。

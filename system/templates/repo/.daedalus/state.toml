@@ -28,7 +28,7 @@ required_artifacts = [".daedalus/task-card.md"]
 id = "02-repo-scout"
 title = "选择学习仓库"
 status = "pending"
-required_artifacts = ["notes/repo-selection.md"]
+required_artifacts = ["guides/02-repo-selection-guide.md"]
 
 [[stages]]
 id = "03-socratic-coach"

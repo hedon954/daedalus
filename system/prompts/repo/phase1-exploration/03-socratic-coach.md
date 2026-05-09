@@ -6,6 +6,8 @@ phase: repo.phase1-exploration
 
 @system/prompts/common/question-roadmap.md
 @system/prompts/common/first-principles.md
+@system/prompts/common/coach-questioning.md
+@system/prompts/common/diagram-guidelines.md
 
 # Ask Repo Socratic Questions
 
@@ -30,7 +32,7 @@ phase: repo.phase1-exploration
 
 ## Repo-Specific Workflow
 
-1. 先基于 `notes/repo-selection.md` 和用户目标提出最多 3 个第一轮问题。
+1. 先基于 `guides/02-repo-selection-guide.md` 和用户目标提出最多 3 个第一轮问题。
 2. 将 Agent 的问题设计意图写入 `guides/03-question-roadmap-guide.md`。
 3. 引导用户亲自回答或改写关键问题，再把用户形成的阅读假设写入 `notes/question-roadmap.md`。
 4. 每个问题都要绑定后续可验证路径：文件入口、运行实验、架构图或 mini demo 假设。
@@ -39,14 +41,14 @@ phase: repo.phase1-exploration
 ## Output Delta
 
 ```markdown
-## Socratic Questions
-- 当前目标：
-- 本轮问题：
+## 当前目标
+
+## 本轮问题
   1.
   2.
   3.
-- 用户回答后要验证：
-- 推荐下一步：
+
+## 用户回答
 ```
 
 ```markdown

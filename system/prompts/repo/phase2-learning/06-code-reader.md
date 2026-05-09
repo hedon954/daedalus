@@ -6,6 +6,8 @@ phase: repo.phase2-learning
 
 @system/prompts/common/first-principles.md
 @system/prompts/common/summarize.md
+@system/prompts/common/coach-questioning.md
+@system/prompts/common/diagram-guidelines.md
 
 # Read Core Repo Code
 
@@ -51,3 +53,4 @@ phase: repo.phase2-learning
 - 不要为了覆盖率扫读所有文件。
 - 只在关键片段逐行阅读。
 - 每个阅读片段都要回到架构问题或 demo 设计。
+- 不要替用户直接写完整代码阅读笔记；先让用户描述理解，再由 Agent 校正、补充证据和按需画图。

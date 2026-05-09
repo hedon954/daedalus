@@ -6,6 +6,8 @@ phase: repo.phase2-learning
 
 @system/prompts/common/first-principles.md
 @system/prompts/common/summarize.md
+@system/prompts/common/coach-questioning.md
+@system/prompts/common/diagram-guidelines.md
 
 # Run And Debug Repo
 
@@ -28,6 +30,7 @@ phase: repo.phase2-learning
 5. 指导用户亲自运行最小命令，并把用户观察到的输出、错误和问题写入 `notes/runbook.md`。
 6. 从入口设置断点，指导用户跟踪一次核心链路。
 7. 形成“入口 -> 核心模块 -> 状态变化 -> 输出”的链路笔记。
+8. 外部 repo 的实际运行/调试应优先在该 repo 或其实际 workspace 根目录单独打开 Cursor 窗口；`launch.json` 示例必须以被学习 repo 的 `${workspaceFolder}` 为基准。
 
 ## Output Delta
 
@@ -62,4 +65,5 @@ phase: repo.phase2-learning
 - 所有环境依赖都要写入 runbook。
 - 默认不要替用户完成启动和调试；本阶段核心是让用户亲自运行、观察和形成手感。
 - Agent 在等待构建或测试时，应提示用户可以观察什么、思考什么、记录什么。
+- 不要假设 Cursor workspace 是 daedalus 根目录；调试配置默认以被学习 repo 的根目录为 workspace。
 - 完成阶段前，在 `.daedalus/validation-log.md` 记录 daedalus 是否有效促进用户实践。

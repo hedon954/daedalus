@@ -64,6 +64,7 @@ daedalus-tui <task-dir>
 ```
 
 `daedalus` 只能在 daedalus 项目根目录或其子目录下运行。它会动态推导 repo root 和 task path；在非法目录运行时会拒绝服务并给出下一步建议。
+新建 repo learning 任务必须通过 `daedalus init repo-learning <task-name>` 完成。Agent 不应该手写 `.daedalus`、`state.toml`、`todo.md` 等模板文件；如果 CLI 不可用，应先说明阻塞原因。
 `daedalus-tui` 也遵循同样的目录边界，并会根据任务所在 bucket 调整 UI 侧重点：进行中任务关注下一步，已完成任务关注归档复用，已放弃任务关注恢复判断。`01-backlog` 的任务语义尚未固化，暂不纳入 TUI 选择页。
 
 ## Workspace Lifecycle
@@ -72,8 +73,8 @@ daedalus-tui <task-dir>
 
 ```mermaid
 flowchart LR
-    Active["active\nworkspaces/02-learning"] -->|"task complete"| Completed["completed\nworkspaces/03-completed"]
-    Active -->|"task abandon"| Abandoned["abandoned\nworkspaces/04-abandoned"]
+    Active["active：workspaces/02-learning"] -->|"task complete"| Completed["completed：workspaces/03-completed"]
+    Active -->|"task abandon"| Abandoned["abandoned：workspaces/04-abandoned"]
     Completed -.-> Validate["validate: state 与目录一致"]
     Abandoned -.-> Validate
 ```
@@ -109,6 +110,10 @@ workspaces/02-learning/<name>/
 ```
 
 根目录 `CLAUDE.md` 会通过 `@.daedalus/state.md`、`@.daedalus/task-card.md` 等引用任务状态中心，让 Cursor、Claude Code、Codex 这类 Agent 能在打开 workspace 后快速恢复上下文。
+
+`guides/` 和 `notes/` 的职责必须区分：`guides/` 保存 Agent 生成的行动指南、问题引导、运行说明和验收清单；`notes/` 保存用户亲自回答、观察、实践后的学习证据。用户没有回答或实践前，Agent 不应把完整学习结论写入 `notes/`。
+
+学习外部 repo 时，daedalus 保存学习状态和复盘；实际运行、调试、断点配置建议在外部 repo 根目录单独打开 Cursor 窗口，并以该 repo 的 `${workspaceFolder}` 为路径基准。
 
 `guides/` 与 `notes/` 要刻意分层：`guides/` 保存 Agent 给用户的行动指南，`notes/` 保存用户亲自实践和思考后的学习笔记。外部源码放入 `source/` 时默认不提交，通过 `pull_source.sh` 记录可复现来源。
 

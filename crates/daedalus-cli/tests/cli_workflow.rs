@@ -94,7 +94,11 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(state_md.contains("当前阶段：`01-goal-aligner`"));
     assert!(state_md.contains("生命周期：`active`"));
     assert!(state_md.contains("Workspace Bucket：`02-learning`"));
-    assert!(state_md.contains("[`notes/repo-selection.md`](../notes/repo-selection.md)"));
+    assert!(
+        state_md.contains(
+            "[`guides/02-repo-selection-guide.md`](../guides/02-repo-selection-guide.md)"
+        )
+    );
     assert!(state_md.contains("`stage.status` 只能是"));
     assert!(state_md.contains("`transition.approval_source` 只能是"));
     let state_toml = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state.toml");
@@ -112,6 +116,11 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(artifact_index.contains("> `状态` 列只能使用"));
     assert!(artifact_index.contains("[`.daedalus/task-card.md`](task-card.md)"));
     assert!(artifact_index.contains("[`guides/`](../guides)"));
+    assert!(
+        artifact_index.contains(
+            "[`guides/02-repo-selection-guide.md`](../guides/02-repo-selection-guide.md)"
+        )
+    );
     assert!(artifact_index.contains("`草稿`"));
     assert!(artifact_index.contains("`不适用`"));
 }
