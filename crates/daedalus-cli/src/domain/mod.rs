@@ -16,4 +16,4 @@ pub mod transition;
 
 pub use error::{ApprovalSource, DaedalusError, Result};
 pub use learning_task::{TaskLifecycle, WorkspaceBucket};
-pub use stage::{StageSnapshot, StageStatus};
+pub use stage::{StageSnapshot, StageState, StageTransitionKind};

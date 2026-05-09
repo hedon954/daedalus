@@ -6,7 +6,8 @@ use crate::application::render::render_state;
 use crate::application::state_machine::StateTransition;
 use crate::domain::transition::Transition;
 use crate::domain::{
-    ApprovalSource, DaedalusError, Result, StageStatus, TaskLifecycle, WorkspaceBucket,
+    ApprovalSource, DaedalusError, Result, StageState, StageTransitionKind, TaskLifecycle,
+    WorkspaceBucket,
 };
 use crate::infrastructure::{clock, state_toml, workspace_fs};
 
@@ -129,27 +130,23 @@ impl StateTransition for CloseTaskOptions {
             return Err(DaedalusError::TaskMoveDestinationExists(destination));
         }
         if self.complete_final_stage {
-            let missing = state_toml::collect_missing_artifacts(&doc, &task_dir, FINAL_STAGE_ID)?;
-            if !missing.is_empty() {
-                if !self.final_stage_force {
-                    return Err(DaedalusError::MissingRequiredArtifact {
-                        artifact: missing[0].clone(),
-                        stage: FINAL_STAGE_ID.to_owned(),
-                    });
-                }
-                validate_final_stage_force(reason, self.final_stage_approval_source)?;
-            }
+            validate_final_stage_completion(
+                &doc,
+                &task_dir,
+                reason,
+                self.final_stage_force,
+                self.final_stage_approval_source,
+            )?;
         }
         Ok(())
     }
 
-    fn apply(self) -> Result<Self::Output> {
-        self.pre_check()?;
-        apply_close_task(self)
+    fn commit(self) -> Result<Self::Output> {
+        commit_close_task(self)
     }
 }
 
-fn apply_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
+fn commit_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
     let reason = normalize_reason(&options.reason)?;
     let task_dir = canonical_task_dir(&options.task_dir)?;
     let state_path = state_toml::state_path(&task_dir);
@@ -159,13 +156,7 @@ fn apply_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
     let planned_to_task_dir = planned_destination(&task_dir, &destination_root)?;
 
     if options.complete_final_stage {
-        complete_final_stage(
-            &mut doc,
-            &task_dir,
-            reason,
-            &options.actor,
-            closed_at.clone(),
-        )?;
+        complete_final_stage(&mut doc, reason, &options.actor, closed_at.clone())?;
     }
     state_toml::pause_active_stages(&mut doc);
 
@@ -216,19 +207,11 @@ fn apply_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
 
 fn complete_final_stage(
     doc: &mut toml_edit::DocumentMut,
-    task_dir: &std::path::Path,
     reason: &str,
     actor: &str,
     timestamp: String,
 ) -> Result<()> {
-    let missing = state_toml::collect_missing_artifacts(doc, task_dir, FINAL_STAGE_ID)?;
-    if !missing.is_empty() {
-        return Err(DaedalusError::MissingRequiredArtifact {
-            artifact: missing[0].clone(),
-            stage: FINAL_STAGE_ID.to_owned(),
-        });
-    }
-    state_toml::set_stage_status(doc, FINAL_STAGE_ID, StageStatus::Done)?;
+    state_toml::set_stage_state(doc, FINAL_STAGE_ID, StageState::Done)?;
     state_toml::set_current_phase(doc, FINAL_STAGE_ID);
     state_toml::append_transition(
         doc,
@@ -313,6 +296,29 @@ fn ensure_active_learning_task(
         )));
     }
     Ok(())
+}
+
+fn validate_final_stage_completion(
+    doc: &toml_edit::DocumentMut,
+    task_dir: &Path,
+    reason: &str,
+    force: bool,
+    approval_source: Option<ApprovalSource>,
+) -> Result<()> {
+    let state = state_toml::stage_state(doc, FINAL_STAGE_ID)?;
+    state.transition(StageTransitionKind::Complete)?;
+
+    let missing = state_toml::collect_missing_artifacts(doc, task_dir, FINAL_STAGE_ID)?;
+    if missing.is_empty() {
+        return Ok(());
+    }
+    if !force {
+        return Err(DaedalusError::MissingRequiredArtifact {
+            artifact: missing[0].clone(),
+            stage: FINAL_STAGE_ID.to_owned(),
+        });
+    }
+    validate_final_stage_force(reason, approval_source)
 }
 
 fn validate_final_stage_force(reason: &str, approval_source: Option<ApprovalSource>) -> Result<()> {

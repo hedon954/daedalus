@@ -181,6 +181,21 @@ fn complete_rejects_missing_artifact_without_force() {
         .current_dir(repo.path())
         .args([
             "state",
+            "enter",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Start repo scout before checking required artifacts.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
             "complete",
             "02-repo-scout",
             "--task-dir",
@@ -189,6 +204,112 @@ fn complete_rejects_missing_artifact_without_force() {
         .assert()
         .failure()
         .stderr(predicates::str::contains("missing required artifact"));
+}
+
+#[test]
+fn complete_rejects_pending_stage() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["init", "repo-learning", "pending-complete"])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/02-learning/pending-complete");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "complete",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("invalid stage state transition"));
+}
+
+#[test]
+fn resume_blocked_stage_keeps_single_active_stage() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["init", "repo-learning", "resume-single-active"])
+        .assert()
+        .success();
+
+    let task_dir = repo
+        .path()
+        .join("workspaces/02-learning/resume-single-active");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "enter",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Start repo scout.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "block",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Waiting for source access.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "enter",
+            "03-socratic-coach",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Continue with question planning while source access is pending.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "resume",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Source access is restored.",
+        ])
+        .assert()
+        .success();
+
+    let state = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state");
+    assert_eq!(state.matches("status = \"active\"").count(), 1);
+    assert!(
+        state.contains("id = \"02-repo-scout\"\ntitle = \"选择学习仓库\"\nstatus = \"active\"")
+    );
+    assert!(state.contains(
+        "id = \"03-socratic-coach\"\ntitle = \"提出 Repo 递进问题\"\nstatus = \"blocked\""
+    ));
 }
 
 #[test]
@@ -239,6 +360,21 @@ fn force_requires_reason_and_approval_source() {
         .current_dir(repo.path())
         .args([
             "state",
+            "enter",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Start repo scout before testing force approval.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
             "complete",
             "02-repo-scout",
             "--task-dir",
@@ -272,6 +408,38 @@ fn force_requires_reason_and_approval_source() {
 }
 
 #[test]
+fn final_stage_completion_requires_active_final_stage() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["init", "repo-learning", "final-stage-pending"])
+        .assert()
+        .success();
+
+    let task_dir = repo
+        .path()
+        .join("workspaces/02-learning/final-stage-pending");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "complete",
+            "10-archivist",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Try to close before entering the final stage.",
+        ])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("invalid stage state transition"));
+
+    assert!(task_dir.exists());
+}
+
+#[test]
 fn final_stage_completion_moves_task_to_completed() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")
@@ -282,6 +450,21 @@ fn final_stage_completion_moves_task_to_completed() {
         .success();
 
     let task_dir = repo.path().join("workspaces/02-learning/final-stage");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "enter",
+            "10-archivist",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Archive stage is ready to close.",
+        ])
+        .assert()
+        .success();
+
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -341,6 +524,21 @@ fn task_complete_moves_task_and_releases_wip() {
         .success();
 
     let task_dir = repo.path().join("workspaces/02-learning/close-me");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "enter",
+            "10-archivist",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Archive stage is ready for task completion.",
+        ])
+        .assert()
+        .success();
+
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())

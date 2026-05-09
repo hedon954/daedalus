@@ -4,7 +4,8 @@ use crate::application::render::render_state;
 use crate::application::state_machine::StateTransition;
 use crate::domain::transition::Transition;
 use crate::domain::{
-    ApprovalSource, DaedalusError, Result, StageStatus, TaskLifecycle, WorkspaceBucket,
+    ApprovalSource, DaedalusError, Result, StageState, StageTransitionKind, TaskLifecycle,
+    WorkspaceBucket,
 };
 use crate::infrastructure::{clock, state_toml, workspace_fs};
 
@@ -24,6 +25,26 @@ pub enum StageAction {
     Block,
     /// 恢复 blocked 或 paused 阶段。
     Resume,
+}
+
+impl StageAction {
+    fn kind(&self) -> StageTransitionKind {
+        match self {
+            Self::Enter => StageTransitionKind::Enter,
+            Self::Complete { .. } => StageTransitionKind::Complete,
+            Self::Block => StageTransitionKind::Block,
+            Self::Resume => StageTransitionKind::Resume,
+        }
+    }
+
+    fn approval_source(&self) -> Option<ApprovalSource> {
+        match self {
+            Self::Complete {
+                approval_source, ..
+            } => *approval_source,
+            _ => None,
+        }
+    }
 }
 
 /// 阶段流转 use case 的输入参数。
@@ -69,90 +90,36 @@ impl StateTransition for TransitionStageOptions {
         let state_path = state_toml::state_path(&self.task_dir);
         let doc = state_toml::load_state_doc(&state_path)?;
         ensure_active_learning_task(&doc, &self.task_dir)?;
-        if !state_toml::stage_exists(&doc, &self.stage_id) {
-            return Err(DaedalusError::InvalidStageId(self.stage_id.clone()));
-        }
-
-        match &self.action {
-            StageAction::Enter => {}
-            StageAction::Complete {
-                force,
-                approval_source,
-            } => {
-                let missing =
-                    state_toml::collect_missing_artifacts(&doc, &self.task_dir, &self.stage_id)?;
-                if !missing.is_empty() {
-                    if !force {
-                        return Err(DaedalusError::MissingRequiredArtifact {
-                            artifact: missing[0].clone(),
-                            stage: self.stage_id.clone(),
-                        });
-                    }
-                    validate_force(self.reason.as_deref(), *approval_source)?;
-                }
-            }
-            StageAction::Block | StageAction::Resume => {
-                require_specific_reason(self.reason.as_deref())?;
-            }
-        }
-
-        Ok(())
+        validate_stage_transition(&doc, self)
     }
 
-    fn apply(self) -> Result<Self::Output> {
-        self.pre_check()?;
-        apply_stage_transition(self)
+    fn commit(self) -> Result<Self::Output> {
+        commit_stage_transition(self)
     }
 }
 
-fn apply_stage_transition(options: TransitionStageOptions) -> Result<TransitionStageOutput> {
+fn commit_stage_transition(options: TransitionStageOptions) -> Result<TransitionStageOutput> {
     let state_path = state_toml::state_path(&options.task_dir);
     let mut doc = state_toml::load_state_doc(&state_path)?;
+    let kind = options.action.kind();
+    let action_name = kind.as_str();
 
-    let action_name = match &options.action {
+    match &options.action {
         StageAction::Enter => {
             state_toml::set_other_active_to_blocked(&mut doc, &options.stage_id);
             state_toml::set_current_phase(&mut doc, &options.stage_id);
-            state_toml::set_stage_status(&mut doc, &options.stage_id, StageStatus::Active)?;
-            "enter"
         }
-        StageAction::Complete {
-            force,
-            approval_source,
-        } => {
-            let missing =
-                state_toml::collect_missing_artifacts(&doc, &options.task_dir, &options.stage_id)?;
-            if !missing.is_empty() {
-                if !force {
-                    return Err(DaedalusError::MissingRequiredArtifact {
-                        artifact: missing[0].clone(),
-                        stage: options.stage_id,
-                    });
-                }
-                validate_force(options.reason.as_deref(), *approval_source)?;
-            }
-            state_toml::set_stage_status(&mut doc, &options.stage_id, StageStatus::Done)?;
+        StageAction::Complete { .. } => {
             update_next_action_after_complete(&mut doc, &options.stage_id);
-            "complete"
         }
-        StageAction::Block => {
-            require_specific_reason(options.reason.as_deref())?;
-            state_toml::set_stage_status(&mut doc, &options.stage_id, StageStatus::Blocked)?;
-            "block"
-        }
+        StageAction::Block => {}
         StageAction::Resume => {
+            state_toml::set_other_active_to_blocked(&mut doc, &options.stage_id);
             state_toml::set_current_phase(&mut doc, &options.stage_id);
-            state_toml::set_stage_status(&mut doc, &options.stage_id, StageStatus::Active)?;
-            "resume"
         }
-    };
+    }
+    state_toml::set_stage_state(&mut doc, &options.stage_id, target_state(kind))?;
 
-    let approval_source = match &options.action {
-        StageAction::Complete {
-            approval_source, ..
-        } => approval_source.map(|source| source.as_str().to_owned()),
-        _ => None,
-    };
     state_toml::append_transition(
         &mut doc,
         Transition {
@@ -163,7 +130,10 @@ fn apply_stage_transition(options: TransitionStageOptions) -> Result<TransitionS
             reason: options.reason.clone().unwrap_or_else(|| {
                 format!("Run `{action_name}` for stage `{}`.", options.stage_id)
             }),
-            approval_source,
+            approval_source: options
+                .action
+                .approval_source()
+                .map(|source| source.as_str().to_owned()),
         },
     );
     state_toml::save_state_doc(&state_path, &doc)?;
@@ -175,6 +145,65 @@ fn apply_stage_transition(options: TransitionStageOptions) -> Result<TransitionS
         action: action_name.to_owned(),
         state_md,
     })
+}
+
+fn validate_stage_transition(
+    doc: &toml_edit::DocumentMut,
+    options: &TransitionStageOptions,
+) -> Result<()> {
+    let state = state_toml::stage_state(doc, &options.stage_id)?;
+    state.transition(options.action.kind())?;
+
+    match &options.action {
+        StageAction::Enter => {}
+        StageAction::Complete {
+            force,
+            approval_source,
+        } => {
+            validate_completion_artifacts(
+                doc,
+                &options.task_dir,
+                &options.stage_id,
+                *force,
+                *approval_source,
+                options.reason.as_deref(),
+            )?;
+        }
+        StageAction::Block | StageAction::Resume => {
+            require_specific_reason(options.reason.as_deref())?;
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_completion_artifacts(
+    doc: &toml_edit::DocumentMut,
+    task_dir: &std::path::Path,
+    stage_id: &str,
+    force: bool,
+    approval_source: Option<ApprovalSource>,
+    reason: Option<&str>,
+) -> Result<()> {
+    let missing = state_toml::collect_missing_artifacts(doc, task_dir, stage_id)?;
+    if missing.is_empty() {
+        return Ok(());
+    }
+    if !force {
+        return Err(DaedalusError::MissingRequiredArtifact {
+            artifact: missing[0].clone(),
+            stage: stage_id.to_owned(),
+        });
+    }
+    validate_force(reason, approval_source)
+}
+
+fn target_state(kind: StageTransitionKind) -> StageState {
+    match kind {
+        StageTransitionKind::Enter | StageTransitionKind::Resume => StageState::Active,
+        StageTransitionKind::Complete => StageState::Done,
+        StageTransitionKind::Block => StageState::Blocked,
+    }
 }
 
 fn ensure_active_learning_task(

@@ -5,7 +5,7 @@ use toml_edit::{Array, DocumentMut, Item, Table, value};
 
 use crate::domain::transition::Transition;
 use crate::domain::{
-    DaedalusError, Result, StageSnapshot, StageStatus, TaskLifecycle, WorkspaceBucket,
+    DaedalusError, Result, StageSnapshot, StageState, TaskLifecycle, WorkspaceBucket,
 };
 
 /// 返回学习任务的 `state.toml` 路径。
@@ -141,6 +141,18 @@ pub fn stage_exists(doc: &DocumentMut, stage_id: &str) -> bool {
     stages(doc).iter().any(|stage| stage.id == stage_id)
 }
 
+/// 读取某个阶段的强类型运行时状态。
+pub fn stage_state(doc: &DocumentMut, stage_id: &str) -> Result<StageState> {
+    let stage = stages(doc)
+        .into_iter()
+        .find(|stage| stage.id == stage_id)
+        .ok_or_else(|| DaedalusError::InvalidStageId(stage_id.to_owned()))?;
+    StageState::parse(&stage.status).ok_or(DaedalusError::InvalidStageState {
+        stage: stage.id,
+        state: stage.status,
+    })
+}
+
 /// 查找某个阶段之后的下一个 pending 阶段。
 pub fn next_pending_stage_after(doc: &DocumentMut, stage_id: &str) -> Option<StageSnapshot> {
     let mut seen_current = false;
@@ -165,14 +177,14 @@ pub fn stage_required_artifacts(doc: &DocumentMut, stage_id: &str) -> Result<Vec
 }
 
 /// 设置某个阶段的状态。
-pub fn set_stage_status(doc: &mut DocumentMut, stage_id: &str, status: StageStatus) -> Result<()> {
+pub fn set_stage_state(doc: &mut DocumentMut, stage_id: &str, state: StageState) -> Result<()> {
     let Some(array) = doc["stages"].as_array_of_tables_mut() else {
         return Err(DaedalusError::InvalidStageId(stage_id.to_owned()));
     };
 
     for stage in array.iter_mut() {
         if stage["id"].as_str() == Some(stage_id) {
-            stage["status"] = value(status.as_str());
+            stage["status"] = value(state.as_str());
             return Ok(());
         }
     }
@@ -197,7 +209,7 @@ pub fn pause_active_stages(doc: &mut DocumentMut) {
     if let Some(array) = doc["stages"].as_array_of_tables_mut() {
         for stage in array.iter_mut() {
             if stage["status"].as_str() == Some("active") {
-                stage["status"] = value(StageStatus::Paused.as_str());
+                stage["status"] = value(StageState::Paused.as_str());
             }
         }
     }

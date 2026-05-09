@@ -72,6 +72,22 @@ pub enum DaedalusError {
     /// 状态文件中出现多个 active 阶段。
     #[error("multiple active stages")]
     MultipleActiveStages,
+    /// 状态文件中出现不支持的阶段状态。
+    #[error("invalid stage state `{state}` for stage `{stage}`")]
+    InvalidStageState {
+        /// 阶段 ID。
+        stage: String,
+        /// 无法解析的阶段状态。
+        state: String,
+    },
+    /// 阶段状态不允许当前流转动作。
+    #[error("invalid stage state transition: {state} cannot {action}")]
+    InvalidStageStateTransition {
+        /// 当前阶段状态。
+        state: String,
+        /// 试图执行的流转动作。
+        action: String,
+    },
     /// 完成阶段时缺少必需产物。
     #[error("missing required artifact: {artifact}")]
     MissingRequiredArtifact { artifact: PathBuf, stage: String },
