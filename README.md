@@ -159,6 +159,7 @@ flowchart TD
 - `stage.status`、`transition.action`、`approval_source` 等枚举值在模板和渲染输出中显式列出。
 - `--force` 只在用户明确批准或已有可追溯等价证据时使用，并必须记录 reason 与 approval source。
 - `validate` 会检查必需文件、active stage 数量、current phase、required artifacts、lifecycle 与目录 bucket 是否一致。
+- `validate` 只证明结构和文件存在，不证明 `notes/` 已包含用户亲自回答、观察或实践后的学习证据。
 
 ## 开发与验证
 

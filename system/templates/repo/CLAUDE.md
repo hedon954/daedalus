@@ -23,5 +23,6 @@
 - `guides/` 用于保存 Agent 生成的行动指南、问题引导、运行说明和验收清单；`notes/` 用于保存用户亲自观察、回答、实践和总结后的学习笔记。
 - 不要默认代替用户完成关键学习实践。Agent 应该说明要做什么、为什么做、用户等待时可以思考什么，并在用户完成实践后协助验收和排障。
 - Notes Ownership Rule：用户没有回答、观察或实践前，不要把结论写入 `notes/`。Agent 可以写 `guides/`，也可以在 `notes/` 中创建待用户填写的轻量模板；整理用户口述内容时，必须保留用户原始回答和待验证假设。
+- `daedalus validate` 只校验 workspace 结构、状态一致性和 required artifacts 是否存在；它不能证明 `notes/` 已包含真实用户理解。完成阶段前仍要检查 notes 是否来自用户回答、观察或实践。
 - 外部源码放在 `source/`，默认被忽略。优先维护 [`source/pull_source.sh`](source/pull_source.sh) 让用户按需拉取；如果 Agent 代为拉取，必须避免提交外部源码和嵌套 `.git`。
 - 学习外部 repo 时，建议用户单独用 Cursor 打开该 repo 或其实际 workspace 根目录。运行、断点和 `launch.json` 示例默认以被学习 repo 的 workspace 为基准；daedalus 任务目录只保存学习状态、指南、笔记和复盘。

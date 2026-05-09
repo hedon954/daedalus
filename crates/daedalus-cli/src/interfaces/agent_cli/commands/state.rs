@@ -223,7 +223,7 @@ async fn execute_transition(
         stage_id,
         action,
         reason,
-        actor: "agent".to_owned(),
+        actor: "daedalus-cli".to_owned(),
     })?;
     print_transition(&output, ctx.format);
     Ok(())

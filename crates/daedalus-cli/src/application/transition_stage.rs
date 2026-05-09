@@ -110,7 +110,11 @@ fn commit_stage_transition(options: TransitionStageOptions) -> Result<Transition
             state_toml::set_current_phase(&mut doc, &options.stage_id);
         }
         StageAction::Complete { .. } => {
-            update_next_action_after_complete(&mut doc, &options.stage_id);
+            let next_stage = state_toml::next_pending_stage_after(&doc, &options.stage_id);
+            update_next_action_after_complete(&mut doc, next_stage.as_ref());
+            if let Some(stage) = next_stage {
+                state_toml::set_current_phase(&mut doc, &stage.id);
+            }
         }
         StageAction::Block => {}
         StageAction::Resume => {
@@ -237,8 +241,11 @@ fn validate_force(reason: Option<&str>, approval_source: Option<ApprovalSource>)
     Ok(())
 }
 
-fn update_next_action_after_complete(doc: &mut toml_edit::DocumentMut, stage_id: &str) {
-    let next_action = state_toml::next_pending_stage_after(doc, stage_id)
+fn update_next_action_after_complete(
+    doc: &mut toml_edit::DocumentMut,
+    next_stage: Option<&crate::domain::StageSnapshot>,
+) {
+    let next_action = next_stage
         .map(|stage| {
             let artifacts = if stage.required_artifacts.is_empty() {
                 "更新该阶段需要的学习产物".to_owned()

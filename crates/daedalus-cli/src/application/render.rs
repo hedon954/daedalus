@@ -6,6 +6,8 @@ use toml_edit::DocumentMut;
 use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::state_toml;
 
+const RECENT_TRANSITION_LIMIT: usize = 10;
+
 /// `state.md` 渲染结果。
 #[derive(Debug, Clone)]
 pub struct RenderedState {
@@ -127,7 +129,13 @@ pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Strin
     if transitions.is_empty() {
         output.push_str("- 无\n");
     } else {
-        let start = transitions.len().saturating_sub(5);
+        let start = transitions.len().saturating_sub(RECENT_TRANSITION_LIMIT);
+        let shown = transitions.len() - start;
+        output.push_str(&format!(
+            "> 共 {} 条状态流转；下面显示最近 {} 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。\n\n",
+            transitions.len(),
+            shown
+        ));
         for transition in &transitions[start..] {
             let approval = transition
                 .approval_source
