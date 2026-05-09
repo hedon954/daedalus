@@ -5,6 +5,7 @@ use crate::domain::Result;
 use crate::infrastructure::{state_toml, workspace_fs};
 
 const WORKSPACE_BUCKETS: [&str; 3] = ["02-learning", "03-completed", "04-abandoned"];
+const RECENT_TRANSITION_LIMIT: usize = 10;
 
 /// TUI 当前页面。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -190,7 +191,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         .unwrap_or_default();
 
     let transitions = state_toml::transitions(&doc);
-    let start = transitions.len().saturating_sub(5);
+    let start = transitions.len().saturating_sub(RECENT_TRANSITION_LIMIT);
     let recent_transitions = transitions[start..]
         .iter()
         .map(|transition| {

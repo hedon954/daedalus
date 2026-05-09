@@ -88,13 +88,19 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(claude.contains("@.daedalus/state.md"));
     assert!(claude.contains("[`.daedalus/state.toml`](.daedalus/state.toml)"));
     assert!(claude.contains("`guides/` 用于保存 Agent 生成的行动指南"));
+    assert!(claude.contains("`daedalus validate` 只校验 workspace 结构"));
     let state_md = fs::read_to_string(task_dir.join(".daedalus/state.md")).expect("state.md");
     assert!(state_md.contains("# 学习状态"));
     assert!(state_md.contains("[`.daedalus/state.toml`](state.toml)"));
     assert!(state_md.contains("当前阶段：`01-goal-aligner`"));
     assert!(state_md.contains("生命周期：`active`"));
     assert!(state_md.contains("Workspace Bucket：`02-learning`"));
-    assert!(state_md.contains("[`notes/repo-selection.md`](../notes/repo-selection.md)"));
+    assert!(state_md.contains("完整历史见 [`.daedalus/state.toml`](state.toml)"));
+    assert!(
+        state_md.contains(
+            "[`guides/02-repo-selection-guide.md`](../guides/02-repo-selection-guide.md)"
+        )
+    );
     assert!(state_md.contains("`stage.status` 只能是"));
     assert!(state_md.contains("`transition.approval_source` 只能是"));
     let state_toml = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state.toml");
@@ -103,6 +109,7 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(state_toml.contains("lifecycle = \"active\""));
     assert!(state_toml.contains("workspace_bucket = \"02-learning\""));
     assert!(state_toml.contains("transition.action 只能是"));
+    assert!(state_toml.contains("CLI 只校验文件存在"));
     let task_card =
         fs::read_to_string(task_dir.join(".daedalus/task-card.md")).expect("task-card.md");
     assert!(task_card.contains("# 学习任务卡"));
@@ -112,6 +119,11 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(artifact_index.contains("> `状态` 列只能使用"));
     assert!(artifact_index.contains("[`.daedalus/task-card.md`](task-card.md)"));
     assert!(artifact_index.contains("[`guides/`](../guides)"));
+    assert!(
+        artifact_index.contains(
+            "[`guides/02-repo-selection-guide.md`](../guides/02-repo-selection-guide.md)"
+        )
+    );
     assert!(artifact_index.contains("`草稿`"));
     assert!(artifact_index.contains("`不适用`"));
 }
@@ -169,6 +181,7 @@ fn enter_preserves_state_toml_comments() {
     let updated = fs::read_to_string(state_path).expect("updated state");
     assert!(updated.contains("# custom operator note"));
     assert!(updated.contains("action = \"enter\""));
+    assert!(updated.contains("actor = \"daedalus-cli\""));
 }
 
 #[test]
@@ -346,7 +359,10 @@ fn complete_updates_next_action_to_next_stage() {
 
     let state = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state");
     assert!(state.contains("next_action = \"进入 `02-repo-scout`"));
+    assert!(state.contains("current_phase = \"02-repo-scout\""));
     let state_md = fs::read_to_string(task_dir.join(".daedalus/state.md")).expect("state.md");
+    assert!(state_md.contains("当前阶段：`02-repo-scout`"));
+    assert!(state_md.contains("状态：`pending`"));
     assert!(state_md.contains("下一步：进入 `02-repo-scout`"));
 }
 

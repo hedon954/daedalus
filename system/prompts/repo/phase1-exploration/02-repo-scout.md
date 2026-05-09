@@ -6,6 +6,7 @@ phase: repo.phase1-exploration
 
 @system/prompts/common/first-principles.md
 @system/prompts/common/gatekeeper.md
+@system/prompts/common/coach-questioning.md
 
 # Select Study Repo
 
@@ -33,8 +34,9 @@ phase: repo.phase1-exploration
 2. 对每个 repo 评估匹配度、学习密度、运行风险和 demo 可能性。
 3. 给出首选 repo，并说明为什么它最值得优先深入。
 4. 如果候选 repo 都不合适，建议调整目标或重新搜索。
-5. 将 Agent 的候选比较和选择建议写入 `guides/02-repo-selection-guide.md`；用户确认后的选择理由、风险接受和最终结论写入 `notes/repo-selection.md`。
+5. 将 Agent 的候选比较、选择建议、风险提示和源码拉取建议写入 `guides/02-repo-selection-guide.md`。
 6. 如果需要准备源码，优先维护 `source/pull_source.sh`，由用户执行拉取；不要默认替用户 clone。
+7. 用户如需记录自己的选择思考，可另写 `notes/repo-selection-reflection.md`，但不要把它作为阶段必需产物。
 
 ## Output Delta
 
@@ -59,7 +61,7 @@ phase: repo.phase1-exploration
 - 用户确认的首选 repo：
 - 用户接受的风险：
 - 用户是否亲自执行 `source/pull_source.sh`：
-- `notes/repo-selection.md` 中的证据：
+- `guides/02-repo-selection-guide.md` 中的证据：
 - 是否允许进入下一阶段：
 ```
 

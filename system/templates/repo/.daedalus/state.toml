@@ -7,7 +7,8 @@
 # - transition.action 只能是：init、enter、complete、block、resume、task-complete、abandon。
 # - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
-# required_artifacts 表示阶段完成证据，应该尽量包含用户确认、亲自实践或手写笔记后的结果。
+# required_artifacts 表示阶段完成所需文件。CLI 只校验文件存在；
+# Agent 仍需确认 notes 是否包含用户确认、亲自实践或手写笔记后的证据。
 
 [task]
 name = "{{TASK_NAME}}"
@@ -28,7 +29,7 @@ required_artifacts = [".daedalus/task-card.md"]
 id = "02-repo-scout"
 title = "选择学习仓库"
 status = "pending"
-required_artifacts = ["notes/repo-selection.md"]
+required_artifacts = ["guides/02-repo-selection-guide.md"]
 
 [[stages]]
 id = "03-socratic-coach"

@@ -6,6 +6,7 @@ phase: repo.phase1-exploration
 
 @system/prompts/common/clarify-goal.md
 @system/prompts/common/gatekeeper.md
+@system/prompts/common/coach-questioning.md
 
 # Align Repo Learning Goal
 
@@ -28,11 +29,13 @@ phase: repo.phase1-exploration
 
 ## Repo-Specific Workflow
 
-1. 继承 `Clarify Learning Goal` 生成通用学习任务卡。
-2. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
-3. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
-4. 如果目标无法导向 repo 选择或 mini demo，先要求用户收窄。
-5. 生成给用户的目标澄清指南时，写入 `guides/01-goal-alignment-guide.md`；用户确认后的任务目标和验收标准写入 `.daedalus/task-card.md`。
+1. 如果这是新的 repo learning 任务，先检查 WIP，然后直接用 `daedalus init repo-learning <task-name>` 初始化；不要手写 `.daedalus`、`state.toml`、`todo.md` 等模板文件。
+2. 如果 CLI 不可用，先报告阻塞原因，不要自动 fallback 到手写模板。
+3. 继承 `Clarify Learning Goal` 生成通用学习任务卡。
+4. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
+5. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
+6. 如果目标无法导向 repo 选择或 mini demo，先要求用户收窄。
+7. 生成给用户的目标澄清指南时，写入 `guides/01-goal-alignment-guide.md`；用户确认后的任务目标和验收标准写入 `.daedalus/task-card.md`。
 
 ## Output Delta
 
@@ -66,4 +69,5 @@ phase: repo.phase1-exploration
 - 不要在目标未明确时推荐 repo。
 - 学习目标必须能导向 mini demo 或业务方案。
 - 不要替用户直接决定学习目标；如果只能靠 Agent 猜测，应保持 `01-goal-aligner` active。
+- 新任务初始化必须 CLI-first；不要为了省事手写模板结构。
 - 完成阶段前，在 `.daedalus/validation-log.md` 记录本阶段 daedalus 的引导效果和缺口。
