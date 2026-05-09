@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::{DaedalusError, Result, TaskLifecycle, WorkspaceBucket};
+use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::{state_toml, workspace_fs};
 
 /// workspace 校验结果。
@@ -78,7 +78,7 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         workspace_fs::bucket_from_task_dir(task_dir),
     ) {
         (Ok(lifecycle), Ok(state_bucket), Ok(actual_bucket)) => {
-            let expected_bucket = expected_bucket_for_lifecycle(lifecycle);
+            let expected_bucket = lifecycle.expected_bucket();
             if state_bucket != expected_bucket {
                 issues.push(format!(
                     "task lifecycle `{}` expects workspace_bucket `{}`, got `{}`",
@@ -141,14 +141,6 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         task_dir: task_dir.to_path_buf(),
         issues,
     })
-}
-
-fn expected_bucket_for_lifecycle(lifecycle: TaskLifecycle) -> WorkspaceBucket {
-    match lifecycle {
-        TaskLifecycle::Active => WorkspaceBucket::Learning,
-        TaskLifecycle::Completed => WorkspaceBucket::Completed,
-        TaskLifecycle::Abandoned => WorkspaceBucket::Abandoned,
-    }
 }
 
 fn stale(source: &Path, generated: &Path) -> Result<bool> {

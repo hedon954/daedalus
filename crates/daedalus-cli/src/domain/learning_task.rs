@@ -30,6 +30,15 @@ impl TaskLifecycle {
             _ => None,
         }
     }
+
+    /// 返回该生命周期应该落入的 workspace bucket。
+    pub fn expected_bucket(self) -> WorkspaceBucket {
+        match self {
+            Self::Active => WorkspaceBucket::Learning,
+            Self::Completed => WorkspaceBucket::Completed,
+            Self::Abandoned => WorkspaceBucket::Abandoned,
+        }
+    }
 }
 
 /// 学习任务所在 workspace bucket。
