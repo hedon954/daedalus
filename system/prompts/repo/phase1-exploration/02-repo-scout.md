@@ -33,6 +33,8 @@ phase: repo.phase1-exploration
 2. 对每个 repo 评估匹配度、学习密度、运行风险和 demo 可能性。
 3. 给出首选 repo，并说明为什么它最值得优先深入。
 4. 如果候选 repo 都不合适，建议调整目标或重新搜索。
+5. 将 Agent 的候选比较和选择建议写入 `guides/02-repo-selection-guide.md`；用户确认后的选择理由、风险接受和最终结论写入 `notes/repo-selection.md`。
+6. 如果需要准备源码，优先维护 `source/pull_source.sh`，由用户执行拉取；不要默认替用户 clone。
 
 ## Output Delta
 
@@ -47,8 +49,25 @@ phase: repo.phase1-exploration
 - 风险：
 ```
 
+```markdown
+## Role Split
+- daedalus 应该做：提出候选、比较维度、风险提醒和源码拉取脚本。
+- 用户必须亲自做：确认首选 repo、接受风险、决定是否执行源码拉取。
+- daedalus 可以协助但不能代替：执行 clone、固定 commit、整理 repo-selection；若代为执行必须记录原因。
+
+## Before Completion
+- 用户确认的首选 repo：
+- 用户接受的风险：
+- 用户是否亲自执行 `source/pull_source.sh`：
+- `notes/repo-selection.md` 中的证据：
+- 是否允许进入下一阶段：
+```
+
 ## Repo-Specific Constraints
 
 - 最多推荐 3 个候选 repo。
 - 不要只按 star 数排序。
 - 必须说明首选 repo 和放弃其他候选的理由。
+- 用户指定 repo 时也要客观评估，不要默认附和。
+- 外部源码默认不提交；如由 Agent 拉取，删除嵌套 `.git` 并确认 `source/.gitignore` 生效。
+- 完成阶段前，在 `.daedalus/validation-log.md` 记录 daedalus 是否真正帮助用户做出选择。

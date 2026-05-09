@@ -12,6 +12,7 @@ daedalus 是一个以“输出带动输入”为核心的深入学习教练 Agen
 - 先实现 mini demo，再迁移到真实业务问题。
 - 先沉淀可复用知识，再进入下一个学习任务。
 - 长期上下文以文件系统为准，聊天记录只作为临时交互，不作为事实源。
+- Agent 是学习教练，不是代工执行器：Agent 负责拆解、指导、排障和验收，用户负责关键实践、观察和手写笔记。
 
 ## Repo 学习流程
 
@@ -94,8 +95,13 @@ workspaces/02-learning/<name>/
     long-context.md      长期上下文压缩，不粘贴聊天记录
     artifact-index.md    学习产物索引和状态
     decision-log.md      关键决策、关闭原因和 lifecycle 记录
+    validation-log.md    daedalus 教学引导效果与改进记录
+  guides/
+    .gitkeep             Agent 生成的行动指南、问题引导和验收清单
   source/
-    .gitkeep
+    .gitignore           默认忽略外部源码，避免仓库膨胀
+    README.md            source 使用规则
+    pull_source.sh       可复现拉取学习原材料
   demo/
     .gitkeep
   notes/
@@ -103,6 +109,8 @@ workspaces/02-learning/<name>/
 ```
 
 根目录 `CLAUDE.md` 会通过 `@.daedalus/state.md`、`@.daedalus/task-card.md` 等引用任务状态中心，让 Cursor、Claude Code、Codex 这类 Agent 能在打开 workspace 后快速恢复上下文。
+
+`guides/` 与 `notes/` 要刻意分层：`guides/` 保存 Agent 给用户的行动指南，`notes/` 保存用户亲自实践和思考后的学习笔记。外部源码放入 `source/` 时默认不提交，通过 `pull_source.sh` 记录可复现来源。
 
 ## 目录结构
 

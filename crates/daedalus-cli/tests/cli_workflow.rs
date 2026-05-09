@@ -78,12 +78,16 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(task_dir.join("CLAUDE.md").exists());
     assert!(!task_dir.join(".daedalus/CLAUDE.md").exists());
     assert!(task_dir.join("demo/.gitkeep").exists());
+    assert!(task_dir.join("guides/.gitkeep").exists());
     assert!(task_dir.join("notes/.gitkeep").exists());
-    assert!(task_dir.join("source/.gitkeep").exists());
+    assert!(task_dir.join("source/.gitignore").exists());
+    assert!(task_dir.join("source/pull_source.sh").exists());
     assert!(task_dir.join(".daedalus/state.toml").exists());
+    assert!(task_dir.join(".daedalus/validation-log.md").exists());
     let claude = fs::read_to_string(task_dir.join("CLAUDE.md")).expect("CLAUDE.md");
     assert!(claude.contains("@.daedalus/state.md"));
     assert!(claude.contains("[`.daedalus/state.toml`](.daedalus/state.toml)"));
+    assert!(claude.contains("`guides/` 用于保存 Agent 生成的行动指南"));
     let state_md = fs::read_to_string(task_dir.join(".daedalus/state.md")).expect("state.md");
     assert!(state_md.contains("# 学习状态"));
     assert!(state_md.contains("[`.daedalus/state.toml`](state.toml)"));
@@ -102,10 +106,12 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     let task_card =
         fs::read_to_string(task_dir.join(".daedalus/task-card.md")).expect("task-card.md");
     assert!(task_card.contains("# 学习任务卡"));
+    assert!(task_card.contains("## 角色边界"));
     let artifact_index =
         fs::read_to_string(task_dir.join(".daedalus/artifact-index.md")).expect("artifact-index");
     assert!(artifact_index.contains("> `状态` 列只能使用"));
     assert!(artifact_index.contains("[`.daedalus/task-card.md`](task-card.md)"));
+    assert!(artifact_index.contains("[`guides/`](../guides)"));
     assert!(artifact_index.contains("`草稿`"));
     assert!(artifact_index.contains("`不适用`"));
 }

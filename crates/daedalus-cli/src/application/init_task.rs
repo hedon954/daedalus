@@ -28,7 +28,7 @@ pub struct InitTaskOutput {
 
 /// 初始化一个 repo learning workspace。
 ///
-/// 该 use case 会复制 `system/templates/repo` 模板、创建 `source`/`demo`/`notes`
+/// 该 use case 会复制 `system/templates/repo` 模板、创建 `source`/`demo`/`notes`/`guides`
 /// 目录，并立即从 `state.toml` 渲染 `state.md`。
 pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
     let learning_root = workspace_fs::learning_root(&options.repo_root);
@@ -47,6 +47,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
     workspace_fs::ensure_dir(&task_dir.join("source"))?;
     workspace_fs::ensure_dir(&task_dir.join("demo"))?;
     workspace_fs::ensure_dir(&task_dir.join("notes"))?;
+    workspace_fs::ensure_dir(&task_dir.join("guides"))?;
 
     let created_at = clock::now_local_timestamp();
     let template_dir = options

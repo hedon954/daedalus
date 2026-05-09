@@ -32,6 +32,7 @@ phase: repo.phase1-exploration
 2. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
 3. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
 4. 如果目标无法导向 repo 选择或 mini demo，先要求用户收窄。
+5. 生成给用户的目标澄清指南时，写入 `guides/01-goal-alignment-guide.md`；用户确认后的任务目标和验收标准写入 `.daedalus/task-card.md`。
 
 ## Output Delta
 
@@ -43,6 +44,20 @@ phase: repo.phase1-exploration
 - 运行/调试要求：
 - Mini demo 方向：
 - 暂不学习：
+- 用户确认：
+```
+
+```markdown
+## Role Split
+- daedalus 应该做：提出澄清问题、解释为什么需要收窄目标、给出任务卡草案。
+- 用户必须亲自做：确认现实目标、学习边界、验收标准和暂不学习内容。
+- daedalus 可以协助但不能代替：把用户口述内容整理成 `.daedalus/task-card.md`。
+
+## Before Completion
+- 用户已经确认/回答：
+- 用户仍不确定的问题：
+- 产物中留下的证据：
+- 是否允许进入下一阶段：
 ```
 
 ## Repo-Specific Constraints
@@ -50,3 +65,5 @@ phase: repo.phase1-exploration
 - 只在必要时提问，每次最多 3 个问题。
 - 不要在目标未明确时推荐 repo。
 - 学习目标必须能导向 mini demo 或业务方案。
+- 不要替用户直接决定学习目标；如果只能靠 Agent 猜测，应保持 `01-goal-aligner` active。
+- 完成阶段前，在 `.daedalus/validation-log.md` 记录本阶段 daedalus 的引导效果和缺口。

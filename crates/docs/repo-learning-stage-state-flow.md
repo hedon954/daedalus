@@ -199,6 +199,8 @@ learning-xxx/
     long-context.md
     artifact-index.md
     decision-log.md
+    validation-log.md
+  guides/
   notes/
   demo/
   source/
@@ -209,13 +211,19 @@ learning-xxx/
 - `state.toml` 是唯一事实中心，由 CLI 确定性更新。
 - `state.md` 是从 `state.toml` 渲染出的 Agent-friendly 状态摘要，用于被 `CLAUDE.md` 通过 `@` 引用。
 - `todo.md` 是 Agent 可调整的动态任务列表，服务于当前 stage。
+- `guides/` 保存 Agent 生成的行动指南、问题引导、运行说明和验收清单。
+- `notes/` 保存用户亲自实践、观察、回答和总结后的学习笔记。
+- `source/` 保存外部源码缓存，默认不提交到 daedalus 仓库；用 `source/pull_source.sh` 复现拉取。
 - `artifact-index.md` 和 `long-context.md` 在 `10-archivist` 阶段沉淀学习成果。
 - `decision-log.md` 记录关键决策，尤其是关闭、放弃、强制通过等需要审计的动作。
+- `validation-log.md` 记录 daedalus 自身教学引导效果和改进点。
 
 ## 当前实现的关键约束
 
 - Agent 不应该手改 `state.toml` 中的确定性字段，而应该调用 `daedalus` CLI。
 - Agent 不应该发明新的 `stage.status` 枚举值；如需新增，必须同步修改 Rust 领域模型、模板和测试。
-- `complete` 需要 required artifacts 存在；`--force` 只能在用户明确批准或存在等价证据时使用。
+- `complete` 需要 required artifacts 存在；这些产物应尽量包含用户参与后的学习证据，而不只是 Agent 自动生成的文件。
+- Agent 应默认指导用户亲自实践，再协助验收和排障；不要把代跑命令、代写笔记伪装成用户已经掌握。
+- `--force` 只能在用户明确批准或存在等价证据时使用。
 - `task complete` 和 `state complete 10-archivist` 都必须遵守最终阶段状态机，不能从 `pending` 直接关闭任务。
 - `state.toml` 保留原始结构和注释，CLI 通过 `toml_edit` 更新，尽量避免破坏人工可读性。

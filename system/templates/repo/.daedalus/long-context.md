@@ -2,6 +2,13 @@
 
 只保留可长期复用的上下文，不要粘贴聊天记录。
 
+## 角色边界
+
+- `guides/` 保存 Agent 给用户的行动指南。
+- `notes/` 保存用户亲自实践和思考后的学习笔记。
+- `source/` 保存外部源码缓存，默认不提交到 daedalus 仓库。
+- `.daedalus/validation-log.md` 保存 daedalus 自身教学效果的复盘。
+
 ## 目标
 
 ## 决策

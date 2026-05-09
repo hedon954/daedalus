@@ -7,3 +7,6 @@
 | 产物 | 阶段 | 目的 | 状态 |
 | --- | --- | --- | --- |
 | [`.daedalus/task-card.md`](task-card.md) | 01-goal-aligner | 学习目标与验收标准 | 草稿 |
+| [`.daedalus/validation-log.md`](validation-log.md) | all | 记录 daedalus 教学引导效果与改进点 | 草稿 |
+| [`guides/`](../guides) | all | Agent 生成的行动指南与验收清单 | 草稿 |
+| [`notes/`](../notes) | all | 用户亲自实践后的学习笔记 | 草稿 |

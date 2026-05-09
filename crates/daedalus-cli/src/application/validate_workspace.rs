@@ -35,9 +35,12 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         ".daedalus/long-context.md",
         ".daedalus/artifact-index.md",
         ".daedalus/decision-log.md",
+        ".daedalus/validation-log.md",
         "demo/.gitkeep",
+        "guides/.gitkeep",
         "notes/.gitkeep",
-        "source/.gitkeep",
+        "source/.gitignore",
+        "source/pull_source.sh",
     ];
 
     for path in required {

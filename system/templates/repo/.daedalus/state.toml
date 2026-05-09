@@ -7,6 +7,7 @@
 # - transition.action 只能是：init、enter、complete、block、resume、task-complete、abandon。
 # - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+# required_artifacts 表示阶段完成证据，应该尽量包含用户确认、亲自实践或手写笔记后的结果。
 
 [task]
 name = "{{TASK_NAME}}"
@@ -15,7 +16,7 @@ created_at = "{{CREATED_AT}}"
 lifecycle = "active"
 workspace_bucket = "02-learning"
 current_phase = "01-goal-aligner"
-next_action = "澄清学习目标，并填写 [`.daedalus/task-card.md`](task-card.md)。"
+next_action = "澄清学习目标，引导用户确认边界，并填写 [`.daedalus/task-card.md`](task-card.md)。"
 
 [[stages]]
 id = "01-goal-aligner"
