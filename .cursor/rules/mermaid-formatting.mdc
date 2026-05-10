@@ -1,0 +1,13 @@
+---
+description: Mermaid formatting conventions for learning notes
+alwaysApply: true
+---
+
+# Mermaid Formatting
+
+- When adding Mermaid diagrams to notes or guides, use `<br>` for line breaks inside node labels.
+- Do not use escaped newline sequences like `\n` in Mermaid node labels.
+- For Typora compatibility, avoid Mermaid reserved words such as `loop` as participant or node aliases.
+- In sequence diagrams, quote participant display names when they contain spaces or punctuation, for example `participant UI as "ChatWidget / BottomPane"`.
+- Avoid `->` inside sequence message text; write `to` or another plain-word description instead.
+- Keep diagrams compact and supportive of the surrounding explanation.

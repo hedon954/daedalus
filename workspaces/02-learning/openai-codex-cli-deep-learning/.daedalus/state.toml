@@ -1,0 +1,171 @@
+# daedalus 学习状态。保留注释；确定性字段由 CLI 更新。
+#
+# 枚举约束：
+# - task.lifecycle 只能是：active、completed、abandoned。
+# - task.workspace_bucket 只能是：02-learning、03-completed、04-abandoned。
+# - stage.status 只能是：pending、active、blocked、paused、done。
+# - transition.action 只能是：init、enter、complete、block、resume、task-complete、abandon。
+# - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
+# Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+# required_artifacts 表示阶段完成证据，应该尽量包含用户确认、亲自实践或手写笔记后的结果。
+
+[task]
+name = "openai-codex-cli-deep-learning"
+kind = "repo-learning"
+created_at = "2026-05-09 15:58:52"
+lifecycle = "active"
+workspace_bucket = "02-learning"
+current_phase = "06-code-reader"
+next_action = "进入 `06-code-reader`：深读 Repo 核心代码，准备产物：notes/code-reading.md。"
+
+[[stages]]
+id = "01-goal-aligner"
+title = "对齐 Repo 学习目标"
+status = "done"
+required_artifacts = [".daedalus/task-card.md"]
+
+[[stages]]
+id = "02-repo-scout"
+title = "选择学习仓库"
+status = "done"
+required_artifacts = ["notes/repo-selection.md"]
+
+[[stages]]
+id = "03-socratic-coach"
+title = "提出 Repo 递进问题"
+status = "done"
+required_artifacts = ["notes/question-roadmap.md"]
+
+[[stages]]
+id = "04-debugger-guide"
+title = "运行并调试 Repo"
+status = "done"
+required_artifacts = ["notes/runbook.md"]
+
+[[stages]]
+id = "05-arch-analyzer"
+title = "分析 Repo 架构"
+status = "done"
+required_artifacts = ["notes/architecture.md"]
+
+[[stages]]
+id = "06-code-reader"
+title = "深读 Repo 核心代码"
+status = "active"
+required_artifacts = ["notes/code-reading.md"]
+
+[[stages]]
+id = "07-demo-architecture"
+title = "设计 Repo Mini Demo"
+status = "pending"
+required_artifacts = ["demo/design.md"]
+
+[[stages]]
+id = "08-demo-coder"
+title = "实现 Repo Mini Demo"
+status = "pending"
+required_artifacts = ["demo/README.md"]
+
+[[stages]]
+id = "09-biz-solver"
+title = "将 Repo 学习迁移到业务问题"
+status = "pending"
+required_artifacts = ["notes/business-application.md"]
+
+[[stages]]
+id = "10-archivist"
+title = "闭环 Repo 学习任务"
+status = "pending"
+required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md"]
+
+[[transitions]]
+stage = "01-goal-aligner"
+action = "init"
+timestamp = "2026-05-09 15:58:52"
+actor = "daedalus-cli"
+reason = "初始化 repo 学习任务。"
+
+[[transitions]]
+stage = "01-goal-aligner"
+action = "complete"
+timestamp = "2026-05-09 16:00:30"
+actor = "agent"
+reason = "用户已确认 OpenAI Codex CLI、学习重点和输出形态，任务卡与目标对齐指南已落盘。"
+
+[[transitions]]
+stage = "02-repo-scout"
+action = "enter"
+timestamp = "2026-05-09 16:00:31"
+actor = "agent"
+reason = "开始客观评估用户指定的 OpenAI Codex CLI 仓库，并确认源码拉取方式。"
+
+[[transitions]]
+stage = "02-repo-scout"
+action = "complete"
+timestamp = "2026-05-09 16:03:49"
+actor = "agent"
+reason = "用户确认选择 OpenAI Codex CLI，源码已通过 pull_source.sh 拉取并固定 commit，repo-selection 记录已落盘。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "enter"
+timestamp = "2026-05-09 16:03:49"
+actor = "agent"
+reason = "开始生成 Codex CLI 深读问题路线图。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "block"
+timestamp = "2026-05-09 16:05:01"
+actor = "agent"
+reason = "等待用户回答或改写第一轮 3 个 Codex 源码学习问题。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "resume"
+timestamp = "2026-05-09 16:19:02"
+actor = "agent"
+reason = "用户已回答第一轮 3 个问题，问题路线图具备阶段完成证据。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "complete"
+timestamp = "2026-05-09 16:19:02"
+actor = "agent"
+reason = "用户回答已写入 notes/question-roadmap.md，并转化为后续运行调试和架构分析的可验证假设。"
+
+[[transitions]]
+stage = "04-debugger-guide"
+action = "enter"
+timestamp = "2026-05-09 16:19:02"
+actor = "agent"
+reason = "开始围绕 codex exec 建立可复现运行 runbook 和核心路径追踪。"
+
+[[transitions]]
+stage = "04-debugger-guide"
+action = "complete"
+timestamp = "2026-05-10 13:15:08"
+actor = "daedalus-cli"
+reason = "runbook 已验证，用户已执行最小命令并记录 codex-exec 测试通过；后续调试项保留为补充任务。"
+
+[[transitions]]
+stage = "05-arch-analyzer"
+action = "enter"
+timestamp = "2026-05-10 13:15:09"
+actor = "daedalus-cli"
+reason = "开始分析 Codex agent loop、工具系统、权限审批、沙箱和事件流架构。"
+
+[[transitions]]
+stage = "05-arch-analyzer"
+action = "complete"
+timestamp = "2026-05-10 13:15:09"
+actor = "daedalus-cli"
+reason = "notes/codex-agent-loop-architecture.md 已作为 architecture.md 的等价架构笔记，覆盖核心 loop、架构分层、tool/auth/sandbox/event 关系，并配套 Excalidraw/Mermaid 图。"
+approval_source = "artifact-equivalent"
+
+[[transitions]]
+stage = "06-code-reader"
+action = "enter"
+timestamp = "2026-05-10 13:15:09"
+actor = "daedalus-cli"
+reason = "开始围绕上下文管理、压缩机制、工具结果回灌和 rollout 恢复深读核心代码。"

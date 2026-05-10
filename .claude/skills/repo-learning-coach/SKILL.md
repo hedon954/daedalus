@@ -103,6 +103,7 @@ For long-running work:
 - Load `system/prompts/common/resume.md` when resuming.
 - Load `system/prompts/common/compress-context.md` before pausing or switching stages.
 - Keep `done`, `doing`, `next`, and `blocked` explicit.
+- When a Socratic question round produces user answers, record the full learning trace in notes: question, user's original answer, Agent calibration/supplement, source or experiment validation path, and validation status.
 
 ## Rules
 
@@ -111,5 +112,6 @@ For long-running work:
 - Treat `.daedalus/state.toml` as the only lifecycle fact source; completed and abandoned directories are projections of `task.lifecycle` and `task.workspace_bucket`.
 - Ask at most 3 high-value questions at a time.
 - Tie every reading step to a future output artifact.
+- Preserve the distinction between user understanding, Agent calibration, and verified source-code conclusions.
 - Do not mark the task complete until demo/business transfer/knowledge archival are addressed.
 - Do not archive unverified summaries as knowledge.
