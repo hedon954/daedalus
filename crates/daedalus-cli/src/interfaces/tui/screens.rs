@@ -6,12 +6,28 @@ use ratatui::widgets::{
 
 use crate::interfaces::tui::app::{TuiOverview, TuiTaskSummary};
 
+const BG: Color = Color::Rgb(24, 22, 20);
+const PANEL_BG: Color = Color::Rgb(31, 29, 27);
+const PANEL_BG_SOFT: Color = Color::Rgb(54, 48, 42);
+const TEXT: Color = Color::Rgb(220, 216, 207);
+const TEXT_STRONG: Color = Color::Rgb(244, 241, 234);
+const MUTED: Color = Color::Rgb(136, 128, 117);
+const LEARNING: Color = Color::Rgb(217, 119, 87);
+const COMPLETED: Color = Color::Rgb(147, 125, 194);
+const ABANDONED: Color = Color::Rgb(203, 100, 100);
+const PAUSED: Color = Color::Rgb(203, 155, 92);
+const SECONDARY: Color = Color::Rgb(180, 171, 160);
+const TERTIARY: Color = Color::Rgb(170, 143, 214);
+const CURRENT_ACCENT: Color = Color::Rgb(124, 159, 191);
+const PROGRESS_ACCENT: Color = Color::Rgb(119, 172, 125);
+const MISSING_ACCENT: Color = Color::Rgb(192, 101, 92);
+const TODO_ACCENT: Color = Color::Rgb(97, 166, 154);
+const NEXT_ACCENT: Color = Color::Rgb(203, 155, 92);
+const CONTROLS_ACCENT: Color = Color::Rgb(139, 132, 122);
+
 /// 绘制 workspace 任务选择页。
 pub fn draw_selector(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary], selected: usize) {
-    frame.render_widget(
-        Block::default().style(Style::default().bg(Color::Rgb(9, 12, 22))),
-        area,
-    );
+    frame.render_widget(Block::default().style(Style::default().bg(BG)), area);
 
     let root = Layout::default()
         .direction(Direction::Vertical)
@@ -27,26 +43,18 @@ pub fn draw_selector(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary]
     let header = Paragraph::new(Line::from(vec![
         Span::styled(
             "DAEDALUS",
-            Style::default()
-                .fg(Color::Rgb(80, 250, 123))
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(LEARNING).add_modifier(Modifier::BOLD),
         ),
         Span::raw("  workspace radar"),
     ]))
     .alignment(Alignment::Center)
-    .block(chrome_block(
-        " Select Learning Task ",
-        Color::Rgb(80, 250, 123),
-    ));
+    .block(chrome_block(" Select Learning Task ", LEARNING));
     frame.render_widget(header, root[0]);
 
     let counts = bucket_count_line(tasks);
     let summary = Paragraph::new(counts)
         .alignment(Alignment::Center)
-        .block(chrome_block(
-            " 02 / 03 / 04 Scan ",
-            Color::Rgb(139, 233, 253),
-        ));
+        .block(chrome_block(" 02 / 03 / 04 Scan ", COMPLETED));
     frame.render_widget(summary, root[1]);
 
     render_task_list(frame, root[2], tasks, selected);
@@ -60,10 +68,7 @@ pub fn draw_overview(
     overview: &TuiOverview,
     can_return_to_selector: bool,
 ) {
-    frame.render_widget(
-        Block::default().style(Style::default().bg(Color::Rgb(9, 12, 22))),
-        area,
-    );
+    frame.render_widget(Block::default().style(Style::default().bg(BG)), area);
 
     let root = Layout::default()
         .direction(Direction::Vertical)
@@ -97,7 +102,7 @@ pub fn draw_overview(
         left[0],
         bucket_missing_title(&overview.workspace_bucket),
         &overview.missing_artifacts,
-        bucket_accent(&overview.workspace_bucket),
+        bucket_missing_accent(&overview.workspace_bucket),
         bucket_missing_empty(&overview.workspace_bucket),
     );
     render_next_action(frame, left[1], overview);
@@ -106,7 +111,7 @@ pub fn draw_overview(
         right[0],
         bucket_todo_title(&overview.workspace_bucket),
         &overview.todo_summary,
-        Color::Rgb(139, 233, 253),
+        bucket_todo_accent(&overview.workspace_bucket),
         bucket_todo_empty(&overview.workspace_bucket),
     );
     let transitions_title = bucket_transition_title(&overview.workspace_bucket);
@@ -122,7 +127,7 @@ pub fn draw_overview(
         right[1],
         transitions_title,
         &transitions,
-        Color::Rgb(189, 147, 249),
+        TERTIARY,
         "No transition history yet.",
     );
 
@@ -139,7 +144,7 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
         ),
         Span::styled(
             format!("  {}  ", bucket_label(&overview.workspace_bucket)),
-            Style::default().fg(Color::Rgb(248, 248, 242)),
+            Style::default().fg(TEXT),
         ),
         Span::styled(
             format!("[{}]", overview.lifecycle),
@@ -173,20 +178,20 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
         Span::styled(
             overview.task_name.as_str(),
             Style::default()
-                .fg(Color::White)
+                .fg(TEXT_STRONG)
                 .add_modifier(Modifier::BOLD),
         ),
         Span::raw("    "),
         Span::styled("Path  ", muted()),
         Span::styled(
             overview.task_dir.display().to_string(),
-            Style::default().fg(Color::Rgb(98, 114, 164)),
+            Style::default().fg(MUTED),
         ),
         Span::raw("    "),
         Span::styled("Phase  ", muted()),
         Span::styled(
             overview.current_phase.as_str(),
-            Style::default().fg(Color::Cyan),
+            Style::default().fg(CURRENT_ACCENT),
         ),
         Span::raw("    "),
         Span::styled("Status  ", muted()),
@@ -200,26 +205,26 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
         Span::styled("Bucket  ", muted()),
         Span::styled(
             overview.workspace_bucket.as_str(),
-            Style::default().fg(Color::Rgb(255, 121, 198)),
+            Style::default().fg(SECONDARY),
         ),
     ]);
     let current = Paragraph::new(vec![Line::raw(""), status])
         .alignment(Alignment::Center)
         .block(chrome_block(
             bucket_current_title(&overview.workspace_bucket),
-            Color::Rgb(139, 233, 253),
+            CURRENT_ACCENT,
         ));
     frame.render_widget(current, chunks[0]);
 
     let gauge = Gauge::default()
         .block(chrome_block(
             bucket_progress_title(&overview.workspace_bucket),
-            bucket_accent(&overview.workspace_bucket),
+            bucket_progress_accent(&overview.workspace_bucket),
         ))
         .gauge_style(
             Style::default()
-                .fg(bucket_accent(&overview.workspace_bucket))
-                .bg(Color::Rgb(40, 42, 54))
+                .fg(bucket_progress_accent(&overview.workspace_bucket))
+                .bg(PANEL_BG_SOFT)
                 .add_modifier(Modifier::BOLD),
         )
         .ratio(progress)
@@ -232,11 +237,11 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
 
 fn render_next_action(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
     let paragraph = Paragraph::new(overview.next_action.as_str())
-        .style(Style::default().fg(Color::Rgb(248, 248, 242)))
+        .style(Style::default().fg(TEXT))
         .wrap(Wrap { trim: true })
         .block(chrome_block(
             bucket_next_title(&overview.workspace_bucket),
-            bucket_accent(&overview.workspace_bucket),
+            bucket_next_accent(&overview.workspace_bucket),
         ));
     frame.render_widget(paragraph, area);
 }
@@ -249,26 +254,25 @@ fn render_list(
     accent: Color,
     empty_message: &str,
 ) {
-    let items: Vec<ListItem<'_>> = if values.is_empty() {
-        vec![ListItem::new(Line::from(Span::styled(
+    let lines: Vec<Line<'_>> = if values.is_empty() {
+        vec![Line::from(Span::styled(
             empty_message,
-            Style::default().fg(Color::Rgb(98, 114, 164)),
-        )))]
+            Style::default().fg(MUTED),
+        ))]
     } else {
         values
             .iter()
             .map(|value| {
-                ListItem::new(Line::from(vec![
+                Line::from(vec![
                     Span::styled(">> ", Style::default().fg(accent)),
-                    Span::styled(
-                        value.as_str(),
-                        Style::default().fg(Color::Rgb(248, 248, 242)),
-                    ),
-                ]))
+                    Span::styled(value.as_str(), Style::default().fg(TEXT)),
+                ])
             })
             .collect()
     };
-    let list = List::new(items).block(chrome_block(title, accent));
+    let list = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .block(chrome_block(title, accent));
     frame.render_widget(list, area);
 }
 
@@ -288,30 +292,27 @@ fn render_task_list(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary],
                         .fg(bucket_accent(&task.bucket))
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(
-                    format!("{:<28}", task.task_name),
-                    Style::default().fg(Color::Rgb(248, 248, 242)),
-                ),
+                Span::styled(format!("{:<28}", task.task_name), Style::default().fg(TEXT)),
                 Span::styled(format!("{:<11}", task.lifecycle), muted()),
                 Span::styled(
                     format!("{:<18}", task.current_phase),
-                    Style::default().fg(Color::Cyan),
+                    Style::default().fg(CURRENT_ACCENT),
                 ),
                 Span::styled(
                     format!("{:<8}", task.current_status),
                     Style::default().fg(status_color(&task.current_status)),
                 ),
-                Span::styled(progress, Style::default().fg(Color::Rgb(255, 184, 108))),
+                Span::styled(progress, Style::default().fg(PROGRESS_ACCENT)),
             ]))
         })
         .collect();
     let list = List::new(items)
-        .block(chrome_block(" Learning Tasks ", Color::Rgb(189, 147, 249)))
+        .block(chrome_block(" Learning Tasks ", TERTIARY))
         .highlight_symbol(">> ")
         .highlight_style(
             Style::default()
-                .fg(Color::Rgb(9, 12, 22))
-                .bg(Color::Rgb(80, 250, 123))
+                .fg(TEXT_STRONG)
+                .bg(Color::Rgb(83, 63, 55))
                 .add_modifier(Modifier::BOLD),
         );
     let mut state = ListState::default();
@@ -323,40 +324,37 @@ fn render_task_list(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary],
 
 fn render_selector_footer(frame: &mut Frame<'_>, area: Rect) {
     let footer = Paragraph::new(Line::from(vec![
-        Span::styled("↑/↓ j/k", Style::default().fg(Color::Rgb(255, 184, 108))),
+        Span::styled("↑/↓ j/k", Style::default().fg(PAUSED)),
         Span::raw(" select    "),
-        Span::styled("enter", Style::default().fg(Color::Rgb(80, 250, 123))),
+        Span::styled("enter", Style::default().fg(LEARNING)),
         Span::raw(" open    "),
-        Span::styled("q / esc", Style::default().fg(Color::Rgb(255, 184, 108))),
+        Span::styled("q / esc", Style::default().fg(PAUSED)),
         Span::raw(" quit"),
     ]))
     .alignment(Alignment::Center)
-    .block(chrome_block(" Controls ", Color::Rgb(98, 114, 164)));
+    .block(chrome_block(" Controls ", CONTROLS_ACCENT));
     frame.render_widget(footer, area);
 }
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, can_return_to_selector: bool) {
     let mut spans = vec![
-        Span::styled("q / esc", Style::default().fg(Color::Rgb(255, 184, 108))),
+        Span::styled("q / esc", Style::default().fg(PAUSED)),
         Span::raw(" quit    "),
     ];
     if can_return_to_selector {
         spans.extend([
-            Span::styled(
-                "b / backspace",
-                Style::default().fg(Color::Rgb(80, 250, 123)),
-            ),
+            Span::styled("b / backspace", Style::default().fg(LEARNING)),
             Span::raw(" back    "),
         ]);
     }
     spans.extend([
-        Span::styled("readonly", Style::default().fg(Color::Rgb(139, 233, 253))),
+        Span::styled("readonly", Style::default().fg(COMPLETED)),
         Span::raw(" view    "),
         Span::styled("state changes go through daedalus CLI", muted()),
     ]);
     let footer = Paragraph::new(Line::from(spans))
         .alignment(Alignment::Center)
-        .block(chrome_block(" Controls ", Color::Rgb(98, 114, 164)));
+        .block(chrome_block(" Controls ", CONTROLS_ACCENT));
     frame.render_widget(footer, area);
 }
 
@@ -369,21 +367,21 @@ fn chrome_block<'a>(title: &'a str, accent: Color) -> Block<'a> {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(accent))
-        .style(Style::default().bg(Color::Rgb(13, 17, 30)))
+        .style(Style::default().bg(PANEL_BG))
         .padding(Padding::new(1, 1, 0, 0))
 }
 
 fn muted() -> Style {
-    Style::default().fg(Color::Rgb(98, 114, 164))
+    Style::default().fg(MUTED)
 }
 
 fn status_color(status: &str) -> Color {
     match status {
-        "active" => Color::Rgb(80, 250, 123),
-        "done" | "completed" => Color::Rgb(139, 233, 253),
-        "blocked" | "abandoned" => Color::Rgb(255, 85, 85),
-        "paused" => Color::Rgb(255, 184, 108),
-        _ => Color::Rgb(248, 248, 242),
+        "active" => PROGRESS_ACCENT,
+        "done" | "completed" => COMPLETED,
+        "blocked" | "abandoned" => ABANDONED,
+        "paused" => PAUSED,
+        _ => TEXT,
     }
 }
 
@@ -492,11 +490,43 @@ fn bucket_transition_title(bucket: &str) -> &'static str {
     }
 }
 
+fn bucket_missing_accent(bucket: &str) -> Color {
+    match bucket {
+        "03-completed" => COMPLETED,
+        "04-abandoned" => ABANDONED,
+        _ => MISSING_ACCENT,
+    }
+}
+
+fn bucket_next_accent(bucket: &str) -> Color {
+    match bucket {
+        "03-completed" => COMPLETED,
+        "04-abandoned" => PAUSED,
+        _ => NEXT_ACCENT,
+    }
+}
+
+fn bucket_progress_accent(bucket: &str) -> Color {
+    match bucket {
+        "03-completed" => COMPLETED,
+        "04-abandoned" => PAUSED,
+        _ => PROGRESS_ACCENT,
+    }
+}
+
+fn bucket_todo_accent(bucket: &str) -> Color {
+    match bucket {
+        "03-completed" => TERTIARY,
+        "04-abandoned" => PAUSED,
+        _ => TODO_ACCENT,
+    }
+}
+
 fn bucket_accent(bucket: &str) -> Color {
     match bucket {
-        "02-learning" => Color::Rgb(80, 250, 123),
-        "03-completed" => Color::Rgb(139, 233, 253),
-        "04-abandoned" => Color::Rgb(255, 85, 85),
-        _ => Color::Rgb(189, 147, 249),
+        "02-learning" => LEARNING,
+        "03-completed" => COMPLETED,
+        "04-abandoned" => ABANDONED,
+        _ => TERTIARY,
     }
 }
