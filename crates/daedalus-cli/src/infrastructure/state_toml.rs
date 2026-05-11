@@ -204,6 +204,29 @@ pub fn set_other_active_to_blocked(doc: &mut DocumentMut, stage_id: &str) {
     }
 }
 
+/// 回退到目标阶段：目标阶段设为 active，目标之后的阶段全部重置为 pending。
+pub fn rollback_to_stage(doc: &mut DocumentMut, stage_id: &str) -> Result<()> {
+    let Some(array) = doc["stages"].as_array_of_tables_mut() else {
+        return Err(DaedalusError::InvalidStageId(stage_id.to_owned()));
+    };
+
+    let mut seen_target = false;
+    for stage in array.iter_mut() {
+        if stage["id"].as_str() == Some(stage_id) {
+            stage["status"] = value(StageState::Active.as_str());
+            seen_target = true;
+        } else if seen_target {
+            stage["status"] = value(StageState::Pending.as_str());
+        }
+    }
+
+    if seen_target {
+        Ok(())
+    } else {
+        Err(DaedalusError::InvalidStageId(stage_id.to_owned()))
+    }
+}
+
 /// 关闭任务时将仍处于 active 的阶段标记为 paused，避免 closed task 继续呈现进行中状态。
 pub fn pause_active_stages(doc: &mut DocumentMut) {
     if let Some(array) = doc["stages"].as_array_of_tables_mut() {

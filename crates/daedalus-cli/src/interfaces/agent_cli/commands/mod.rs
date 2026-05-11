@@ -10,7 +10,8 @@ use enum_dispatch::enum_dispatch;
 
 pub use init::{InitCommand, InitKind, InitRepoLearningArgs};
 pub use state::{
-    BlockArgs, CompleteArgs, EnterArgs, RenderArgs, ResumeArgs, StateCommand, StateSubcommand,
+    BlockArgs, CompleteArgs, EnterArgs, RenderArgs, ResumeArgs, RollbackArgs, StateCommand,
+    StateSubcommand,
 };
 pub use task::{TaskAbandonArgs, TaskCommand, TaskCompleteArgs, TaskSubcommand};
 pub use validate::ValidateCommand;

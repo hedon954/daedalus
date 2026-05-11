@@ -4,7 +4,7 @@
 # - task.lifecycle 只能是：active、completed、abandoned。
 # - task.workspace_bucket 只能是：02-learning、03-completed、04-abandoned。
 # - stage.status 只能是：pending、active、blocked、paused、done。
-# - transition.action 只能是：init、enter、complete、block、resume、task-complete、abandon。
+# - transition.action 只能是：init、enter、complete、block、resume、rollback、task-complete、abandon。
 # - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
 # required_artifacts 表示阶段完成证据，应该尽量包含用户确认、亲自实践或手写笔记后的结果。
@@ -16,7 +16,7 @@ created_at = "2026-05-09 15:58:52"
 lifecycle = "active"
 workspace_bucket = "02-learning"
 current_phase = "06-code-reader"
-next_action = "进入 `06-code-reader`：深读 Repo 核心代码，准备产物：notes/code-reading.md。"
+next_action = "已回退到 `06-code-reader`：深读 Repo 核心代码，复核产物：notes/code-reading.md。"
 
 [[stages]]
 id = "01-goal-aligner"
@@ -169,3 +169,10 @@ action = "enter"
 timestamp = "2026-05-10 13:15:09"
 actor = "daedalus-cli"
 reason = "开始围绕上下文管理、压缩机制、工具结果回灌和 rollout 恢复深读核心代码。"
+
+[[transitions]]
+stage = "06-code-reader"
+action = "rollback"
+timestamp = "2026-05-11 23:44:20"
+actor = "daedalus-cli"
+reason = "根据用户要求回到 code-reader 阶段，用生产失败模式驱动的源码阅读规则重新审视 Codex。"

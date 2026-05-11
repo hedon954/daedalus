@@ -42,6 +42,8 @@ pub enum StateSubcommand {
     Block(BlockArgs),
     /// 恢复阶段。
     Resume(ResumeArgs),
+    /// 回退到某个已到达阶段。
+    Rollback(RollbackArgs),
     /// 重新渲染 `state.md`。
     Render(RenderArgs),
 }
@@ -188,6 +190,33 @@ impl CmdExecutor for ResumeArgs {
             self.stage_id,
             StageAction::Resume,
             self.reason,
+        )
+        .await
+    }
+}
+
+/// 回退阶段命令参数。
+#[derive(Debug, Args)]
+pub struct RollbackArgs {
+    /// 回退目标阶段 ID。
+    pub stage_id: String,
+    /// 显式学习任务目录。
+    #[arg(long)]
+    pub task_dir: Option<PathBuf>,
+    /// 回退原因。
+    #[arg(long)]
+    pub reason: String,
+}
+
+impl CmdExecutor for RollbackArgs {
+    async fn execute(self, ctx: AgentCliContext) -> Result<()> {
+        debug!(stage = %self.stage_id, "回退学习阶段");
+        execute_transition(
+            ctx,
+            self.task_dir,
+            self.stage_id,
+            StageAction::Rollback,
+            Some(self.reason),
         )
         .await
     }

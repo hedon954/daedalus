@@ -4,7 +4,7 @@
 # - task.lifecycle 只能是：active、completed、abandoned。
 # - task.workspace_bucket 只能是：02-learning、03-completed、04-abandoned。
 # - stage.status 只能是：pending、active、blocked、paused、done。
-# - transition.action 只能是：init、enter、complete、block、resume、task-complete、abandon。
+# - transition.action 只能是：init、enter、complete、block、resume、rollback、task-complete、abandon。
 # - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
 # required_artifacts 表示阶段完成所需文件。CLI 只校验文件存在；

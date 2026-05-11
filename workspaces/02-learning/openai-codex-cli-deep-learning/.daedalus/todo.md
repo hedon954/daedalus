@@ -8,7 +8,7 @@ Todo 是动态的。学习证据变化、阶段完成、学习路径需要收窄
 
 - [x] 完成 `04-debugger-guide`：用户已执行最小 runbook，`codex-exec` 测试通过。
 - [x] 完成 `05-arch-analyzer`：形成 `notes/codex-agent-loop-architecture.md`，覆盖 agent loop、工具、权限、沙箱和事件回流。
-- [ ] 进行 `06-code-reader`：深读核心代码，当前已完成上下文管理 / compact 机制专题。
+- [ ] 进行 `06-code-reader`：已回退并重定向为工业问题驱动的核心代码阅读，当前需要重读生产失败模式、不变量和 trade-off。
 
 ## 下一步
 
@@ -30,7 +30,7 @@ Todo 是动态的。学习证据变化、阶段完成、学习路径需要收窄
 - [x] 提炼 TUI 交互循环、agent loop、工具分发、权限审批和沙箱执行，重写为单一最终结论 notes。
 - [x] 使用 Excalidraw 重绘 Codex 核心交互循环与 Tool System 图，并嵌入最终结论 notes。
 - [x] 梳理上下文管理、history、prompt 构建、工具结果回灌、rollout 恢复与 compact 机制。
-- [ ] 继续深读一个核心专题：建议在 `auth/approval/sandbox` 和 `mini demo 设计前的不变量清单` 中二选一。
+- [ ] 继续深读 `auth/approval/sandbox`：先从本地执行会造成的生产事故出发，再验证 Codex 的审批、沙箱、重试和禁止策略。
 
 ## 阻塞
 
@@ -62,5 +62,6 @@ Todo 是动态的。学习证据变化、阶段完成、学习路径需要收窄
 - 2026-05-09：新增 `notes/codex-context-and-compaction.md`，基于源码梳理 `ContextManager`、`SessionState.history`、`for_prompt`、工具结果 `ResponseInputItem` 回灌、pre/mid-turn auto compact、manual compact、`replacement_history` 和 rollout replay。
 - 2026-05-10：使用 daedalus CLI 将任务状态推进到 `06-code-reader` active；`04-debugger-guide` 已完成，`05-arch-analyzer` 以 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
 - 2026-05-10：整理 `notes/codex-context-and-compaction.md`，明确三层上下文模型、ReAct 因果链、prompt view/runtime history 分离、compact checkpoint 和 tool future 顺序保证。
+- 2026-05-11：实现并使用 `daedalus state rollback` 回退到 `06-code-reader`；后续 code-reader 必须按生产问题、naive 失败、源码应对、不变量、trade-off 和可迁移模式推进。
 
 ## 已取消

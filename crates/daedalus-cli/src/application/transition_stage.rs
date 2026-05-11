@@ -25,6 +25,8 @@ pub enum StageAction {
     Block,
     /// 恢复 blocked 或 paused 阶段。
     Resume,
+    /// 回退到某个已到达阶段，并将其后的阶段重置为 pending。
+    Rollback,
 }
 
 impl StageAction {
@@ -34,6 +36,7 @@ impl StageAction {
             Self::Complete { .. } => StageTransitionKind::Complete,
             Self::Block => StageTransitionKind::Block,
             Self::Resume => StageTransitionKind::Resume,
+            Self::Rollback => StageTransitionKind::Rollback,
         }
     }
 
@@ -121,6 +124,11 @@ fn commit_stage_transition(options: TransitionStageOptions) -> Result<Transition
             state_toml::set_other_active_to_blocked(&mut doc, &options.stage_id);
             state_toml::set_current_phase(&mut doc, &options.stage_id);
         }
+        StageAction::Rollback => {
+            state_toml::rollback_to_stage(&mut doc, &options.stage_id)?;
+            state_toml::set_current_phase(&mut doc, &options.stage_id);
+            update_next_action_after_rollback(&mut doc, &options.stage_id);
+        }
     }
     state_toml::set_stage_state(&mut doc, &options.stage_id, target_state(kind))?;
 
@@ -173,7 +181,7 @@ fn validate_stage_transition(
                 options.reason.as_deref(),
             )?;
         }
-        StageAction::Block | StageAction::Resume => {
+        StageAction::Block | StageAction::Resume | StageAction::Rollback => {
             require_specific_reason(options.reason.as_deref())?;
         }
     }
@@ -207,6 +215,7 @@ fn target_state(kind: StageTransitionKind) -> StageState {
         StageTransitionKind::Enter | StageTransitionKind::Resume => StageState::Active,
         StageTransitionKind::Complete => StageState::Done,
         StageTransitionKind::Block => StageState::Blocked,
+        StageTransitionKind::Rollback => StageState::Active,
     }
 }
 
@@ -255,6 +264,23 @@ fn update_next_action_after_complete(
             format!("进入 `{}`：{}，{}。", stage.id, stage.title, artifacts)
         })
         .unwrap_or_else(|| "所有阶段已完成；复核归档产物并关闭学习任务。".to_owned());
+    state_toml::set_next_action(doc, &next_action);
+}
+
+fn update_next_action_after_rollback(doc: &mut toml_edit::DocumentMut, stage_id: &str) {
+    let stage = state_toml::stages(doc)
+        .into_iter()
+        .find(|stage| stage.id == stage_id);
+    let next_action = stage
+        .map(|stage| {
+            let artifacts = if stage.required_artifacts.is_empty() {
+                "复核该阶段学习状态和后续阅读计划".to_owned()
+            } else {
+                format!("复核产物：{}", stage.required_artifacts.join("、"))
+            };
+            format!("已回退到 `{}`：{}，{}。", stage.id, stage.title, artifacts)
+        })
+        .unwrap_or_else(|| format!("已回退到 `{stage_id}`；复核学习状态和后续计划。"));
     state_toml::set_next_action(doc, &next_action);
 }
 

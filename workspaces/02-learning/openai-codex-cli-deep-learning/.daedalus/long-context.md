@@ -19,6 +19,7 @@
 - 架构总览不再拆散成多篇阶段性 notes；最终架构笔记集中在 `notes/codex-agent-loop-architecture.md`。
 - 复杂全局图优先使用 Excalidraw，局部调用链和控制流使用 Typora 兼容 Mermaid。
 - `notes/codex-context-and-compaction.md` 是 `06-code-reader` 的第一个核心专题笔记，保留用户原始回答、Agent 校准、源码验证路径和验证状态。
+- 2026-05-11 回退到 `06-code-reader`：后续源码阅读必须按“生产问题 -> naive 失败 -> 源码应对 -> 保护的不变量 -> trade-off -> 可迁移模式”推进。
 
 ## 已验证结论
 
@@ -33,13 +34,13 @@
 ## 未解决问题
 
 - 交互式 TUI 断点方案尚待用户在 Cursor 中打开 `source/codex/codex-rs` 后验证。
-- `06-code-reader` 还需要决定下一专题：继续深读 `auth/approval/sandbox`，或开始把已读内容收敛为 mini demo 不变量清单。
+- `06-code-reader` 需要重读核心专题：优先从工业级 Agent CLI 的真实失败模式切入，例如 `auth/approval/sandbox` 如何防止本地执行事故。
 - 尚未进入 `07-demo-architecture`、`08-demo-coder`、`09-biz-solver` 和 `10-archivist`。
 
 ## 恢复上下文提示
 
-- 当前机器状态：`06-code-reader` active。`04-debugger-guide` 已完成；`05-arch-analyzer` 已用 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
+- 当前机器状态：`06-code-reader` active，最近一次状态流转是 `rollback`。`04-debugger-guide` 已完成；`05-arch-analyzer` 已用 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
 - 当前最重要的两份 notes：
   - `notes/codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
   - `notes/codex-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
-- 下一步建议：先让用户选择继续读 `auth/approval/sandbox` 细节，还是进入 mini demo 设计前的不变量提炼。
+- 下一步建议：以 `auth/approval/sandbox` 为专题，先让用户回答本地执行在生产环境会造成哪些事故，再读 Codex 的审批、沙箱、重试和禁止策略。

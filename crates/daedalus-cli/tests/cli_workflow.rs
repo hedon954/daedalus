@@ -332,6 +332,144 @@ fn resume_blocked_stage_keeps_single_active_stage() {
 }
 
 #[test]
+fn rollback_reopens_target_stage_and_resets_later_stages() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["init", "repo-learning", "rollback-stage"])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/02-learning/rollback-stage");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "complete",
+            "01-goal-aligner",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Goal alignment is documented.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "enter",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Start repo scout.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "complete",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--force",
+            "--reason",
+            "Repo selection evidence exists outside the required artifact.",
+            "--approval-source",
+            "artifact-equivalent",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "enter",
+            "03-socratic-coach",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Start question roadmap.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "rollback",
+            "02-repo-scout",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Revisit repo selection assumptions before continuing.",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: rollback"))
+        .stdout(predicates::str::contains("stage: 02-repo-scout"));
+
+    let state = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state");
+    assert_eq!(state.matches("status = \"active\"").count(), 1);
+    assert!(state.contains("current_phase = \"02-repo-scout\""));
+    assert!(
+        state.contains(
+            "id = \"01-goal-aligner\"\ntitle = \"对齐 Repo 学习目标\"\nstatus = \"done\""
+        )
+    );
+    assert!(
+        state.contains("id = \"02-repo-scout\"\ntitle = \"选择学习仓库\"\nstatus = \"active\"")
+    );
+    assert!(state.contains(
+        "id = \"03-socratic-coach\"\ntitle = \"提出 Repo 递进问题\"\nstatus = \"pending\""
+    ));
+    assert!(state.contains("action = \"rollback\""));
+    assert!(state.contains("next_action = \"已回退到 `02-repo-scout`"));
+
+    let state_md = fs::read_to_string(task_dir.join(".daedalus/state.md")).expect("state.md");
+    assert!(state_md.contains("当前阶段：`02-repo-scout`"));
+    assert!(state_md.contains("状态：`active`"));
+    assert!(state_md.contains("执行 `rollback`"));
+}
+
+#[test]
+fn rollback_rejects_unreached_pending_stage() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["init", "repo-learning", "rollback-pending"])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/02-learning/rollback-pending");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "rollback",
+            "03-socratic-coach",
+            "--task-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Try to rollback to a stage that has not been reached.",
+        ])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("invalid stage state transition"));
+}
+
+#[test]
 fn complete_updates_next_action_to_next_stage() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")

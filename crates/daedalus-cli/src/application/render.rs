@@ -81,7 +81,7 @@ pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Strin
     );
     output
         .push_str("- `stage.status` 只能是：`pending`、`active`、`blocked`、`paused`、`done`。\n");
-    output.push_str("- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`task-complete`、`abandon`。\n");
+    output.push_str("- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`rollback`、`task-complete`、`abandon`。\n");
     output.push_str("- `transition.approval_source` 只能是：`user-confirmed`、`artifact-equivalent`、`stage-not-applicable`。\n");
     output.push_str("- Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。\n\n");
 
