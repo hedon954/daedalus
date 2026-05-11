@@ -21,6 +21,8 @@
 | [`source/codex/codex-rs/.vscode/launch.json`](../source/codex/codex-rs/.vscode/launch.json) | 04-debugger-guide | Cursor/CodeLLDB 调试交互式 Codex TUI 与 exec 路径 | 草稿 |
 | [`notes/architecture.md`](../notes/architecture.md) | 05-arch-analyzer | 架构阶段标准入口，指向最终架构分析笔记 | 已验证 |
 | [`notes/codex-agent-loop-architecture.md`](../notes/codex-agent-loop-architecture.md) | 05-arch-analyzer | Codex 交互循环、core agent loop、工具分发、权限审批、沙箱执行和关键 struct 分层最终结论；作为 `notes/architecture.md` 的等价架构产物 | 已验证 |
+| [`guides/06-code-reader-guide.md`](../guides/06-code-reader-guide.md) | 06-code-reader | auth/approval/sandbox 专题的工业问题驱动阅读问题、回答格式和源码验证路径 | 草稿 |
+| [`notes/code-reading.md`](../notes/code-reading.md) | 06-code-reader | 核心代码阅读标准入口，按生产问题、naive 失败、源码应对、不变量和 trade-off 记录专题阅读 | 草稿 |
 | [`notes/codex-context-and-compaction.md`](../notes/codex-context-and-compaction.md) | 06-code-reader | Codex 上下文管理、history、rollout、prompt 构建、工具结果回灌和 compact 机制 | 已验证 |
 | [`notes/diagrams/codex-core-agent-loop-flow.excalidraw`](../notes/diagrams/codex-core-agent-loop-flow.excalidraw) | 04-debugger-guide | Codex 核心 Agent loop 标准流程图 | 草稿 |
 | [`notes/diagrams/codex-architecture-layers.excalidraw`](../notes/diagrams/codex-architecture-layers.excalidraw) | 04-debugger-guide | Codex 架构分层可编辑图 | 草稿 |

@@ -35,7 +35,6 @@
 
 ## 缺失产物
 
-- [`notes/code-reading.md`](../notes/code-reading.md) 属于 `06-code-reader`
 - [`demo/design.md`](../demo/design.md) 属于 `07-demo-architecture`
 - [`demo/README.md`](../demo/README.md) 属于 `08-demo-coder`
 - [`notes/business-application.md`](../notes/business-application.md) 属于 `09-biz-solver`
