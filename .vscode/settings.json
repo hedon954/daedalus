@@ -1,0 +1,6 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "crates/Cargo.toml",
+        "workspaces/02-learning/openai-codex-cli-deep-learning/demo/Cargo.toml"
+    ]
+}

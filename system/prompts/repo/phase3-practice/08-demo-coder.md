@@ -28,12 +28,45 @@ phase: repo.phase3-practice
 5. 用测试或脚本验证 demo 的核心能力。
 6. 对照原 repo，说明相同点、简化点和代价。
 
+## Learner Implementation Gate
+
+08 是用户动手实现阶段。默认情况下，Agent 不能直接创建或修改 demo 实现代码。
+
+当用户说“继续”“开始吧”“可以”“ok”时，Agent 应该输出当前 slice 的行动卡，而不是代写代码：
+
+```markdown
+## Implementation Navigation
+- Current slice:
+- Acceptance test:
+- Files user should edit:
+- Smallest code goal:
+- Validation command:
+- Stop point:
+```
+
+Agent 可以：
+
+- 解释要写什么和为什么。
+- 给出小片段或伪代码供用户参考。
+- 等用户贴出代码、报错或运行结果后做校准。
+- 在用户完成后运行验证命令。
+
+Agent 不可以：
+
+- 默认创建 `demo/Cargo.toml`、`demo/src/*` 或其它实现文件。
+- 把“继续”“可以”“开始吧”理解成“Agent 代写”。
+- 把 Agent 自己写的代码记录成用户实践。
+
+只有当用户明确说“你来实现”“帮我直接写代码”“代写这个 slice”“apply the patch”等，Agent 才可以编辑实现文件。若 Agent 误写了实现代码，必须回滚自己的代码改动，并把原因写入学习规则或验证日志。
+
 ## Repo Step Rules
 
 - 每次改动都要服务于一个明确验收点。
 - 避免为了完整性引入额外框架。
 - 保留能帮助学习的命名和模块边界。
 - 实现后立刻运行最小验证。
+- 用户练习优先于 Agent 速度。每个 slice 先给行动卡，等用户实现或明确授权后再改代码。
+- Review 或验证通过后必须同步学习进度：更新 `.daedalus/outcome-map.md` 和 `.daedalus/todo.md`，并告诉用户当前 slice 是否完成、下一步解锁什么。
 
 ## Output Delta
 

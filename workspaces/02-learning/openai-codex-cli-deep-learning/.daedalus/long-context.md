@@ -20,6 +20,13 @@
 - 复杂全局图优先使用 Excalidraw，局部调用链和控制流使用 Typora 兼容 Mermaid。
 - `notes/codex-context-and-compaction.md` 是 `06-code-reader` 的第一个核心专题笔记，保留用户原始回答、Agent 校准、源码验证路径和验证状态。
 - 2026-05-11 回退到 `06-code-reader`：后续源码阅读必须按“生产问题 -> naive 失败 -> 源码应对 -> 保护的不变量 -> trade-off -> 可迁移模式”推进。
+- 2026-05-16 重构 repo learning 协议：后续学习以 `.daedalus/outcome-map.md` 为终点地图，`06-code-reader` 只补阻塞 `demo/design.md` 的源码缺口；当前 auth/approval/sandbox 只保留 Decision 合成、Runtime request assembly、Orchestrator retry 三个缺口。
+- 2026-05-16 增量迁移 active 阶段为文件夹入口：`guides/06-code-reader/README.md` 与 `notes/06-code-reader/README.md` 是后续 code-reader 导航入口；旧 `guides/06-code-reader-guide.md` 和 `notes/code-reading.md` 保留为 legacy 产物。
+- 2026-05-16 `06-code-reader` 的 auth/approval/sandbox 三个 demo 缺口已补齐：Decision 合成、Runtime request assembly、Orchestrator retry。下一步进入 `07-demo-architecture`，定稿 `demo/design.md`。
+- 2026-05-16 `07-demo-architecture` 已将 demo 收敛为两阶段方案：Phase 1 使用 `SimulatedSandboxRunner` 跑通安全执行闭环，Phase 2 在同一接口下接入 `OsSandboxRunner`；已制定 AT-01 到 AT-14 验收测试和 `guides/08-demo-coder/README.md` 编码子地图。
+- 2026-05-16 沉淀设计学习方法：`notes/design-method-from-source-to-demo.md`，总结从 Reality Problem 到 Build Slices 的源码学习转可迁移设计流程。
+- 2026-05-16 用户确认继续后，状态推进到 `08-demo-coder`。随后 Agent 曾错误地代写 Slice 0/1 demo 代码，用户指出 08 应该一步步带用户实现；已回滚代写代码，并需要补强 repo-learning 指令中的实现练习门禁。
+- 2026-05-16 用户亲手完成 `08-demo-coder` Slice 0：创建 `demo/Cargo.toml`、`demo/src/lib.rs`、`demo/src/main.rs`、`demo/Makefile` 和 `Cargo.lock`；Agent 验证 `cargo test` 通过 1 个占位测试，`cargo run` 输出 `Hello, world!`。
 
 ## 已验证结论
 
@@ -35,12 +42,14 @@
 
 - 交互式 TUI 断点方案尚待用户在 Cursor 中打开 `source/codex/codex-rs` 后验证。
 - `06-code-reader` 需要重读核心专题：优先从工业级 Agent CLI 的真实失败模式切入，例如 `auth/approval/sandbox` 如何防止本地执行事故。
-- 尚未进入 `07-demo-architecture`、`08-demo-coder`、`09-biz-solver` 和 `10-archivist`。
+- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已启动，Slice 0、Slice 1 和 Slice 2 已由用户实践完成，下一步是带用户完成 Slice 3 Approval Decision。
+- 尚未进入 `08-demo-coder`、`09-biz-solver` 和 `10-archivist`。
 
 ## 恢复上下文提示
 
-- 当前机器状态：`06-code-reader` active，最近一次状态流转是 `rollback`。`04-debugger-guide` 已完成；`05-arch-analyzer` 已用 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
+- 当前机器状态：`08-demo-coder` active。`04-debugger-guide`、`05-arch-analyzer`、`06-code-reader`、`07-demo-architecture` 已完成；`05-arch-analyzer` 已用 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
 - 当前最重要的两份 notes：
   - `notes/codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
   - `notes/codex-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
-- 下一步建议：以 `auth/approval/sandbox` 为专题，先让用户回答本地执行在生产环境会造成哪些事故，再读 Codex 的审批、沙箱、重试和禁止策略。
+- 当前阶段入口：`notes/06-code-reader/README.md`；后续新专题写入 `notes/06-code-reader/`，Agent-only 阅读地图写入 `guides/06-code-reader/`。
+- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；下一步是用户亲手完成 Slice 3 Approval Decision。

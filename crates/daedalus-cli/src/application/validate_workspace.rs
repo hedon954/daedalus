@@ -29,6 +29,7 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
     let required = [
         "CLAUDE.md",
         ".daedalus/task-card.md",
+        ".daedalus/outcome-map.md",
         ".daedalus/state.toml",
         ".daedalus/state.md",
         ".daedalus/todo.md",

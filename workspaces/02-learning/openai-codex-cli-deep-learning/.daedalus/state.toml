@@ -15,8 +15,8 @@ kind = "repo-learning"
 created_at = "2026-05-09 15:58:52"
 lifecycle = "active"
 workspace_bucket = "02-learning"
-current_phase = "06-code-reader"
-next_action = "已回退到 `06-code-reader`：深读 Repo 核心代码，复核产物：notes/code-reading.md。"
+current_phase = "08-demo-coder"
+next_action = "进入 `08-demo-coder`：实现 Repo Mini Demo，准备产物：demo/README.md。"
 
 [[stages]]
 id = "01-goal-aligner"
@@ -51,26 +51,26 @@ required_artifacts = ["notes/architecture.md"]
 [[stages]]
 id = "06-code-reader"
 title = "深读 Repo 核心代码"
-status = "active"
-required_artifacts = ["notes/code-reading.md"]
+status = "done"
+required_artifacts = ["notes/06-code-reader/README.md"]
 
 [[stages]]
 id = "07-demo-architecture"
 title = "设计 Repo Mini Demo"
-status = "pending"
+status = "done"
 required_artifacts = ["demo/design.md"]
 
 [[stages]]
 id = "08-demo-coder"
 title = "实现 Repo Mini Demo"
-status = "pending"
+status = "active"
 required_artifacts = ["demo/README.md"]
 
 [[stages]]
 id = "09-biz-solver"
 title = "将 Repo 学习迁移到业务问题"
 status = "pending"
-required_artifacts = ["notes/business-application.md"]
+required_artifacts = ["notes/09-biz-solver/README.md"]
 
 [[stages]]
 id = "10-archivist"
@@ -176,3 +176,31 @@ action = "rollback"
 timestamp = "2026-05-11 23:44:20"
 actor = "daedalus-cli"
 reason = "根据用户要求回到 code-reader 阶段，用生产失败模式驱动的源码阅读规则重新审视 Codex。"
+
+[[transitions]]
+stage = "06-code-reader"
+action = "complete"
+timestamp = "2026-05-16 19:25:45"
+actor = "daedalus-cli"
+reason = "Decision 合成、Runtime request assembly、Orchestrator retry 三个 demo 缺口已由用户复述并经源码核对，足以进入 demo architecture。"
+
+[[transitions]]
+stage = "07-demo-architecture"
+action = "enter"
+timestamp = "2026-05-16 19:25:50"
+actor = "daedalus-cli"
+reason = "进入 demo 架构定稿：将 CommandRequest、ApprovalRequirement、SandboxRetryState 和验收用例从源码笔记收敛为 mini demo 设计。"
+
+[[transitions]]
+stage = "07-demo-architecture"
+action = "complete"
+timestamp = "2026-05-16 21:49:10"
+actor = "daedalus-cli"
+reason = "用户确认继续；demo/design.md 已完成 Phase 1/Phase 2 蓝图、事件协议、主状态机、AT-01 到 AT-14 验收测试和 08 子地图。"
+
+[[transitions]]
+stage = "08-demo-coder"
+action = "enter"
+timestamp = "2026-05-16 21:49:16"
+actor = "daedalus-cli"
+reason = "开始 08-demo-coder：按 guides/08-demo-coder/README.md 的 slice 地图实现 Phase 1 mini demo。"

@@ -35,7 +35,7 @@ phase: repo.phase1-exploration
 4. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
 5. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
 6. 如果目标无法导向 repo 选择或 mini demo，先要求用户收窄。
-7. 生成给用户的目标澄清指南时，写入 `guides/01-goal-alignment-guide.md`；用户确认后的任务目标和验收标准写入 `.daedalus/task-card.md`。
+7. 生成给用户的目标澄清指南时，写入 `guides/01-goal-aligner/README.md`；用户确认后的任务目标和验收标准写入 `.daedalus/task-card.md`。
 
 ## Output Delta
 

@@ -83,10 +83,13 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(task_dir.join("source/.gitignore").exists());
     assert!(task_dir.join("source/pull_source.sh").exists());
     assert!(task_dir.join(".daedalus/state.toml").exists());
+    assert!(task_dir.join(".daedalus/outcome-map.md").exists());
     assert!(task_dir.join(".daedalus/validation-log.md").exists());
     let claude = fs::read_to_string(task_dir.join("CLAUDE.md")).expect("CLAUDE.md");
     assert!(claude.contains("@.daedalus/state.md"));
+    assert!(claude.contains("@.daedalus/outcome-map.md"));
     assert!(claude.contains("[`.daedalus/state.toml`](.daedalus/state.toml)"));
+    assert!(claude.contains("[`.daedalus/outcome-map.md`](.daedalus/outcome-map.md)"));
     assert!(claude.contains("`guides/` 用于保存 Agent 生成的行动指南"));
     assert!(claude.contains("`daedalus validate` 只校验 workspace 结构"));
     let state_md = fs::read_to_string(task_dir.join(".daedalus/state.md")).expect("state.md");
@@ -97,9 +100,7 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(state_md.contains("Workspace Bucket：`02-learning`"));
     assert!(state_md.contains("完整历史见 [`.daedalus/state.toml`](state.toml)"));
     assert!(
-        state_md.contains(
-            "[`guides/02-repo-selection-guide.md`](../guides/02-repo-selection-guide.md)"
-        )
+        state_md.contains("[`guides/02-repo-scout/README.md`](../guides/02-repo-scout/README.md)")
     );
     assert!(state_md.contains("`stage.status` 只能是"));
     assert!(state_md.contains("`transition.approval_source` 只能是"));
@@ -114,15 +115,20 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
         fs::read_to_string(task_dir.join(".daedalus/task-card.md")).expect("task-card.md");
     assert!(task_card.contains("# 学习任务卡"));
     assert!(task_card.contains("## 角色边界"));
+    let outcome_map =
+        fs::read_to_string(task_dir.join(".daedalus/outcome-map.md")).expect("outcome-map.md");
+    assert!(outcome_map.contains("# Outcome Map"));
+    assert!(outcome_map.contains("## North Star"));
+    assert!(outcome_map.contains("## Stop Rules"));
     let artifact_index =
         fs::read_to_string(task_dir.join(".daedalus/artifact-index.md")).expect("artifact-index");
     assert!(artifact_index.contains("> `状态` 列只能使用"));
     assert!(artifact_index.contains("[`.daedalus/task-card.md`](task-card.md)"));
+    assert!(artifact_index.contains("[`.daedalus/outcome-map.md`](outcome-map.md)"));
     assert!(artifact_index.contains("[`guides/`](../guides)"));
     assert!(
-        artifact_index.contains(
-            "[`guides/02-repo-selection-guide.md`](../guides/02-repo-selection-guide.md)"
-        )
+        artifact_index
+            .contains("[`guides/02-repo-scout/README.md`](../guides/02-repo-scout/README.md)")
     );
     assert!(artifact_index.contains("`草稿`"));
     assert!(artifact_index.contains("`不适用`"));

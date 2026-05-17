@@ -1,0 +1,85 @@
+use std::path::PathBuf;
+
+/// 工具权限批准策略
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ApprovalPolicy {
+    /// 永远不要问用户。
+    /// 如果命令需要审批，或者 sandbox 失败后想提权重试，系统都不能弹审批。
+    /// 适合自动化、CI、无交互环境。
+    Never,
+    /// 先在沙箱里跑；如果因为权限/sandbox 失败，再问用户能不能提权重试。
+    OnFailure,
+    /// 只有调用方明确请求提权时，才允许问用户。
+    /// 模型/工具调用明确带了 require_escalated / justification 之类的请求时，才走审批。
+    OnRequest,
+}
+
+/// 工具权限批准情况
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ApprovalRequirement {
+    /// 跳过审批
+    Skip {
+        /// 是否绕过沙箱
+        bypass_sandbox: bool,
+        /// 原因
+        reason: String,
+    },
+    /// 需要审批
+    NeedsApproval {
+        /// 原因
+        reason: String,
+        /// 审批范围
+        approval_scope: ApprovalScope,
+    },
+    /// 禁止执行
+    Forbidden {
+        /// 原因
+        reason: String,
+    },
+}
+
+/// 审批范围
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ApprovalScope {
+    /// 命令前缀
+    pub command_prefix: Vec<String>,
+    /// 当前工作目录
+    pub cwd: PathBuf,
+    /// 沙箱策略
+    pub sandbox_profile: SandboxProfile,
+    /// 网络策略
+    pub network_policy: NetworkPolicy,
+    /// 持久化策略
+    pub persistence: ApprovalPersistence,
+}
+
+/// 沙箱策略
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum SandboxProfile {
+    /// 只读
+    ReadOnly,
+    /// 工作区写入
+    WorkspaceWrite,
+    /// 无沙箱
+    NoSandbox,
+}
+
+/// 网络策略
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum NetworkPolicy {
+    /// 不允许
+    Deny,
+    /// 提示用户
+    Prompt,
+    /// 允许
+    Allow,
+}
+
+/// 权限持久化策略
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum ApprovalPersistence {
+    /// 只允许一次
+    Once,
+    /// 会话内有效
+    Session,
+}

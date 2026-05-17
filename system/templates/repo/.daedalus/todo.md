@@ -1,35 +1,37 @@
-# Todo
+# Todo Path Board
 
-Todo 是动态的。学习证据变化、阶段完成、学习路径需要收窄或扩展时，都要及时调整它。
+Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需要收窄或扩展时，都要同步更新它和 [`outcome-map.md`](outcome-map.md)。
 
 > Agent 负责拆解、指导、排障和验收；用户负责关键实践、观察和手写笔记。不要把 Agent 自动完成的事项伪装成用户已经掌握。
 
-## 当前
+## North Star
 
-- [ ] 澄清当前学习目标。
-- [ ] 填写 [`task-card.md`](task-card.md)。
-- [ ] 让用户确认学习边界与验收标准。
-- [ ] 确认验收标准。
+- 最终产物：
+- 最小 demo：
+- 业务迁移目标：
 
-## 下一步
+## Current Path
 
-- [ ] 选择候选 repo。
-- [ ] 创建问题路线图。
-- [ ] 为当前阶段创建或更新 [`guides/`](../guides) 中的行动指南。
-- [ ] 在 [`validation-log.md`](validation-log.md) 中记录 daedalus 的引导效果。
+当前正在从 `01-goal-aligner` 走向 `.daedalus/task-card.md` 和 `.daedalus/outcome-map.md`。
 
-## 阻塞
+## Now
 
-- 暂无。
+- 当前问题：澄清当前学习目标、学习边界和验收标准。
+- 为什么现在做它：没有 North Star，后续 repo 选择、问题路线图、源码阅读和 demo 都会失去取舍标准。
+- 完成后解锁：进入候选 repo 选择，并能判断哪些材料不值得读。
 
-## 后续
+## Gaps Blocking Next Stage
 
-- [ ] 运行/调试核心链路。
-- [ ] 分析架构并阅读核心代码。
-- [ ] 设计并实现 mini demo。
-- [ ] 将学习结果迁移到业务问题。
-- [ ] 归档已验证知识。
+- [ ] 学习目标：阻塞 `.daedalus/task-card.md` 的当前目标和验收标准。
+- [ ] 最小 demo：阻塞 `.daedalus/outcome-map.md` 的 North Star。
+- [ ] 业务迁移目标：阻塞后续 `notes/business-application.md` 的评价标准。
 
-## 已完成
+## Stage Exit Criteria
 
-## 已取消
+- [ ] 可以解释本任务为什么值得学习一个真实 repo。
+- [ ] 可以说清最终产物和最小 demo。
+- [ ] 可以用验收标准判断是否进入 `02-repo-scout`。
+
+## Done
+
+## Canceled

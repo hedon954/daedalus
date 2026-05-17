@@ -7,8 +7,13 @@
 | 产物 | 阶段 | 目的 | 状态 |
 | --- | --- | --- | --- |
 | [`.daedalus/task-card.md`](task-card.md) | 01-goal-aligner | 学习目标与验收标准 | 草稿 |
+| [`.daedalus/outcome-map.md`](outcome-map.md) | all | 全程导航：最终产物、当前位置、缺口、依赖和停止规则 | 草稿 |
 | [`.daedalus/validation-log.md`](validation-log.md) | all | 记录 daedalus 教学引导效果与改进点 | 草稿 |
 | [`guides/`](../guides) | all | Agent 生成的行动指南与验收清单 | 草稿 |
 | [`notes/`](../notes) | all | 用户亲自实践后的学习笔记 | 草稿 |
-| [`guides/02-repo-selection-guide.md`](../guides/02-repo-selection-guide.md) | 02-repo-scout | Agent 生成的候选仓库比较、风险提示和源码准备建议 | 草稿 |
-| [`notes/question-roadmap.md`](../notes/question-roadmap.md) | 03-socratic-coach | 用户围绕本轮问题形成的回答和阅读假设 | 草稿 |
+| [`guides/02-repo-scout/README.md`](../guides/02-repo-scout/README.md) | 02-repo-scout | 候选仓库比较、风险提示和源码准备建议的阶段入口 | 草稿 |
+| [`notes/03-socratic-coach/README.md`](../notes/03-socratic-coach/README.md) | 03-socratic-coach | 用户问题路线图、回答和阅读假设的阶段入口 | 草稿 |
+| [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 04-debugger-guide | 本地运行、调试和用户观察证据的阶段入口 | 草稿 |
+| [`notes/05-arch-analyzer/README.md`](../notes/05-arch-analyzer/README.md) | 05-arch-analyzer | 架构分析、不变量和 trade-off 的阶段入口 | 草稿 |
+| [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 06-code-reader | 核心源码阅读专题索引与已验证结论入口 | 草稿 |
+| [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 09-biz-solver | 业务迁移方案阶段入口 | 草稿 |

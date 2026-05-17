@@ -20,26 +20,29 @@ scope: common
 
 - 当前 active workspace。
 - 学习任务卡。
+- Outcome map。
 - 长期上下文。
 - Todo 状态。
 - 最近产物和未解决问题。
 
 ## Workflow
 
-1. 读取当前 workspace 中的学习任务卡、长期上下文、todo 和最近产物。
+1. 读取当前 workspace 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
 2. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
-3. 用 5-8 行摘要告诉用户：我们在学什么、已经完成什么、下一步是什么。
-4. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
+3. 用路径坐标告诉用户：最终产物是什么、当前在哪个阶段、正在补哪个缺口、为什么这个缺口重要、哪些细节本轮停止阅读、完成后解锁什么。
+4. 如果用户只是说“继续学习”，恢复后优先提出下一轮 coaching question；不要直接进入 Agent-led 源码验证。
+5. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
 
 ## Output
 
 ```markdown
-## 恢复状态
-- 当前学习目标：
-- 当前阶段：
-- 已完成：
-- 下一步：
-- 需要用户确认：
+## 你现在在哪里
+- Final artifact:
+- Current stage:
+- Current gap:
+- Why this gap matters:
+- What we will stop reading:
+- What becomes possible after this:
 ```
 
 ## Constraints
@@ -47,3 +50,4 @@ scope: common
 - 恢复后优先推进一个最小行动。
 - 不要重新展开完整规划，除非上下文已经不可恢复。
 - 明确区分“已验证结论”和“待验证假设”。
+- 不要把 `todo.md` 中的 next action 当作自动执行许可；先定位路径，再按 coaching gate 问用户。

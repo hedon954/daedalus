@@ -52,3 +52,39 @@
 - Agent 代替用户过多的地方：进入上下文管理专题时，Agent 曾先直接生成总结，违背“先现实约束、再问题、再源码验证”的教练原则；已把“问题 -> 用户回答 -> Agent 校准 -> 验证路径 -> 验证状态”写入公共 prompt 和 repo-learning skill。
 - Prompt/template/CLI/docs 改进建议：阶段产物命名与 state 模板不完全一致，例如架构产物实际为 `notes/codex-agent-loop-architecture.md`，而 state 模板期望 `notes/architecture.md`；后续可考虑允许 artifact-index 中声明等价产物。
 - 是否足以进入下一步：当前足以保持在 `06-code-reader`，继续选择一个专题深读，或开始提炼 mini demo 不变量。
+
+## 2026-05-16
+
+- 阶段：`06-code-reader`
+- 有效引导：用户指出当前学习缺少“以终为始”的路径感，容易陷入无穷源码细节；本次将 repo learning 协议重构为 outcome-map 驱动，并为当前任务新增 `outcome-map.md` 与 `demo/design.md` 草案。
+- 用户亲自完成的实践：用户明确提出最终产物、当前位置、障碍和解锁关系必须持续可见，并给出一套可执行的重构方案。
+- Agent 代替用户过多的地方：此前 Agent 容易把“下一步源码点”当成学习目标本身，而没有持续说明它服务哪个最终产物。
+- Prompt/template/CLI/docs 改进建议：`repo-learning-coach`、`06-code-reader`、`07-demo-architecture`、`resume.md`、`todo.md` 模板和 workspace 校验都应围绕 outcome map 工作。
+- 是否足以进入下一步：足以继续留在 `06-code-reader`，但只能补 `outcome-map.md` 中列出的 3 个 demo 缺口；补完后必须进入 `07-demo-architecture`。
+
+## 2026-05-16 目录化复盘
+
+- 阶段：`06-code-reader`
+- 有效引导：用户指出 `guides/` 和 `notes/` 不应每阶段挤在一个 markdown 文件中；本次将 active 阶段增量迁移为 `guides/06-code-reader/README.md` 与 `notes/06-code-reader/README.md`。
+- 用户亲自完成的实践：用户提出阶段内部也需要可导航的信息架构，避免单文件越来越长。
+- Agent 代替用户过多的地方：历史上 Agent 容易把多个专题堆入 `notes/code-reading.md`，降低恢复和定位质量。
+- Prompt/template/CLI/docs 改进建议：后续新任务应使用 `guides/<stage-id>/README.md` 和 `notes/<stage-id>/README.md` 作为阶段入口，专题拆到同目录文件。
+- 是否足以进入下一步：足以继续 Runtime request assembly；后续新内容应写入 `guides/06-code-reader/` 和 `notes/06-code-reader/`。
+
+## 2026-05-16 Orchestrator retry 复盘
+
+- 阶段：`06-code-reader`
+- 有效引导：用户先复述 sandbox denied 后的 retry 分支，Agent 再按源码校准 `AskForApproval::Never` 和 `already_approved` 的含义，避免把运行时 retry 逻辑简化成“失败后问不问用户”。
+- 用户亲自完成的实践：用户定位到 `ToolOrchestrator::run` 的 sandbox denied 分支，概括出 network approval context、approval policy gate、retry reason、approval 后 second attempt 四个关键步骤。
+- Agent 代替用户过多的地方：本轮没有先给结论；Agent 只做源码核对和边界校准。
+- Prompt/template/CLI/docs 改进建议：`06-code-reader` 的 outcome gate 有效，三个缺口补齐后应主动进入 `07-demo-architecture`，不能继续开放式阅读权限系统。
+- 是否足以进入下一步：足以进入 `07-demo-architecture`，定稿 `demo/design.md`。
+
+## 2026-05-16 08 实现阶段越界复盘
+
+- 阶段：`08-demo-coder`
+- 有效引导：`07-demo-architecture` 已形成清晰的 Phase 1/Phase 2 蓝图和 08 子地图，用户确认可以继续进入实现阶段。
+- 用户亲自完成的实践：用户指出 Agent 不应在 08 阶段直接代写代码，而应该一步步带用户实现。
+- Agent 代替用户过多的地方：Agent 将“继续”误解为允许直接编码，擅自创建 demo crate、README 和领域模型代码，违背 repo learning 的练习边界。
+- Prompt/template/CLI/docs 改进建议：已补强 `repo-learning-coach`、`08-demo-coder` 和 `coach-questioning`，新增 Implementation Practice Gate：08 默认只给行动卡和验证目标，除非用户明确说“你来实现/代写/apply patch”，否则不得编辑实现文件。
+- 是否足以进入下一步：实现代码已回滚；任务仍处于 `08-demo-coder`，下一步应输出 Slice 0 行动卡，等待用户亲手创建工程骨架。

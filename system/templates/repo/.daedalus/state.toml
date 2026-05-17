@@ -23,37 +23,37 @@ next_action = "澄清学习目标，引导用户确认边界，并填写 [`.daed
 id = "01-goal-aligner"
 title = "对齐 Repo 学习目标"
 status = "active"
-required_artifacts = [".daedalus/task-card.md"]
+required_artifacts = [".daedalus/task-card.md", ".daedalus/outcome-map.md"]
 
 [[stages]]
 id = "02-repo-scout"
 title = "选择学习仓库"
 status = "pending"
-required_artifacts = ["guides/02-repo-selection-guide.md"]
+required_artifacts = ["guides/02-repo-scout/README.md"]
 
 [[stages]]
 id = "03-socratic-coach"
 title = "提出 Repo 递进问题"
 status = "pending"
-required_artifacts = ["notes/question-roadmap.md"]
+required_artifacts = ["notes/03-socratic-coach/README.md"]
 
 [[stages]]
 id = "04-debugger-guide"
 title = "运行并调试 Repo"
 status = "pending"
-required_artifacts = ["notes/runbook.md"]
+required_artifacts = ["notes/04-debugger-guide/README.md"]
 
 [[stages]]
 id = "05-arch-analyzer"
 title = "分析 Repo 架构"
 status = "pending"
-required_artifacts = ["notes/architecture.md"]
+required_artifacts = ["notes/05-arch-analyzer/README.md"]
 
 [[stages]]
 id = "06-code-reader"
 title = "深读 Repo 核心代码"
 status = "pending"
-required_artifacts = ["notes/code-reading.md"]
+required_artifacts = ["notes/06-code-reader/README.md"]
 
 [[stages]]
 id = "07-demo-architecture"
@@ -71,7 +71,7 @@ required_artifacts = ["demo/README.md"]
 id = "09-biz-solver"
 title = "将 Repo 学习迁移到业务问题"
 status = "pending"
-required_artifacts = ["notes/business-application.md"]
+required_artifacts = ["notes/09-biz-solver/README.md"]
 
 [[stages]]
 id = "10-archivist"

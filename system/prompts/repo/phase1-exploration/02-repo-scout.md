@@ -34,9 +34,9 @@ phase: repo.phase1-exploration
 2. 对每个 repo 评估匹配度、学习密度、运行风险和 demo 可能性。
 3. 给出首选 repo，并说明为什么它最值得优先深入。
 4. 如果候选 repo 都不合适，建议调整目标或重新搜索。
-5. 将 Agent 的候选比较、选择建议、风险提示和源码拉取建议写入 `guides/02-repo-selection-guide.md`。
+5. 将 Agent 的候选比较、选择建议、风险提示和源码拉取建议写入 `guides/02-repo-scout/README.md`。如内容较多，把候选细节拆到同目录专题文件，并从 README 链接。
 6. 如果需要准备源码，优先维护 `source/pull_source.sh`，由用户执行拉取；不要默认替用户 clone。
-7. 用户如需记录自己的选择思考，可另写 `notes/repo-selection-reflection.md`，但不要把它作为阶段必需产物。
+7. 用户如需记录自己的选择思考，可另写 `notes/02-repo-scout/repo-selection-reflection.md`，但不要把它作为阶段必需产物。
 
 ## Output Delta
 
@@ -61,7 +61,7 @@ phase: repo.phase1-exploration
 - 用户确认的首选 repo：
 - 用户接受的风险：
 - 用户是否亲自执行 `source/pull_source.sh`：
-- `guides/02-repo-selection-guide.md` 中的证据：
+- `guides/02-repo-scout/README.md` 中的证据：
 - 是否允许进入下一阶段：
 ```
 

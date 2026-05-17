@@ -35,9 +35,9 @@ phase: repo.phase1-exploration
 
 ## Repo-Specific Workflow
 
-1. 先基于 `guides/02-repo-selection-guide.md` 和用户目标提出最多 3 个第一轮问题，问题必须从生产失败模式出发。
-2. 将 Agent 的问题设计意图写入 `guides/03-question-roadmap-guide.md`。
-3. 引导用户亲自回答或改写关键问题，再把用户形成的阅读假设写入 `notes/question-roadmap.md`。
+1. 先基于 `guides/02-repo-scout/README.md` 和用户目标提出最多 3 个第一轮问题，问题必须从生产失败模式出发。
+2. 将 Agent 的问题设计意图写入 `guides/03-socratic-coach/README.md`，专题问题可拆到同目录文件。
+3. 引导用户亲自回答或改写关键问题，再把用户形成的阅读假设写入 `notes/03-socratic-coach/README.md` 或同目录专题文件。
 4. 每个问题都要绑定后续可验证路径：文件入口、运行实验、架构图、失败注入或 mini demo 假设。
 5. 如果用户还没有回答任何关键问题，不要直接把问题路线图标记为完成。
 6. 用户回答后，必须记录“用户原始回答 + Agent 校准/补充 + 生产约束 + 源码应对假设 + 后续验证路径”，而不是只写 Agent 的最终结论。
@@ -74,7 +74,7 @@ phase: repo.phase1-exploration
 ## Role Split
 - daedalus 应该做：设计问题层次、给提示路径、帮助用户把回答变成可验证假设。
 - 用户必须亲自做：回答或改写关键问题，说明自己当前的理解和疑问。
-- daedalus 可以协助但不能代替：整理 `notes/question-roadmap.md`，但不能把 Agent 自问自答当成用户理解。
+- daedalus 可以协助但不能代替：整理 `notes/03-socratic-coach/README.md` 和专题文件，但不能把 Agent 自问自答当成用户理解。
 
 ## Before Completion
 - 用户已经回答/改写的问题：
