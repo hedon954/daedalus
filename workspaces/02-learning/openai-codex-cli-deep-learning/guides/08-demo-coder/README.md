@@ -7,7 +7,7 @@
 实现一个 Phase 1 mini demo：
 
 ```text
-scripted ReAct loop
+real OpenAI streaming loop
   -> capability registry
   -> command request
   -> approval decision
@@ -138,12 +138,17 @@ decide_retry(request, requirement, failure, approval_state) -> RetryDecision
 
 ### Slice 6: Agent Orchestrator
 
-目标：把 scripted model、tool approval、runner、retry 和 event stream 串成最小 ReAct loop。
+目标：把真实 OpenAI streaming model、tool approval、runner、retry 和 event stream 串成最小 ReAct loop。
 
 实现：
 
 ```text
-run_agent(query, scripted_model, approval_provider, sandbox_runner) -> AgentRunResult
+OpenAI Responses API stream
+  -> ModelStreamEvent
+  -> tool call
+  -> approval / sandbox / retry
+  -> tool output
+  -> final answer
 ```
 
 验收：
@@ -151,6 +156,10 @@ run_agent(query, scripted_model, approval_provider, sandbox_runner) -> AgentRunR
 - 通过 AT-07、AT-14。
 - 工具结果和命令失败都作为 observation 回灌给下一轮 model。
 - `max_turns` 能阻止无限循环。
+
+实现前阅读：
+
+- [`rust-openai-integration.md`](rust-openai-integration.md)：Rust 中使用 OpenAI Responses API、streaming 和 function calling 的最小接入方案。
 
 ### Slice 7: Demo README And Runbook
 
@@ -182,7 +191,7 @@ AT-01 ... AT-14
 
 ## Stop Rules
 
-- Phase 1 不接真实 LLM，用 scripted model 保留 ReAct loop 形状。
+- Phase 1 接真实 OpenAI streaming model，但默认测试不依赖真实 API；联网验收放到 runbook。
 - Phase 1 不做真实 OS sandbox，用 `SimulatedSandboxRunner` 验证编排逻辑。
 - Phase 1 不实现完整 shell parser，只支持验收用例需要的命令形态。
 - Phase 1 不做完整 TUI，不引入与核心状态机无关的 UI 框架。

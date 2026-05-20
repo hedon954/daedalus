@@ -16,9 +16,11 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 6 Agent Orchestrator 还未实现。
-- 为什么现在做它：approval、runner、retry 都已经可以独立决策，但还没有一个最小 ReAct loop 把 tool call、审批、执行、重试和 observation 回灌串起来。
-- 完成后解锁：进入 Slice 7 README / Runbook，让 Phase 1 demo 变成可运行、可讲解、可验收的学习产物。
+- 当前问题：Slice 6 Agent Orchestrator 进入 LLM streaming adapter 子步骤，但还未串起完整 ReAct loop。
+- 为什么现在做它：approval、runner、retry 都已经可以独立决策；当前先把真实 OpenAI-compatible streaming 响应稳定映射成 `StreamEvent`，再让 orchestrator 消费 tool call。
+- 完成后解锁：进入 approval / sandbox / retry 的 orchestrator 串联，并最终进入 Slice 7 README / Runbook。
+- 当前已做：新增 `agent::llm` 与 `OpenAiCompatibleLlm`，使用 `async_stream` + `reqwest::bytes_stream()` 逐步产出 `StreamEvent`；新增 Rust/OpenAI integration guide。
+- 当前待解决：`take_sse_events` 仍只支持 `data: ...` 首行事件；guide 讲 OpenAI Responses API，但代码实际实现 DeepSeek/OpenAI-compatible Chat Completions 形态；`Default` 缺少 env 时仍 panic；parser/tool-call 聚合缺少默认 fixture 单测；多 tool 切换事件顺序可继续整理。
 
 ## Gaps Blocking Next Stage
 
@@ -34,7 +36,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 3 Approval Decision：用户已实现 `decide_approval` 并完成 review；`cargo test` 通过 11 个测试，覆盖 approval scope、forbidden、prompt policy、capability mismatch fail closed。
 - [x] Slice 4 SimulatedSandboxRunner：用户已实现规则表驱动 runner，Agent 补充 read success、command failed、sandbox denied、no-sandbox retry success、unknown command failed 五个测试；`cargo test` 通过 16 个测试。
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，Agent 补充 command failed、already retried、never/on-request、network prompt/allow/deny、non-network sandbox denied 等 8 个测试；`cargo test` 通过 24 个测试。
-- [ ] Slice 6 Agent Orchestrator：串起 scripted model、approval、runner、retry 和 event stream。
+- [ ] Slice 6 Agent Orchestrator：已完成 LLM streaming adapter 雏形；仍需修正 parser 协议边界、补 fixture 单测，并串起 approval、runner、retry 和 event stream。
 - [ ] Slice 7 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
 
 ## 06 Code Reader Gaps

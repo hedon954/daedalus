@@ -88,3 +88,13 @@
 - Agent 代替用户过多的地方：Agent 将“继续”误解为允许直接编码，擅自创建 demo crate、README 和领域模型代码，违背 repo learning 的练习边界。
 - Prompt/template/CLI/docs 改进建议：已补强 `repo-learning-coach`、`08-demo-coder` 和 `coach-questioning`，新增 Implementation Practice Gate：08 默认只给行动卡和验证目标，除非用户明确说“你来实现/代写/apply patch”，否则不得编辑实现文件。
 - 是否足以进入下一步：实现代码已回滚；任务仍处于 `08-demo-coder`，下一步应输出 Slice 0 行动卡，等待用户亲手创建工程骨架。
+
+## 2026-05-21 Slice 6 LLM streaming adapter 检查点
+
+- 阶段：`08-demo-coder` / Slice 6 Agent Orchestrator。
+- 有效引导：用户决定从 scripted model 改为真实 OpenAI-compatible streaming model，当前已新增 `agent::llm`、`OpenAiCompatibleLlm`、`StreamEvent` 和 Rust/OpenAI integration guide。
+- 用户亲自完成的实践：用户实现了 `async_stream::try_stream!` 包装 `reqwest::bytes_stream()` 的流式 adapter，并通过真实 raw stream 样本摸索 Chat Completions chunk 中的 `content`、`reasoning_content` 和 `tool_calls` 字段。
+- Agent 代替用户过多的地方：Agent 只做 review、指出边界和 parser 风险；未直接修改 LLM adapter 实现。
+- 当前验证：`cargo test --manifest-path demo/Cargo.toml` 通过，结果为 24 passed、2 ignored；ignored 测试为真实联网 LLM 调用。
+- 当前待解决：代码实现 DeepSeek / OpenAI-compatible Chat Completions stream，而 guide 主要写 OpenAI Responses API；需要收敛协议目标。`take_sse_events` 仍只支持 `data: ...` 首行事件；`Default` 缺 env 时 panic；parser 和 tool-call 聚合缺少默认 fixture 单测；orchestrator 尚未串起 approval / sandbox / retry。
+- 是否足以进入下一步：可以提交当前检查点，但 Slice 6 不能标完成。下一步应先补 parser / map_chunk fixture tests，再接 orchestrator。

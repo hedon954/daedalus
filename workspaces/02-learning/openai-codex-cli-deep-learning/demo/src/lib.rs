@@ -1,3 +1,4 @@
+pub mod agent;
 pub mod approval;
 pub mod model;
 pub mod registry;

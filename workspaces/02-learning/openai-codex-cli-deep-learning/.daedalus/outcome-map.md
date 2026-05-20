@@ -27,7 +27,7 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 6 Agent Orchestrator 还未实现。
+- 当前障碍：Slice 6 Agent Orchestrator 进行中；LLM streaming adapter 已有雏形，但 parser / protocol / fixture tests 仍待收敛。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
 
 ## Artifact Dependency Graph
@@ -56,7 +56,15 @@ question-roadmap
 - [x] Slice 3 Approval Decision：用户已实现 `decide_approval`，覆盖 capability mismatch fail closed、`Prompt + Never -> Forbidden`、approval scope 绑定 request context、`Skip != bypass sandbox`，`cargo test` 通过 11 个测试。
 - [x] Slice 4 SimulatedSandboxRunner：用户已实现规则表驱动的模拟 runner，使用 `request.argv + ExecutionAttempt` 匹配规则，区分 `Success`、`CommandFailed`、`SandboxDenied`；Agent 补充 5 个 runner unit tests，`cargo test` 通过 16 个测试。
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，区分 `CommandFailed`、`SandboxDenied`、`already_retried`、`ApprovalPolicy` 与 `NetworkPolicy`；Agent 补充 8 个 retry unit tests，`cargo test` 通过 24 个测试。
-- [ ] Slice 6 Agent Orchestrator：串起 scripted model、approval、runner、retry 和 event stream，形成最小 ReAct loop。
+- [ ] Slice 6 Agent Orchestrator：已新增 `agent::llm`、`OpenAiCompatibleLlm` 和 Rust/OpenAI integration guide；当前能以 OpenAI-compatible Chat Completions 形态将流式 chunk 映射为 `StreamEvent`，但尚未串起 approval / runner / retry，也未完成 parser fixture tests。
+
+### Slice 6 当前待解决问题
+
+- LLM adapter 当前实现的是 DeepSeek / OpenAI-compatible Chat Completions stream，guide 仍主要描述 OpenAI Responses API；需要二选一收敛文档和代码。
+- `take_sse_events` 当前只支持 `data: ...` 作为 SSE block 第一行；若要兼容标准 SSE，需要逐行提取 `data:`。
+- `OpenAiCompatibleLlm::default()` 仍会在缺少 `DEEPSEEK_API_KEY` 时 panic；后续应改为 `from_env() -> anyhow::Result<Self>`。
+- `map_chunk` / `take_sse_events` / `map_openai_event` 缺少默认 fixture 单测；当前 `cargo test` 只证明编译通过和 ignored 联网测试存在。
+- 多 tool call 切换时已修复旧参数串到新 tool 的问题，但事件顺序仍可整理为 finish old -> start new -> update cache。
 
 ## Why This Step Matters
 
