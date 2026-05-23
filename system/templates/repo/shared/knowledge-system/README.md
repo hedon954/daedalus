@@ -1,0 +1,28 @@
+# Shared Knowledge System
+
+这里保存跨 topic 可复用的知识体系。只有已验证、边界清楚、能解释现实制约和 trade-off 的结论才能进入 shared。
+
+## Promotion Path
+
+```text
+topic notes / review sessions
+  -> topic knowledge candidates
+  -> shared verified knowledge
+  -> knowledge-base candidate
+  -> knowledge-base entry
+```
+
+## Required Shape
+
+每条 shared knowledge 必须包含：
+
+- 业务目标 / 现实任务
+- 现实制约
+- naive solution 失败点
+- 核心抽象 / 不变量
+- 实现机制
+- trade-off
+- 对比最佳实践
+- 可迁移模式
+- evidence
+- review prompts

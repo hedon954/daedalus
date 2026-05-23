@@ -6,6 +6,7 @@ phase: repo.phase4-closing
 
 @system/prompts/common/summarize.md
 @system/prompts/common/export-knowledge.md
+@system/prompts/common/knowledge-system-extraction.md
 @system/prompts/common/compress-context.md
 
 # Close Repo Learning Loop
@@ -37,8 +38,10 @@ phase: repo.phase4-closing
 1. 检查 active topic 是否满足 completed 条件；如要关闭 project，必须确认所有 topic 都已 completed 或 abandoned。
 2. 汇总产物清单和位置。
 3. 区分已验证结论、未解决问题和后续建议。
-4. 使用 `Export Verified Knowledge` 判断可迁移知识的归档位置。
-5. 给出 closing report。
+4. 使用 `Knowledge System Extraction` 从业务目标、现实制约、naive 失败、核心不变量、实现机制、trade-off、最佳实践对比和迁移模式中萃取候选知识体系。
+5. 使用 `Export Verified Knowledge` 判断可迁移知识的归档位置。
+6. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
+7. 给出 closing report。
 
 ## Output Delta
 
@@ -48,6 +51,7 @@ phase: repo.phase4-closing
 - 最重要的 3 个学习收获：
 - 产物清单：
 - 知识库归档：
+- 复习计划建议：
 - 后续可复用上下文：
 - 下一步建议：
 ```

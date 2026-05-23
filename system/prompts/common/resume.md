@@ -13,6 +13,7 @@ scope: common
 ## Trigger
 
 - 用户说“继续”“恢复”“接着上次”。
+- 用户说“复习一下”“回顾一下”“考我一下”。
 - 当前会话缺少完整上下文。
 - 需要从 `workspaces` 或长期上下文文件恢复任务。
 
@@ -27,6 +28,16 @@ scope: common
 
 ## Workflow
 
+如果用户请求的是复习，而不是继续推进学习 stage：
+
+1. 先定位复习 target：project、topic 或 checkpoint。
+2. 读取对应 outcome map、artifact index、mastery map、review sessions 和 source artifacts。
+3. 输出 `Review Navigation`，不要输出普通 stage navigation。
+4. 按 `system/prompts/common/review-guidance.md` 先问 1-3 个问题，等待用户回答。
+5. 不修改原 project/topic lifecycle。
+
+普通学习恢复时：
+
 1. 先读取当前 workspace 的 project `.daedalus/project-map.md`、`.daedalus/topic-board.md` 和 project `.daedalus/state.toml`，确认 active topic。
 2. 再读取 active topic 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
 2. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
@@ -35,6 +46,20 @@ scope: common
 5. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
 
 ## Output
+
+复习恢复：
+
+```markdown
+## Review Navigation
+- Target:
+- Mode:
+- Review goal:
+- Source artifacts:
+- Current weak spots:
+- After this:
+```
+
+普通学习恢复：
 
 ```markdown
 ## 你现在在哪里

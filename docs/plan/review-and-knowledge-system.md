@@ -524,6 +524,7 @@ system/prompts/common/knowledge-system-extraction.md
 
 - 从 target artifacts 生成 3-7 个复习问题。
 - 强制先让用户回答，不先讲解。
+- 强制问题从业务目标、现实制约、naive 失败、核心不变量、实现机制、trade-off、最佳实践对比和迁移模式出发。
 - 按 recall / rebuild / application / weakness-repair 选择问题形态。
 - 根据用户回答更新 mastery-map。
 - 把错误记录为 weakness，不羞辱用户、不直接替用户完成。
@@ -531,6 +532,7 @@ system/prompts/common/knowledge-system-extraction.md
 `knowledge-system-extraction.md` 负责：
 
 - 从已验证 evidence 里抽取 concept / invariant / failure mode / trade-off / pattern。
+- 每条知识必须补齐业务目标、现实制约、naive 失败、核心抽象/不变量、实现机制、trade-off、最佳实践对比、迁移模式和复习题。
 - 标记每个知识点的 evidence 和 boundary。
 - 判断能否 promotion。
 - 只把已验证内容推进到 shared 或 knowledge-base。

@@ -1,11 +1,11 @@
 ---
 name: repo-learning-coach
-description: Guides the full 10-stage daedalus code repo learning loop: align goal, select repo, ask roadmap questions, run/debug, analyze architecture, read core code, design mini demo, implement mini demo, transfer to business, and archive knowledge. Use when the user starts, continues, resumes, summarizes, or closes a repository learning task.
+description: Guides daedalus repo learning projects, topic tracks, post-learning review plans, and verified knowledge-system extraction. Use when the user starts, continues, resumes, summarizes, reviews, revisits, tests memory, extracts knowledge, promotes verified learning, or closes a repository learning task.
 ---
 
 # Repo Learning Coach
 
-Use this skill when the user wants to learn a code repository deeply through daedalus. The repo can come from GitHub, GitLab, an internal Git service, an archive, or a local filesystem checkout.
+Use this skill when the user wants to learn, review, or extract reusable knowledge from a code repository through daedalus. The repo can come from GitHub, GitLab, an internal Git service, an archive, or a local filesystem checkout.
 
 ## Core Rule
 
@@ -83,6 +83,8 @@ task complete closes the whole project.
 
 If the Agent is unsure which topic is active, it must read `.daedalus/topic-board.md` and project `.daedalus/state.toml` before running state commands.
 
+Review and knowledge command groups are planned but not implemented in the deterministic CLI yet. Until they exist, do not invent `daedalus review ...` or `daedalus knowledge ...` commands in execution steps. Use the filesystem templates and common prompts for review and knowledge-system work.
+
 Every repo learning step must start from real production pressure:
 
 ```text
@@ -152,6 +154,61 @@ Minimum sync:
 4. If the Agent cannot update files, say the exact stale state and the expected new state.
 
 This gate is required after code reviews in `08-demo-coder`. A passing test result alone is not enough; the user must be re-oriented on the learning path.
+
+## Review Guidance Gate
+
+Review is an independent lifecycle attached to a learned topic or project. It is not stage 11, and it must not reopen a completed topic.
+
+Load:
+
+- `system/prompts/common/review-guidance.md`
+
+Use this gate when the user asks to review, revisit, test memory, rebuild understanding, or prepare a review plan.
+
+Every review session must start from this chain:
+
+```text
+business goal / real-world task
+  -> reality constraints
+  -> why the naive solution fails
+  -> core abstraction / invariant
+  -> implementation mechanism
+  -> trade-off
+  -> comparison with best practices
+  -> transferable pattern
+  -> review or application question
+```
+
+The Agent must ask 1-3 questions and wait for the user's answer before giving calibration. Do not start by summarizing the topic. Do not modify project or topic lifecycle during review.
+
+## Knowledge-System Extraction Gate
+
+Knowledge extraction is not note summarization. It promotes verified evidence into a reusable knowledge structure.
+
+Load:
+
+- `system/prompts/common/knowledge-system-extraction.md`
+- `system/prompts/common/export-knowledge.md`
+
+Use this gate when the user asks to extract a knowledge system, identify reusable patterns, promote topic learning into shared context, or prepare knowledge-base entries.
+
+Every extracted knowledge item must include:
+
+```text
+business goal / real-world task
+reality constraints
+naive failure
+core abstraction / invariant
+implementation mechanism
+trade-off
+best-practice comparison
+transfer pattern
+review prompts
+evidence
+promotion decision
+```
+
+If a candidate lacks evidence, trade-off, or transfer boundary, keep it as a topic candidate. Do not promote it to shared context or knowledge-base.
 
 ## Artifact Directory Convention
 
