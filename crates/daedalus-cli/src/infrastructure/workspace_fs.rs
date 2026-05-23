@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::{DaedalusError, Result, WorkspaceBucket};
+use crate::infrastructure::state_toml;
 
 /// 从给定目录向上查找 daedalus 项目根目录。
 ///
@@ -92,8 +93,13 @@ pub fn active_tasks(learning_root: &Path) -> Result<Vec<PathBuf>> {
 /// 如果调用方显式传入 `task_dir`，直接使用该目录；否则优先使用当前目录下的
 /// `.daedalus`，再回退到 daedalus 项目中唯一的 learning task。
 pub fn default_task_dir(explicit: Option<PathBuf>) -> Result<PathBuf> {
+    default_project_dir(explicit)
+}
+
+/// 解析默认 repo learning project 目录。
+pub fn default_project_dir(explicit: Option<PathBuf>) -> Result<PathBuf> {
     if let Some(path) = explicit {
-        return Ok(path);
+        return project_dir_from_any(&path);
     }
 
     let cwd = std::env::current_dir().map_err(|source| DaedalusError::Io {
@@ -101,8 +107,11 @@ pub fn default_task_dir(explicit: Option<PathBuf>) -> Result<PathBuf> {
         source,
     })?;
 
-    if cwd.join(".daedalus").exists() {
-        return Ok(cwd);
+    if let Some(topic_dir) = enclosing_topic_dir(&cwd) {
+        return project_dir_from_topic_dir(&topic_dir);
+    }
+    if let Some(project_dir) = enclosing_project_dir(&cwd) {
+        return Ok(project_dir);
     }
 
     let repo_root = repo_root_from(&cwd)?;
@@ -112,6 +121,126 @@ pub fn default_task_dir(explicit: Option<PathBuf>) -> Result<PathBuf> {
         [] => Err(DaedalusError::NoActiveWorkspace),
         _ => Err(DaedalusError::MultipleActiveStages),
     }
+}
+
+/// 解析默认 topic 目录。
+pub fn default_topic_dir(
+    explicit_topic_dir: Option<PathBuf>,
+    explicit_project_dir: Option<PathBuf>,
+    explicit_topic: Option<String>,
+) -> Result<PathBuf> {
+    if let Some(path) = explicit_topic_dir {
+        ensure_state_kind(&path, "topic")?;
+        return Ok(path);
+    }
+
+    if let Some(slug) = explicit_topic {
+        let project_dir = default_project_dir(explicit_project_dir)?;
+        return topic_dir_by_slug(&project_dir, &slug);
+    }
+
+    let cwd = std::env::current_dir().map_err(|source| DaedalusError::Io {
+        path: PathBuf::from("."),
+        source,
+    })?;
+    if let Some(topic_dir) = enclosing_topic_dir(&cwd) {
+        return Ok(topic_dir);
+    }
+
+    let project_dir = default_project_dir(explicit_project_dir)?;
+    let doc = state_toml::load_state_doc(&state_toml::state_path(&project_dir))?;
+    let slug = state_toml::active_topic(&doc).ok_or(DaedalusError::NoActiveTopic)?;
+    topic_dir_by_slug(&project_dir, &slug)
+}
+
+/// 查找当前目录是否处于 topic 目录或其子目录。
+pub fn enclosing_topic_dir(cwd: &Path) -> Option<PathBuf> {
+    enclosing_state_dir(cwd, "topic")
+}
+
+/// 查找当前目录是否处于 project 目录或其子目录。
+pub fn enclosing_project_dir(cwd: &Path) -> Option<PathBuf> {
+    enclosing_state_dir(cwd, "project")
+}
+
+/// 根据 topic 目录推导 project 目录。
+pub fn project_dir_from_topic_dir(topic_dir: &Path) -> Result<PathBuf> {
+    topic_dir
+        .parent()
+        .and_then(Path::parent)
+        .map(Path::to_path_buf)
+        .ok_or_else(|| {
+            DaedalusError::TaskLifecycleLocationMismatch(format!(
+                "cannot infer project dir from topic dir {}",
+                topic_dir.display()
+            ))
+        })
+}
+
+/// 根据 project 和 topic slug 定位 topic 目录。
+pub fn topic_dir_by_slug(project_dir: &Path, slug: &str) -> Result<PathBuf> {
+    let doc = state_toml::load_state_doc(&state_toml::state_path(project_dir))?;
+    if state_toml::state_kind(&doc) != "project" {
+        return Err(DaedalusError::InvalidStateDocumentKind {
+            expected: "project".to_owned(),
+            actual: state_toml::state_kind(&doc).to_owned(),
+        });
+    }
+    let path = state_toml::topic_path(&doc, slug)
+        .ok_or_else(|| DaedalusError::TopicNotFound(slug.to_owned()))?;
+    let topic_dir = project_dir.join(path);
+    ensure_state_kind(&topic_dir, "topic")?;
+    Ok(topic_dir)
+}
+
+fn project_dir_from_any(path: &Path) -> Result<PathBuf> {
+    if is_state_kind(path, "project")? {
+        return Ok(path.to_path_buf());
+    }
+    if is_state_kind(path, "topic")? {
+        return project_dir_from_topic_dir(path);
+    }
+    Ok(path.to_path_buf())
+}
+
+fn enclosing_state_dir(cwd: &Path, kind: &str) -> Option<PathBuf> {
+    let mut current = cwd.to_path_buf();
+    loop {
+        if is_state_kind(&current, kind).ok()? {
+            return Some(current);
+        }
+        if current.file_name().and_then(|name| name.to_str()) == Some(".daedalus")
+            && current.join("state.toml").exists()
+            && let Some(parent) = current.parent()
+            && is_state_kind(parent, kind).ok()?
+        {
+            return Some(parent.to_path_buf());
+        }
+        if !current.pop() {
+            return None;
+        }
+    }
+}
+
+fn ensure_state_kind(dir: &Path, expected: &str) -> Result<()> {
+    let doc = state_toml::load_state_doc(&state_toml::state_path(dir))?;
+    let actual = state_toml::state_kind(&doc);
+    if actual != expected {
+        return Err(DaedalusError::InvalidStateDocumentKind {
+            expected: expected.to_owned(),
+            actual: actual.to_owned(),
+        });
+    }
+    Ok(())
+}
+
+fn is_state_kind(dir: &Path, expected: &str) -> Result<bool> {
+    let path = state_toml::state_path(dir);
+    if !path.exists() {
+        return Ok(false);
+    }
+    let doc = state_toml::load_state_doc(&path)?;
+    Ok(state_toml::state_kind(&doc) == expected)
 }
 
 /// 确保目录存在。

@@ -38,15 +38,19 @@ pub fn render_state(task_dir: &Path) -> Result<RenderedState> {
 /// 该函数保持确定性：相同的 `state.toml` 和相同的文件系统产物状态，
 /// 应生成相同的 Markdown 内容。
 pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<String> {
-    let current_phase = state_toml::current_phase(doc).unwrap_or_else(|| "unknown".to_owned());
-    let stages = state_toml::stages(doc);
-    let current_stage = stages.iter().find(|stage| stage.id == current_phase);
+    match state_toml::state_kind(doc) {
+        "project" => render_project_state_markdown(doc, task_dir),
+        "topic" => render_topic_state_markdown(doc, task_dir),
+        _ => render_topic_state_markdown(doc, task_dir),
+    }
+}
 
+fn render_project_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<String> {
     let mut output = String::new();
-    output.push_str("# 学习状态\n\n");
+    output.push_str("# Project 状态\n\n");
     output.push_str("> 从 [`.daedalus/state.toml`](state.toml) 生成。不要手动编辑。\n\n");
     output.push_str("## 当前状态\n\n");
-    output.push_str(&format!("- 任务：`{}`\n", state_toml::task_name(doc)));
+    output.push_str(&format!("- Project：`{}`\n", state_toml::task_name(doc)));
     output.push_str(&format!(
         "- 生命周期：`{}`\n",
         state_toml::task_lifecycle(doc)
@@ -59,12 +63,68 @@ pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Strin
             .map(|bucket| bucket.as_str().to_owned())
             .unwrap_or_else(|_| "unknown".to_owned())
     ));
-    if let Some(closed_at) = state_toml::closed_at(doc) {
-        output.push_str(&format!("- 关闭时间：`{closed_at}`\n"));
+    output.push_str(&format!(
+        "- Active Topic：`{}`\n",
+        state_toml::active_topic(doc).unwrap_or_else(|| "none".to_owned())
+    ));
+    output.push_str(&format!("- 下一步：{}\n\n", state_toml::next_action(doc)));
+
+    output.push_str("## Topics\n\n");
+    let topics = state_toml::topics(doc);
+    if topics.is_empty() {
+        output.push_str("- 无\n");
+    } else {
+        for topic in topics {
+            output.push_str(&format!(
+                "- `{}`: {} ({}) -> [`{}`](../{})\n",
+                topic.slug, topic.title, topic.lifecycle, topic.path, topic.path
+            ));
+        }
     }
-    if let Some(close_reason) = state_toml::close_reason(doc) {
-        output.push_str(&format!("- 关闭原因：{close_reason}\n"));
+
+    output.push_str("\n## Project Files\n\n");
+    for path in [
+        ".daedalus/project-map.md",
+        ".daedalus/topic-board.md",
+        "shared/evidence-registry.md",
+        "shared/source-index.md",
+    ] {
+        let status = if task_dir.join(path).exists() {
+            "present"
+        } else {
+            "missing"
+        };
+        output.push_str(&format!("- `{path}`: {status}\n"));
     }
+
+    output.push_str("\n## 最近状态流转\n\n");
+    render_transitions(doc, &mut output);
+    output.push_str("\n## 下一步 CLI 建议\n\n");
+    output.push_str("- `daedalus state render --project`\n");
+    output.push_str("- `daedalus validate`\n");
+    Ok(output)
+}
+
+fn render_topic_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<String> {
+    let current_phase = state_toml::current_phase(doc).unwrap_or_else(|| "unknown".to_owned());
+    let stages = state_toml::stages(doc);
+    let current_stage = stages.iter().find(|stage| stage.id == current_phase);
+
+    let mut output = String::new();
+    output.push_str("# Topic 学习状态\n\n");
+    output.push_str("> 从 [`.daedalus/state.toml`](state.toml) 生成。不要手动编辑。\n\n");
+    output.push_str("## 当前状态\n\n");
+    output.push_str(&format!(
+        "- Topic：`{}` - {}\n",
+        state_toml::topic_slug(doc),
+        state_toml::topic_title(doc)
+    ));
+    output.push_str(&format!(
+        "- 生命周期：`{}`\n",
+        state_toml::topic_lifecycle(doc)
+            .map(|lifecycle| lifecycle.as_str().to_owned())
+            .unwrap_or_else(|_| "unknown".to_owned())
+    ));
     output.push_str(&format!("- 当前阶段：`{}`\n", current_phase));
     output.push_str(&format!(
         "- 状态：`{}`\n",
@@ -75,13 +135,10 @@ pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Strin
     output.push_str(&format!("- 下一步：{}\n\n", state_toml::next_action(doc)));
 
     output.push_str("## 枚举约束\n\n");
-    output.push_str("- `task.lifecycle` 只能是：`active`、`completed`、`abandoned`。\n");
-    output.push_str(
-        "- `task.workspace_bucket` 只能是：`02-learning`、`03-completed`、`04-abandoned`。\n",
-    );
+    output.push_str("- `topic.lifecycle` 只能是：`planned`、`active`、`blocked`、`completed`、`abandoned`、`skipped`。\n");
     output
         .push_str("- `stage.status` 只能是：`pending`、`active`、`blocked`、`paused`、`done`。\n");
-    output.push_str("- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`rollback`、`task-complete`、`abandon`。\n");
+    output.push_str("- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`rollback`、`topic-complete`、`topic-abandon`。\n");
     output.push_str("- `transition.approval_source` 只能是：`user-confirmed`、`artifact-equivalent`、`stage-not-applicable`。\n");
     output.push_str("- Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。\n\n");
 
@@ -125,43 +182,47 @@ pub fn render_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Strin
     }
 
     output.push_str("\n## 最近状态流转\n\n");
-    let transitions = state_toml::transitions(doc);
-    if transitions.is_empty() {
-        output.push_str("- 无\n");
-    } else {
-        let start = transitions.len().saturating_sub(RECENT_TRANSITION_LIMIT);
-        let shown = transitions.len() - start;
-        output.push_str(&format!(
-            "> 共 {} 条状态流转；下面显示最近 {} 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。\n\n",
-            transitions.len(),
-            shown
-        ));
-        for transition in &transitions[start..] {
-            let approval = transition
-                .approval_source
-                .as_ref()
-                .map(|source| format!("，批准来源：`{source}`"))
-                .unwrap_or_default();
-            output.push_str(&format!(
-                "- `{}` 由 `{}` 对 `{}` 执行 `{}`：{}{}\n",
-                transition.timestamp,
-                transition.actor,
-                transition.stage,
-                transition.action,
-                transition.reason,
-                approval
-            ));
-        }
-    }
+    render_transitions(doc, &mut output);
 
     output.push_str("\n## 下一步 CLI 建议\n\n");
     output.push_str(&format!(
-        "- `daedalus state render {}`\n",
+        "- `daedalus state render --topic-dir {}`\n",
         task_dir.display()
     ));
     output.push_str("- 完成阶段前先运行 `daedalus validate`。\n");
 
     Ok(output)
+}
+
+fn render_transitions(doc: &DocumentMut, output: &mut String) {
+    let transitions = state_toml::transitions(doc);
+    if transitions.is_empty() {
+        output.push_str("- 无\n");
+        return;
+    }
+    let start = transitions.len().saturating_sub(RECENT_TRANSITION_LIMIT);
+    let shown = transitions.len() - start;
+    output.push_str(&format!(
+        "> 共 {} 条状态流转；下面显示最近 {} 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。\n\n",
+        transitions.len(),
+        shown
+    ));
+    for transition in &transitions[start..] {
+        let approval = transition
+            .approval_source
+            .as_ref()
+            .map(|source| format!("，批准来源：`{source}`"))
+            .unwrap_or_default();
+        output.push_str(&format!(
+            "- `{}` 由 `{}` 对 `{}` 执行 `{}`：{}{}\n",
+            transition.timestamp,
+            transition.actor,
+            transition.stage,
+            transition.action,
+            transition.reason,
+            approval
+        ));
+    }
 }
 
 fn artifact_markdown_link(path: &str) -> String {

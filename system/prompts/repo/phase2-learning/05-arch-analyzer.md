@@ -15,6 +15,8 @@ phase: repo.phase2-learning
 
 本 prompt 只定义 repo 架构分析的观察维度。问题递进和架构解释原则来自上方 `@` 引用。
 
+所有 `guides/`、`notes/` 产物默认写入 active topic 目录；跨专题稳定架构事实可以同步到 project root 的 `shared/architecture-map.md` 或 `shared/source-index.md`。
+
 ## Repo-Specific Trigger
 
 - repo 已能运行，或已有足够代码入口。
@@ -37,7 +39,7 @@ phase: repo.phase2-learning
 2. 先让用户说出 naive 方案会如何失败，再读源码验证 repo 的实际设计。
 3. 每个关键模块都按“生产问题 -> naive 失败 -> 源码应对 -> 不变量 -> 代价”解释。
 4. 标注可以画图的部分，并优先生成简约、Typora 兼容的 Mermaid；复杂总览可以拆成 Excalidraw。
-5. 将用户假设、Agent 校准、源码验证路径、不变量和 trade-off 写入 `notes/05-arch-analyzer/README.md` 或同目录专题文件；不要只保留整理后的架构答案。
+5. 将用户假设、Agent 校准、源码验证路径、不变量和 trade-off 写入 active topic 的 `notes/05-arch-analyzer/README.md` 或同目录专题文件；不要只保留整理后的架构答案。
 
 ## Output Delta
 

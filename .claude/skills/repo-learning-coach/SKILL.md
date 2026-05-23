@@ -9,7 +9,79 @@ Use this skill when the user wants to learn a code repository deeply through dae
 
 ## Core Rule
 
-Repo learning is a long-running, filesystem-first coaching process. Prefer prompt files and workspace artifacts over hidden chat memory. Keep `workspaces/02-learning` WIP = 1.
+Repo learning is a long-running, filesystem-first coaching process. Prefer prompt files and workspace artifacts over hidden chat memory. Keep `workspaces/02-learning` WIP = 1 project, and keep each project to at most one active topic.
+
+## Project / Topic Model
+
+Repo learning uses a project/topic/stage model:
+
+```text
+Learning Project = one long-running repo/source learning workspace.
+Topic Track = one focused learning objective inside the project.
+Stage = the 10-stage learning loop inside a topic.
+Shared Context = verified cross-topic knowledge under shared/.
+```
+
+Project root state is project-level only:
+
+```text
+.daedalus/state.toml
+.daedalus/project-map.md
+.daedalus/topic-board.md
+shared/
+source/
+topics/
+```
+
+Topic state owns the 10-stage flow:
+
+```text
+topics/<slug>/.daedalus/state.toml
+topics/<slug>/.daedalus/outcome-map.md
+topics/<slug>/.daedalus/todo.md
+topics/<slug>/guides/
+topics/<slug>/notes/
+topics/<slug>/demo/
+```
+
+Do not write topic stage progress into project root. Do not treat project root `.daedalus/state.toml` as a 10-stage task state.
+
+## CLI Contract
+
+Agents must use the current project/topic CLI contract:
+
+```text
+daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>
+daedalus topic new <topic-slug> --title <topic-title>
+daedalus topic activate <topic-slug>
+
+daedalus state enter <stage-id>
+daedalus state complete <stage-id>
+daedalus state block <stage-id> --reason <reason>
+daedalus state resume <stage-id> --reason <reason>
+
+daedalus state enter <stage-id> --topic <topic-slug>
+daedalus state complete <stage-id> --topic <topic-slug>
+
+daedalus state render
+daedalus state render --project
+daedalus validate
+daedalus validate --all-topics
+daedalus topic validate <topic-slug>
+
+daedalus topic complete <topic-slug> --reason <reason>
+daedalus task complete --reason <reason>
+```
+
+Interpretation:
+
+```text
+state complete <stage> completes the active topic's stage.
+topic complete closes one topic.
+task complete closes the whole project.
+```
+
+If the Agent is unsure which topic is active, it must read `.daedalus/topic-board.md` and project `.daedalus/state.toml` before running state commands.
 
 Every repo learning step must start from real production pressure:
 
@@ -28,7 +100,7 @@ Output drives input. The 10 stages are not a checklist to walk through; they are
 3. What evidence is needed.
 4. What becomes possible after this step.
 
-Before continuing a task, update or consult `.daedalus/outcome-map.md`. This file is the learning dashboard, not a summary. It must keep the North Star, final artifacts, current position, artifact dependency graph, open gaps, and stop rules visible.
+Before continuing a project, update or consult `.daedalus/project-map.md`, `.daedalus/topic-board.md`, and the active topic's `.daedalus/outcome-map.md`. The topic outcome map is the learning dashboard, not a summary. It must keep the North Star, final artifacts, current position, artifact dependency graph, open gaps, and stop rules visible.
 
 When speaking to the user at the start of a resume, code-reading round, or stage transition, include a short navigation header:
 
@@ -75,7 +147,7 @@ After any review, validation, or slice completion in repo learning, the Agent mu
 Minimum sync:
 
 1. State the current stage, current slice or gap, and whether the reviewed step is complete.
-2. Update `.daedalus/outcome-map.md` and `.daedalus/todo.md` when the status changed.
+2. Update the active topic's `.daedalus/outcome-map.md` and `.daedalus/todo.md` when the status changed.
 3. Tell the user what this completion unlocks and what the next slice/question is.
 4. If the Agent cannot update files, say the exact stale state and the expected new state.
 
@@ -196,7 +268,7 @@ For long-running work:
 
 - Load `system/prompts/common/resume.md` when resuming.
 - Load `system/prompts/common/compress-context.md` before pausing or switching stages.
-- Read `.daedalus/outcome-map.md` with `task-card.md`, `todo.md`, and `long-context.md`; it tells the user where they are on the path to the final artifacts.
+- Read project `.daedalus/project-map.md` and `.daedalus/topic-board.md`, then read the active topic's `.daedalus/outcome-map.md`, `task-card.md`, `todo.md`, and `long-context.md`; together they tell the user where they are on the path to the final artifacts.
 - Read the relevant `guides/<stage-id>/README.md` or `notes/<stage-id>/README.md` when a stage has a directory entrypoint.
 - Keep `done`, `doing`, `next`, and `blocked` explicit.
 - On resume, do not treat "next action" as permission to complete the next learning step. Treat it as the next coaching question unless the user explicitly asks for direct explanation or Agent-led reading.
@@ -205,12 +277,12 @@ For long-running work:
 
 ## Rules
 
-- Keep WIP = 1 in `workspaces/02-learning`.
+- Keep WIP = 1 active project in `workspaces/02-learning`, and at most one active topic inside that project.
 - Prefer filesystem state over chat memory.
-- Treat `.daedalus/state.toml` as the only lifecycle fact source; completed and abandoned directories are projections of `task.lifecycle` and `task.workspace_bucket`.
+- Treat project `.daedalus/state.toml` as the project lifecycle fact source, and topic `.daedalus/state.toml` as the topic stage fact source.
 - Ask at most 3 high-value questions at a time.
-- Tie every reading step to a future output artifact and a currently blocked decision in `.daedalus/outcome-map.md`.
-- Keep `.daedalus/todo.md` as a path board: North Star, current path, current question, blocking gaps, stage exit criteria, done, and canceled.
+- Tie every reading step to a future output artifact and a currently blocked decision in the active topic's `.daedalus/outcome-map.md`.
+- Keep the active topic's `.daedalus/todo.md` as a path board: North Star, current path, current question, blocking gaps, stage exit criteria, done, and canceled.
 - Prefer stage directories plus README entrypoints over large omnibus guide/note files.
 - Do not let chat become the only learning record. If the user answers, corrects, or validates an important point, update the relevant `notes/` file in the same turn.
 - Preserve the distinction between user understanding, Agent calibration, and verified source-code conclusions.

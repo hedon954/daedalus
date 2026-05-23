@@ -11,9 +11,12 @@ pub mod error;
 pub mod learning_task;
 /// 学习阶段和阶段状态。
 pub mod stage;
+/// repo learning topic 领域类型。
+pub mod topic;
 /// 状态流转记录。
 pub mod transition;
 
 pub use error::{ApprovalSource, DaedalusError, Result};
 pub use learning_task::{TaskLifecycle, WorkspaceBucket};
 pub use stage::{StageSnapshot, StageState, StageTransitionKind};
+pub use topic::{TopicLifecycle, TopicSnapshot};

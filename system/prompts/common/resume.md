@@ -27,7 +27,8 @@ scope: common
 
 ## Workflow
 
-1. 读取当前 workspace 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
+1. 先读取当前 workspace 的 project `.daedalus/project-map.md`、`.daedalus/topic-board.md` 和 project `.daedalus/state.toml`，确认 active topic。
+2. 再读取 active topic 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
 2. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
 3. 用路径坐标告诉用户：最终产物是什么、当前在哪个阶段、正在补哪个缺口、为什么这个缺口重要、哪些细节本轮停止阅读、完成后解锁什么。
 4. 如果用户只是说“继续学习”，恢复后优先提出下一轮 coaching question；不要直接进入 Agent-led 源码验证。
@@ -50,4 +51,4 @@ scope: common
 - 恢复后优先推进一个最小行动。
 - 不要重新展开完整规划，除非上下文已经不可恢复。
 - 明确区分“已验证结论”和“待验证假设”。
-- 不要把 `todo.md` 中的 next action 当作自动执行许可；先定位路径，再按 coaching gate 问用户。
+- 不要把 topic `todo.md` 中的 next action 当作自动执行许可；先定位 project、active topic、topic stage 和 current gap，再按 coaching gate 问用户。

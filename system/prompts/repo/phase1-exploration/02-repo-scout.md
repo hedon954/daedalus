@@ -14,6 +14,8 @@ phase: repo.phase1-exploration
 
 本 prompt 只定义代码仓库的筛选标准。学习任务是否值得进入 active learning 由上方 `Gate Learning Task` 引用处理；现实约束和 trade-off 框架由上方 `Apply First Principles` 引用提供。
 
+所有 `guides/`、`notes/` 产物默认写入 active topic 目录；project root 只维护 `.daedalus/project-map.md`、`.daedalus/topic-board.md` 和 `shared/`。
+
 ## Repo-Specific Trigger
 
 - 学习目标已经明确，但 repo 未确定。
@@ -34,9 +36,9 @@ phase: repo.phase1-exploration
 2. 对每个 repo 评估匹配度、学习密度、运行风险和 demo 可能性。
 3. 给出首选 repo，并说明为什么它最值得优先深入。
 4. 如果候选 repo 都不合适，建议调整目标或重新搜索。
-5. 将 Agent 的候选比较、选择建议、风险提示和源码拉取建议写入 `guides/02-repo-scout/README.md`。如内容较多，把候选细节拆到同目录专题文件，并从 README 链接。
+5. 将 Agent 的候选比较、选择建议、风险提示和源码拉取建议写入 active topic 的 `guides/02-repo-scout/README.md`。如内容较多，把候选细节拆到同目录专题文件，并从 README 链接。
 6. 如果需要准备源码，优先维护 `source/pull_source.sh`，由用户执行拉取；不要默认替用户 clone。
-7. 用户如需记录自己的选择思考，可另写 `notes/02-repo-scout/repo-selection-reflection.md`，但不要把它作为阶段必需产物。
+7. 用户如需记录自己的选择思考，可另写 active topic 的 `notes/02-repo-scout/repo-selection-reflection.md`，但不要把它作为阶段必需产物。
 
 ## Output Delta
 
@@ -61,7 +63,7 @@ phase: repo.phase1-exploration
 - 用户确认的首选 repo：
 - 用户接受的风险：
 - 用户是否亲自执行 `source/pull_source.sh`：
-- `guides/02-repo-scout/README.md` 中的证据：
+- active topic 的 `guides/02-repo-scout/README.md` 中的证据：
 - 是否允许进入下一阶段：
 ```
 
@@ -72,4 +74,4 @@ phase: repo.phase1-exploration
 - 必须说明首选 repo 和放弃其他候选的理由。
 - 用户指定 repo 时也要客观评估，不要默认附和。
 - 外部源码默认不提交；如由 Agent 拉取，删除嵌套 `.git` 并确认 `source/.gitignore` 生效。
-- 完成阶段前，在 `.daedalus/validation-log.md` 记录 daedalus 是否真正帮助用户做出选择。
+- 完成阶段前，在 active topic 的 `.daedalus/validation-log.md` 记录 daedalus 是否真正帮助用户做出选择。

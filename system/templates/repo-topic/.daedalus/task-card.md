@@ -1,6 +1,8 @@
-# 学习任务卡
+# 专题学习任务卡
 
-- 任务：`{{TASK_NAME}}`
+- Project：`{{TASK_NAME}}`
+- Topic：`{{TOPIC_SLUG}}`
+- Topic 标题：{{TOPIC_TITLE}}
 - 创建时间：`{{CREATED_AT}}`
 - 学习材料类型：代码仓库
 - 当前目标：
@@ -11,11 +13,11 @@
 - 暂不学习：
 - 用户确认：
 
-## Repo 学习目标
+## Topic 学习目标
 
 - 希望获得的能力：
-- 候选 repo 方向：
-- Repo 选择约束：
+- 继承的 shared context：
+- 需要补充的源码入口：
 - 运行/调试要求：
 - Mini demo 方向：
 

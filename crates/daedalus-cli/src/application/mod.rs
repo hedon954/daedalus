@@ -6,10 +6,14 @@
 pub mod close_task;
 /// 初始化学习任务 workspace。
 pub mod init_task;
+/// workspace 迁移 use cases。
+pub mod migrate;
 /// 从 `state.toml` 渲染 Agent 友好的 `state.md`。
 pub mod render;
 /// 状态机流转 trait。
 pub mod state_machine;
+/// 管理 repo learning topics。
+pub mod topic;
 /// 执行学习阶段状态流转。
 pub mod transition_stage;
 /// 校验学习任务 workspace 的一致性。

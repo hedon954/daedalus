@@ -72,6 +72,26 @@ pub enum DaedalusError {
     /// 状态文件中出现多个 active 阶段。
     #[error("multiple active stages")]
     MultipleActiveStages,
+    /// Project 中没有 active topic。
+    #[error("no active topic found")]
+    NoActiveTopic,
+    /// Project 中存在多个 active topic。
+    #[error("multiple active topics")]
+    MultipleActiveTopics,
+    /// Topic 不存在。
+    #[error("topic not found: {0}")]
+    TopicNotFound(String),
+    /// Topic lifecycle 状态不允许当前流转。
+    #[error("invalid topic lifecycle transition: {0}")]
+    InvalidTopicLifecycleTransition(String),
+    /// 当前 state 文件类型不符合命令要求。
+    #[error("invalid state document kind: expected {expected}, got {actual}")]
+    InvalidStateDocumentKind {
+        /// 期望类型。
+        expected: String,
+        /// 实际类型。
+        actual: String,
+    },
     /// 状态文件中出现不支持的阶段状态。
     #[error("invalid stage state `{state}` for stage `{stage}`")]
     InvalidStageState {

@@ -1,12 +1,20 @@
 # Outcome Map
 
-Outcome Map 是全程导航仪表盘，不是聊天总结。每次继续学习、深读源码、切换阶段或更新 todo 前，先用它定位：最终产物是什么、当前在哪、正在补哪个缺口、哪些细节停止扩展。
+Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习、深读源码、切换阶段或更新 todo 前，先用它定位：本 topic 的最终产物是什么、当前在哪、正在补哪个缺口、哪些细节停止扩展。
 
 ## North Star
 
+- Project：`{{TASK_NAME}}`
+- Topic：`{{TOPIC_SLUG}}` - {{TOPIC_TITLE}}
 - 最终要获得的能力：
 - 最小可验证 demo：
 - 现实问题中的迁移目标：
+
+## Inherited Context
+
+- Shared runbook：[`../../shared/runbook.md`](../../shared/runbook.md)
+- Shared architecture：[`../../shared/architecture-map.md`](../../shared/architecture-map.md)
+- Shared evidence：[`../../shared/evidence-registry.md`](../../shared/evidence-registry.md)
 
 ## Final Artifacts
 
@@ -28,6 +36,12 @@ Outcome Map 是全程导航仪表盘，不是聊天总结。每次继续学习�
 - 当前目标：澄清 North Star、最终产物和验收标准。
 - 当前障碍：任务目标和最小 demo 尚未由用户确认。
 - 当前动作服务的产物：`.daedalus/task-card.md`、`.daedalus/outcome-map.md`
+
+## Contribution Back To Project
+
+- 本 topic 完成后预计新增或更新哪些 shared evidence：
+- 哪些 shared glossary / architecture-map 需要更新：
+- 哪些 future topics 被发现：
 
 ## Artifact Dependency Graph
 

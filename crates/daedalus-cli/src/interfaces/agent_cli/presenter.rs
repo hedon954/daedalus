@@ -2,29 +2,35 @@ use serde_json::json;
 
 use crate::application::close_task::CloseTaskOutput;
 use crate::application::init_task::InitTaskOutput;
+use crate::application::migrate::MigrateRepoLearningOutput;
 use crate::application::render::RenderedState;
+use crate::application::topic::TopicOutput;
 use crate::application::transition_stage::TransitionStageOutput;
 use crate::application::validate_workspace::ValidationOutput;
-use crate::domain::DaedalusError;
+use crate::domain::{DaedalusError, TopicSnapshot};
 use crate::interfaces::agent_cli::args::OutputFormat;
 
 /// 输出初始化任务成功结果。
 pub fn print_init(output: &InitTaskOutput, format: OutputFormat) {
     match format {
         OutputFormat::Text => {
-            println!("ok: initialized repo learning task");
-            println!("task_dir: {}", output.task_dir.display());
+            println!("ok: initialized repo learning project");
+            println!("project_dir: {}", output.task_dir.display());
+            println!("topic_dir: {}", output.topic_dir.display());
             println!("state_md: {}", output.state_md.display());
-            println!("next: fill .daedalus/task-card.md and run daedalus validate");
+            println!("topic_state_md: {}", output.topic_state_md.display());
+            println!("next: fill active topic .daedalus/task-card.md and run daedalus validate");
         }
         OutputFormat::Json => println!(
             "{}",
             json!({
                 "ok": true,
                 "action": "init",
-                "task_dir": output.task_dir,
+                "project_dir": output.task_dir,
+                "topic_dir": output.topic_dir,
                 "state_md": output.state_md,
-                "next": "fill .daedalus/task-card.md and run daedalus validate"
+                "topic_state_md": output.topic_state_md,
+                "next": "fill active topic .daedalus/task-card.md and run daedalus validate"
             })
         ),
     }
@@ -37,7 +43,7 @@ pub fn print_transition(output: &TransitionStageOutput, format: OutputFormat) {
             println!("ok: state transition completed");
             println!("action: {}", output.action);
             println!("stage: {}", output.stage_id);
-            println!("task_dir: {}", output.task_dir.display());
+            println!("topic_dir: {}", output.task_dir.display());
             println!("state_md: {}", output.state_md.display());
         }
         OutputFormat::Json => println!(
@@ -46,7 +52,7 @@ pub fn print_transition(output: &TransitionStageOutput, format: OutputFormat) {
                 "ok": true,
                 "action": output.action,
                 "stage": output.stage_id,
-                "task_dir": output.task_dir,
+                "topic_dir": output.task_dir,
                 "state_md": output.state_md
             })
         ),
@@ -136,6 +142,128 @@ pub fn print_validation(output: &ValidationOutput, format: OutputFormat) {
                 "issues": output.issues,
                 "note": "validate checks structure and required files only; notes still need user-owned evidence",
                 "next": if output.is_ok() { "continue" } else { "fix listed issues or regenerate derived state with daedalus state render" }
+            })
+        ),
+    }
+}
+
+/// 输出 topic 操作结果。
+pub fn print_topic(output: &TopicOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: topic operation completed");
+            println!("action: {}", output.action);
+            println!("topic: {}", output.slug);
+            println!("project_dir: {}", output.project_dir.display());
+            println!("topic_dir: {}", output.topic_dir.display());
+            println!("state_md: {}", output.state_md.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "topic": output.slug,
+                "project_dir": output.project_dir,
+                "topic_dir": output.topic_dir,
+                "state_md": output.state_md
+            })
+        ),
+    }
+}
+
+/// 输出 topic 列表。
+pub fn print_topic_list(
+    project_dir: &std::path::Path,
+    topics: &[TopicSnapshot],
+    format: OutputFormat,
+) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: topics");
+            println!("project_dir: {}", project_dir.display());
+            for topic in topics {
+                println!(
+                    "topic: {} | {} | {} | {}",
+                    topic.slug, topic.title, topic.lifecycle, topic.path
+                );
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "project_dir": project_dir,
+                "topics": topics.iter().map(|topic| {
+                    json!({
+                        "slug": &topic.slug,
+                        "title": &topic.title,
+                        "lifecycle": &topic.lifecycle,
+                        "path": &topic.path,
+                        "inherits": &topic.inherits
+                    })
+                }).collect::<Vec<_>>()
+            })
+        ),
+    }
+}
+
+/// 输出 topic 校验结果。
+pub fn print_topic_validation(project_dir: &std::path::Path, slug: &str, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: topic valid");
+            println!("project_dir: {}", project_dir.display());
+            println!("topic: {slug}");
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "topic-validate",
+                "project_dir": project_dir,
+                "topic": slug
+            })
+        ),
+    }
+}
+
+/// 输出迁移结果。
+pub fn print_migration(output: &MigrateRepoLearningOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            if output.execute {
+                println!("ok: migration completed");
+            } else {
+                println!("ok: migration dry-run");
+            }
+            println!("project_dir: {}", output.project_dir.display());
+            println!("topic_dir: {}", output.topic_dir.display());
+            if let Some(backup_dir) = &output.backup_dir {
+                println!("backup_dir: {}", backup_dir.display());
+            }
+            if let Some(state_md) = &output.state_md {
+                println!("state_md: {}", state_md.display());
+            }
+            if let Some(topic_state_md) = &output.topic_state_md {
+                println!("topic_state_md: {}", topic_state_md.display());
+            }
+            for action in &output.planned_actions {
+                println!("action: {action}");
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "migrate-repo-learning-multi-topic",
+                "execute": output.execute,
+                "project_dir": &output.project_dir,
+                "topic_dir": &output.topic_dir,
+                "backup_dir": &output.backup_dir,
+                "state_md": &output.state_md,
+                "topic_state_md": &output.topic_state_md,
+                "planned_actions": &output.planned_actions
             })
         ),
     }

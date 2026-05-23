@@ -24,22 +24,26 @@ impl ValidationOutput {
 ///
 /// 该函数只读取文件系统，不会自动修复问题。调用方应根据 `issues`
 /// 决定是否提示用户、重新渲染状态，或阻止阶段完成。
-pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<ValidationOutput> {
+pub fn validate_workspace(
+    task_dir: &Path,
+    repo_root: Option<&Path>,
+    all_topics: bool,
+) -> Result<ValidationOutput> {
     let mut issues = Vec::new();
     let required = [
         "CLAUDE.md",
-        ".daedalus/task-card.md",
-        ".daedalus/outcome-map.md",
+        ".daedalus/project-map.md",
+        ".daedalus/topic-board.md",
         ".daedalus/state.toml",
         ".daedalus/state.md",
-        ".daedalus/todo.md",
         ".daedalus/long-context.md",
         ".daedalus/artifact-index.md",
         ".daedalus/decision-log.md",
         ".daedalus/validation-log.md",
-        "demo/.gitkeep",
-        "guides/.gitkeep",
-        "notes/.gitkeep",
+        "shared/README.md",
+        "shared/evidence-registry.md",
+        "shared/source-index.md",
+        "topics/.gitkeep",
         "source/.gitignore",
         "source/pull_source.sh",
     ];
@@ -62,18 +66,11 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         }
     };
 
-    if state_toml::active_stage_count(&doc) > 1 {
-        issues.push("multiple active stages".to_owned());
-    }
-
-    if let Some(current_phase) = state_toml::current_phase(&doc) {
-        if !state_toml::stage_exists(&doc, &current_phase) {
-            issues.push(format!(
-                "current_phase points to unknown stage: {current_phase}"
-            ));
-        }
-    } else {
-        issues.push("current_phase is missing".to_owned());
+    if state_toml::state_kind(&doc) != "project" {
+        issues.push(format!(
+            "project state expected, got {}",
+            state_toml::state_kind(&doc)
+        ));
     }
 
     match (
@@ -118,17 +115,34 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         issues.push("state.md is stale or missing".to_owned());
     }
 
-    for stage in state_toml::stages(&doc) {
-        if stage.status == "done" {
-            for artifact in stage.required_artifacts {
-                if !task_dir.join(&artifact).exists() {
-                    issues.push(format!(
-                        "completed stage `{}` missing artifact: {artifact}",
-                        stage.id
-                    ));
-                }
-            }
+    let active_count = state_toml::active_topic_count(&doc);
+    if active_count > 1 {
+        issues.push("multiple active topics".to_owned());
+    }
+
+    let topics = state_toml::topics(&doc);
+    let active_topic = state_toml::active_topic(&doc);
+    if let Some(active_topic) = &active_topic {
+        if !topics.iter().any(|topic| &topic.slug == active_topic) {
+            issues.push(format!(
+                "active_topic points to unknown topic: {active_topic}"
+            ));
         }
+    } else if active_count > 0 {
+        issues.push("active_topic is missing".to_owned());
+    }
+
+    let topic_targets: Vec<_> = if all_topics {
+        topics
+    } else {
+        topics
+            .into_iter()
+            .filter(|topic| Some(topic.slug.as_str()) == active_topic.as_deref())
+            .collect()
+    };
+    for topic in topic_targets {
+        let topic_dir = task_dir.join(&topic.path);
+        issues.extend(validate_topic_workspace(&topic_dir, &topic.slug)?);
     }
 
     if let Some(repo_root) = repo_root {
@@ -145,6 +159,86 @@ pub fn validate_workspace(task_dir: &Path, repo_root: Option<&Path>) -> Result<V
         task_dir: task_dir.to_path_buf(),
         issues,
     })
+}
+
+/// 校验 topic workspace。
+pub fn validate_topic_workspace(topic_dir: &Path, slug: &str) -> Result<Vec<String>> {
+    let mut issues = Vec::new();
+    let required = [
+        ".daedalus/task-card.md",
+        ".daedalus/outcome-map.md",
+        ".daedalus/state.toml",
+        ".daedalus/state.md",
+        ".daedalus/todo.md",
+        ".daedalus/long-context.md",
+        ".daedalus/artifact-index.md",
+        ".daedalus/decision-log.md",
+        ".daedalus/validation-log.md",
+    ];
+    for path in required {
+        if !topic_dir.join(path).exists() {
+            issues.push(format!("topic `{slug}` missing required file: {path}"));
+        }
+    }
+    for path in ["demo", "guides", "notes"] {
+        if !topic_dir.join(path).is_dir() {
+            issues.push(format!("topic `{slug}` missing required directory: {path}"));
+        }
+    }
+
+    let state_path = state_toml::state_path(topic_dir);
+    let doc = match state_toml::load_state_doc(&state_path) {
+        Ok(doc) => doc,
+        Err(error) => {
+            issues.push(format!(
+                "topic `{slug}` state.toml cannot be parsed: {error}"
+            ));
+            return Ok(issues);
+        }
+    };
+    if state_toml::state_kind(&doc) != "topic" {
+        issues.push(format!(
+            "topic `{slug}` state expected, got {}",
+            state_toml::state_kind(&doc)
+        ));
+    }
+    if state_toml::topic_slug(&doc) != slug {
+        issues.push(format!(
+            "topic slug mismatch: project references `{slug}`, topic state says `{}`",
+            state_toml::topic_slug(&doc)
+        ));
+    }
+    if state_toml::active_stage_count(&doc) > 1 {
+        issues.push(format!("topic `{slug}` has multiple active stages"));
+    }
+    if let Some(current_phase) = state_toml::current_phase(&doc) {
+        if !state_toml::stage_exists(&doc, &current_phase) {
+            issues.push(format!(
+                "topic `{slug}` current_phase points to unknown stage: {current_phase}"
+            ));
+        }
+    } else {
+        issues.push(format!("topic `{slug}` current_phase is missing"));
+    }
+
+    let state_md = state_toml::state_md_path(topic_dir);
+    if stale(&state_path, &state_md)? {
+        issues.push(format!("topic `{slug}` state.md is stale or missing"));
+    }
+
+    for stage in state_toml::stages(&doc) {
+        if stage.status == "done" {
+            for artifact in stage.required_artifacts {
+                if !topic_dir.join(&artifact).exists() {
+                    issues.push(format!(
+                        "topic `{slug}` completed stage `{}` missing artifact: {artifact}",
+                        stage.id
+                    ));
+                }
+            }
+        }
+    }
+    Ok(issues)
 }
 
 fn stale(source: &Path, generated: &Path) -> Result<bool> {

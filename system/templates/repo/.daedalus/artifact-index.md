@@ -1,19 +1,15 @@
-# 产物索引
+# Project 产物索引
 
-记录学习过程中产生的产物，以及它们服务的学习目的。
+记录 project 层产物，以及它们如何服务多个 topic。
 
-> `状态` 列只能使用 `草稿`、`已验证`、`待补充`、`不适用`。不要发明新的状态值；如需扩展，先更新模板、CLI 测试和相关提示词。
+> `状态` 列只能使用 `草稿`、`已验证`、`待补充`、`不适用`。专题阶段产物写入 `topics/<slug>/.daedalus/artifact-index.md`。
 
-| 产物 | 阶段 | 目的 | 状态 |
+| 产物 | 层级 | 目的 | 状态 |
 | --- | --- | --- | --- |
-| [`.daedalus/task-card.md`](task-card.md) | 01-goal-aligner | 学习目标与验收标准 | 草稿 |
-| [`.daedalus/outcome-map.md`](outcome-map.md) | all | 全程导航：最终产物、当前位置、缺口、依赖和停止规则 | 草稿 |
-| [`.daedalus/validation-log.md`](validation-log.md) | all | 记录 daedalus 教学引导效果与改进点 | 草稿 |
-| [`guides/`](../guides) | all | Agent 生成的行动指南与验收清单 | 草稿 |
-| [`notes/`](../notes) | all | 用户亲自实践后的学习笔记 | 草稿 |
-| [`guides/02-repo-scout/README.md`](../guides/02-repo-scout/README.md) | 02-repo-scout | 候选仓库比较、风险提示和源码准备建议的阶段入口 | 草稿 |
-| [`notes/03-socratic-coach/README.md`](../notes/03-socratic-coach/README.md) | 03-socratic-coach | 用户问题路线图、回答和阅读假设的阶段入口 | 草稿 |
-| [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 04-debugger-guide | 本地运行、调试和用户观察证据的阶段入口 | 草稿 |
-| [`notes/05-arch-analyzer/README.md`](../notes/05-arch-analyzer/README.md) | 05-arch-analyzer | 架构分析、不变量和 trade-off 的阶段入口 | 草稿 |
-| [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 06-code-reader | 核心源码阅读专题索引与已验证结论入口 | 草稿 |
-| [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 09-biz-solver | 业务迁移方案阶段入口 | 草稿 |
+| [`.daedalus/project-map.md`](project-map.md) | project | 说明 North Star、topic 路线和跨专题停止规则 | 草稿 |
+| [`.daedalus/topic-board.md`](topic-board.md) | project | 维护 topic 列表、状态、依赖和下一步 | 草稿 |
+| [`.daedalus/state.md`](state.md) | project | 由 project `state.toml` 渲染的可读状态 | 已验证 |
+| [`shared/README.md`](../shared/README.md) | shared | 跨 topic 共享上下文入口 | 草稿 |
+| [`shared/source-index.md`](../shared/source-index.md) | shared | 被学习 repo 的源码索引和稳定入口 | 草稿 |
+| [`shared/evidence-registry.md`](../shared/evidence-registry.md) | shared | 跨 topic 复用的证据登记表 | 草稿 |
+| [`topics/`](../topics) | topic collection | 专题学习目录；每个 topic 自己维护 10-stage 产物 | 草稿 |

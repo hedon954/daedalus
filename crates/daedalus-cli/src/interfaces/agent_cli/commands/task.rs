@@ -53,7 +53,7 @@ impl CmdExecutor for TaskCompleteArgs {
             self.task_dir,
             CloseTaskAction::Complete,
             self.reason,
-            true,
+            false,
             false,
             None,
         )

@@ -13,6 +13,8 @@ phase: repo.phase3-practice
 
 本 prompt 只定义 repo mini demo 的实作节奏。实现后的学习总结和可迁移结论来自 `Summarize Learning Progress`，实现解释服从 `Apply First Principles`。
 
+所有 demo 实现文件默认位于 active topic 的 `demo/` 下；project root 不直接承载专题 demo 代码。
+
 ## Repo-Specific Trigger
 
 - mini demo 架构已经确定。
@@ -53,7 +55,7 @@ Agent 可以：
 
 Agent 不可以：
 
-- 默认创建 `demo/Cargo.toml`、`demo/src/*` 或其它实现文件。
+- 默认创建 active topic 的 `demo/Cargo.toml`、`demo/src/*` 或其它实现文件。
 - 把“继续”“可以”“开始吧”理解成“Agent 代写”。
 - 把 Agent 自己写的代码记录成用户实践。
 
@@ -66,7 +68,7 @@ Agent 不可以：
 - 保留能帮助学习的命名和模块边界。
 - 实现后立刻运行最小验证。
 - 用户练习优先于 Agent 速度。每个 slice 先给行动卡，等用户实现或明确授权后再改代码。
-- Review 或验证通过后必须同步学习进度：更新 `.daedalus/outcome-map.md` 和 `.daedalus/todo.md`，并告诉用户当前 slice 是否完成、下一步解锁什么。
+- Review 或验证通过后必须同步学习进度：更新 active topic 的 `.daedalus/outcome-map.md` 和 `.daedalus/todo.md`，并告诉用户当前 slice 是否完成、下一步解锁什么。
 
 ## Output Delta
 

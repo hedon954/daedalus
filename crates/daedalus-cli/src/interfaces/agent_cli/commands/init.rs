@@ -35,6 +35,12 @@ pub enum InitKind {
 pub struct InitRepoLearningArgs {
     /// 学习任务名称。
     pub name: String,
+    /// 初始专题 slug。
+    #[arg(long)]
+    pub topic: String,
+    /// 初始专题标题。
+    #[arg(long)]
+    pub title: String,
     /// 是否允许已有 active task 时继续创建。
     #[arg(long)]
     pub allow_existing_active: bool,
@@ -49,6 +55,8 @@ impl CmdExecutor for InitRepoLearningArgs {
         let output = init_repo_learning(InitTaskOptions {
             repo_root: ctx.repo_root,
             name: self.name,
+            topic_slug: self.topic,
+            topic_title: self.title,
             allow_existing_active: self.allow_existing_active,
             reason: self.reason,
         })?;

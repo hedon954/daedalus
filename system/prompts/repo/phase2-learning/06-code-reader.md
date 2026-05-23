@@ -15,14 +15,14 @@ phase: repo.phase2-learning
 
 本 prompt 只定义 repo 核心代码阅读方法。核心原则：不要按函数清单读源码；要从工业级项目的真实失败模式出发，追踪源码如何处理生产约束、保护不变量、付出代价，并抽取可迁移模式。
 
-代码阅读不是在源码专题被读完时完成，而是在下一个 demo 或业务迁移产物的决策不再被阻塞时完成。每轮阅读必须服务 `.daedalus/outcome-map.md` 中的一个 open gap，并填补 `demo/design.md` 草案里的一个字段。
+代码阅读不是在源码专题被读完时完成，而是在下一个 demo 或业务迁移产物的决策不再被阻塞时完成。每轮阅读必须服务 active topic 的 `.daedalus/outcome-map.md` 中的一个 open gap，并填补 active topic 的 `demo/design.md` 草案里的一个字段。
 
 ## Repo-Specific Trigger
 
 - 已有核心入口或架构问题。
 - 需要逐行解释关键实现。
 - demo 设计需要明确不变量和主链路。
-- `demo/design.md` 或业务迁移产物中存在被源码证据阻塞的字段。
+- active topic 的 `demo/design.md` 或业务迁移产物中存在被源码证据阻塞的字段。
 
 ## Learning Navigation Gate
 
@@ -37,7 +37,7 @@ phase: repo.phase2-learning
 - After this:
 ```
 
-如果无法填写 `Final artifact` 或 `Current gap`，不要继续读源码。先回到 `.daedalus/outcome-map.md` 收窄目标，或把这个源码点加入 stop rules。
+如果无法填写 `Final artifact` 或 `Current gap`，不要继续读源码。先回到 active topic 的 `.daedalus/outcome-map.md` 收窄目标，或把这个源码点加入 stop rules。
 
 ## Repo Reading Order
 
@@ -53,9 +53,9 @@ phase: repo.phase2-learning
 1. 每次只读一个可闭环的生产问题，不按文件或函数覆盖率推进。
 2. 先让用户说出 naive 实现和可能失败点，再读源码验证 repo 的真实应对。
 3. 用“这段代码防止了什么生产事故”和“这段代码保护了什么不变量”解释关键实现。
-4. 读源码前声明它会改变 `demo/design.md` 的哪个字段，例如 invariant、data structure、state machine 或 acceptance test。
+4. 读源码前声明它会改变 active topic 的 `demo/design.md` 的哪个字段，例如 invariant、data structure、state machine 或 acceptance test。
 5. 读完后产出可迁移模式、不应照抄的部分，并更新 demo 不变量清单或草案字段。
-6. 每轮代码阅读都要实时写入 `notes/06-code-reader/README.md` 或同目录专题 notes，记录“生产问题、用户猜测、Agent 校准、源码证据、不变量、代价、验证状态”，避免 Agent 直接替用户完成理解。
+6. 每轮代码阅读都要实时写入 active topic 的 `notes/06-code-reader/README.md` 或同目录专题 notes，记录“生产问题、用户猜测、Agent 校准、源码证据、不变量、代价、验证状态”，避免 Agent 直接替用户完成理解。
 
 ## Demo Impact Gate
 
@@ -81,7 +81,7 @@ phase: repo.phase2-learning
 
 ## Draft Demo Skeleton
 
-`06-code-reader` 应在进入开放式深读前创建或维护 `demo/design.md` 草案，并明确标注哪些字段仍然 `blocked by source evidence`。
+`06-code-reader` 应在进入开放式深读前创建或维护 active topic 的 `demo/design.md` 草案，并明确标注哪些字段仍然 `blocked by source evidence`。
 
 草案至少包含：
 
@@ -121,11 +121,11 @@ phase: repo.phase2-learning
 Agent 不得在这种状态下：
 
 - 开启新的源码验证轮次。
-- 把 Agent 自己的预读写成完整 `notes/06-code-reader/README.md` 或专题 notes。
+- 把 Agent 自己的预读写成完整 active topic 的 `notes/06-code-reader/README.md` 或专题 notes。
 - 把“源码已核对”写成“用户已理解”或笼统的“已验证”。
 - 将下一阶段 todo 标记为完成。
 
-如需准备阅读材料，只能写入 `guides/06-code-reader/`，并标注 `待用户回答` 或 `待源码验证`。
+如需准备阅读材料，只能写入 active topic 的 `guides/06-code-reader/`，并标注 `待用户回答` 或 `待源码验证`。
 
 ## Source Judgment Protocol
 
@@ -181,10 +181,10 @@ Agent 不得在这种状态下：
 - 只在关键片段逐行阅读。
 - 不要只解释“代码做了什么”；必须解释“为什么生产环境需要它”和“如果没有它会怎样失败”。
 - 每个源码专题都必须落到不变量、失败兜底、设计代价和可迁移模式。
-- 用户回答、纠正或验证关键点后，必须先更新 `notes/06-code-reader/README.md` 或同目录专题文件，再继续下一段源码阅读；不能只在聊天中总结。
+- 用户回答、纠正或验证关键点后，必须先更新 active topic 的 `notes/06-code-reader/README.md` 或同目录专题文件，再继续下一段源码阅读；不能只在聊天中总结。
 - 每个阅读片段都要回到架构问题或 demo 设计。
 - 不要因为源码专题还没穷尽而继续读；只要 demo 或业务产物的当前决策不再阻塞，就停止。
 - 不要替用户直接写完整代码阅读笔记；先让用户描述理解，再由 Agent 校正、补充证据和按需画图。
 - 用户回答中的误解也要保留并标注为“已校正”或“待验证”，不要静默改写成正确答案。
-- `notes/06-code-reader/` 中的每个阅读小节必须能看出“用户猜测”来自用户；如果没有用户猜测，该小节只能保留在 `guides/06-code-reader/`。
-- `notes/06-code-reader/` 中的源码结论必须附带证据锚点或验证路径；没有证据锚点的 Agent 判断只能标注为“假设”。
+- active topic 的 `notes/06-code-reader/` 中的每个阅读小节必须能看出“用户猜测”来自用户；如果没有用户猜测，该小节只能保留在 active topic 的 `guides/06-code-reader/`。
+- active topic 的 `notes/06-code-reader/` 中的源码结论必须附带证据锚点或验证路径；没有证据锚点的 Agent 判断只能标注为“假设”。

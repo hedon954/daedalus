@@ -4,10 +4,9 @@ use crate::application::render::render_state;
 use crate::application::state_machine::StateTransition;
 use crate::domain::transition::Transition;
 use crate::domain::{
-    ApprovalSource, DaedalusError, Result, StageState, StageTransitionKind, TaskLifecycle,
-    WorkspaceBucket,
+    ApprovalSource, DaedalusError, Result, StageState, StageTransitionKind, TopicLifecycle,
 };
-use crate::infrastructure::{clock, state_toml, workspace_fs};
+use crate::infrastructure::{clock, state_toml};
 
 /// 阶段状态流转动作。
 #[derive(Debug, Clone)]
@@ -92,7 +91,7 @@ impl StateTransition for TransitionStageOptions {
     fn pre_check(&self) -> Result<()> {
         let state_path = state_toml::state_path(&self.task_dir);
         let doc = state_toml::load_state_doc(&state_path)?;
-        ensure_active_learning_task(&doc, &self.task_dir)?;
+        ensure_active_topic(&doc)?;
         validate_stage_transition(&doc, self)
     }
 
@@ -219,24 +218,19 @@ fn target_state(kind: StageTransitionKind) -> StageState {
     }
 }
 
-fn ensure_active_learning_task(
-    doc: &toml_edit::DocumentMut,
-    task_dir: &std::path::Path,
-) -> Result<()> {
-    let lifecycle = state_toml::task_lifecycle(doc)?;
-    if lifecycle != TaskLifecycle::Active {
-        return Err(DaedalusError::InvalidTaskLifecycleTransition(format!(
-            "expected active task, got {}",
-            lifecycle.as_str()
-        )));
+fn ensure_active_topic(doc: &toml_edit::DocumentMut) -> Result<()> {
+    let kind = state_toml::state_kind(doc);
+    if kind != "topic" {
+        return Err(DaedalusError::InvalidStateDocumentKind {
+            expected: "topic".to_owned(),
+            actual: kind.to_owned(),
+        });
     }
-    let state_bucket = state_toml::workspace_bucket(doc)?;
-    let actual_bucket = workspace_fs::bucket_from_task_dir(task_dir)?;
-    if state_bucket != WorkspaceBucket::Learning || actual_bucket != WorkspaceBucket::Learning {
-        return Err(DaedalusError::TaskLifecycleLocationMismatch(format!(
-            "expected active task in 02-learning, state={}, actual={}",
-            state_bucket.as_str(),
-            actual_bucket.as_str()
+    let lifecycle = state_toml::topic_lifecycle(doc)?;
+    if lifecycle != TopicLifecycle::Active {
+        return Err(DaedalusError::InvalidTopicLifecycleTransition(format!(
+            "expected active topic, got {}",
+            lifecycle.as_str()
         )));
     }
     Ok(())

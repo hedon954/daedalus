@@ -6,13 +6,15 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## North Star
 
+- Project：`{{TASK_NAME}}`
+- Topic：`{{TOPIC_SLUG}}` - {{TOPIC_TITLE}}
 - 最终产物：
 - 最小 demo：
 - 业务迁移目标：
 
 ## Current Path
 
-当前正在从 `01-goal-aligner` 走向 `.daedalus/task-card.md` 和 `.daedalus/outcome-map.md`。
+当前 active topic 正在从 `01-goal-aligner` 走向 `.daedalus/task-card.md` 和 `.daedalus/outcome-map.md`。
 
 ## Now
 

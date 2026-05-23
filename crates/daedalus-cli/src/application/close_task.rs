@@ -55,7 +55,7 @@ impl CloseTaskAction {
     fn next_message(self) -> &'static str {
         match self {
             Self::Complete => {
-                "active WIP slot released; start a new task with daedalus init repo-learning <name>"
+                "active WIP slot released; start a new project with daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>"
             }
             Self::Abandon => {
                 "active WIP slot released; review the abandoned task before starting a replacement"
@@ -129,6 +129,9 @@ impl StateTransition for CloseTaskOptions {
         if destination.exists() {
             return Err(DaedalusError::TaskMoveDestinationExists(destination));
         }
+        if self.action == CloseTaskAction::Complete {
+            validate_project_topics_closed(&doc)?;
+        }
         if self.complete_final_stage {
             validate_final_stage_completion(
                 &doc,
@@ -144,6 +147,26 @@ impl StateTransition for CloseTaskOptions {
     fn commit(self) -> Result<Self::Output> {
         commit_close_task(self)
     }
+}
+
+fn validate_project_topics_closed(doc: &toml_edit::DocumentMut) -> Result<()> {
+    let unfinished: Vec<_> = state_toml::topics(doc)
+        .into_iter()
+        .filter(|topic| {
+            !matches!(
+                topic.lifecycle.as_str(),
+                "completed" | "abandoned" | "skipped"
+            )
+        })
+        .map(|topic| topic.slug)
+        .collect();
+    if !unfinished.is_empty() {
+        return Err(DaedalusError::InvalidTaskLifecycleTransition(format!(
+            "project has unfinished topics: {}",
+            unfinished.join(", ")
+        )));
+    }
+    Ok(())
 }
 
 fn commit_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {

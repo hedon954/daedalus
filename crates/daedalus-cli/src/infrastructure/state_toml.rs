@@ -5,7 +5,8 @@ use toml_edit::{Array, DocumentMut, Item, Table, value};
 
 use crate::domain::transition::Transition;
 use crate::domain::{
-    DaedalusError, Result, StageSnapshot, StageState, TaskLifecycle, WorkspaceBucket,
+    DaedalusError, Result, StageSnapshot, StageState, TaskLifecycle, TopicLifecycle, TopicSnapshot,
+    WorkspaceBucket,
 };
 
 /// 返回学习任务的 `state.toml` 路径。
@@ -47,7 +48,26 @@ pub fn save_state_doc(path: &Path, doc: &DocumentMut) -> Result<()> {
 
 /// 读取当前阶段 ID。
 pub fn current_phase(doc: &DocumentMut) -> Option<String> {
-    doc["task"]["current_phase"].as_str().map(ToOwned::to_owned)
+    doc.get("topic")
+        .and_then(|topic| topic.get("current_phase"))
+        .and_then(Item::as_str)
+        .or_else(|| {
+            doc.get("task")
+                .and_then(|task| task.get("current_phase"))
+                .and_then(Item::as_str)
+        })
+        .map(ToOwned::to_owned)
+}
+
+/// 读取 state 文档类型。
+pub fn state_kind(doc: &DocumentMut) -> &'static str {
+    if doc.get("topic").is_some_and(Item::is_table) {
+        "topic"
+    } else if doc.get("project").is_some_and(Item::is_table) {
+        "project"
+    } else {
+        "legacy-task"
+    }
 }
 
 /// 读取任务生命周期。
@@ -102,18 +122,167 @@ pub fn close_reason(doc: &DocumentMut) -> Option<String> {
 
 /// 设置当前阶段 ID。
 pub fn set_current_phase(doc: &mut DocumentMut, stage_id: &str) {
-    doc["task"]["current_phase"] = value(stage_id);
+    if doc.get("topic").is_some_and(Item::is_table) {
+        doc["topic"]["current_phase"] = value(stage_id);
+    } else {
+        doc["task"]["current_phase"] = value(stage_id);
+    }
 }
 
 /// 设置面向 Agent 的下一步动作提示。
 pub fn set_next_action(doc: &mut DocumentMut, next_action: &str) {
-    doc["task"]["next_action"] = value(next_action);
+    if doc.get("topic").is_some_and(Item::is_table) {
+        doc["topic"]["next_action"] = value(next_action);
+    } else {
+        doc["task"]["next_action"] = value(next_action);
+    }
+}
+
+/// 读取 project active topic。
+pub fn active_topic(doc: &DocumentMut) -> Option<String> {
+    doc.get("project")
+        .and_then(|project| project.get("active_topic"))
+        .and_then(Item::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .map(ToOwned::to_owned)
+}
+
+/// 设置 project active topic。
+pub fn set_active_topic(doc: &mut DocumentMut, slug: &str) {
+    doc["project"]["active_topic"] = value(slug);
+}
+
+/// 读取所有 project topics。
+pub fn topics(doc: &DocumentMut) -> Vec<TopicSnapshot> {
+    doc.get("topics")
+        .and_then(Item::as_array_of_tables)
+        .map(|array| {
+            array
+                .iter()
+                .map(|topic| TopicSnapshot {
+                    slug: topic["slug"].as_str().unwrap_or_default().to_owned(),
+                    title: topic["title"].as_str().unwrap_or_default().to_owned(),
+                    lifecycle: topic["lifecycle"].as_str().unwrap_or_default().to_owned(),
+                    path: topic["path"].as_str().unwrap_or_default().to_owned(),
+                    inherits: string_array(topic.get("inherits")),
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// 判断 project 是否登记某个 topic。
+pub fn topic_exists(doc: &DocumentMut, slug: &str) -> bool {
+    topics(doc).iter().any(|topic| topic.slug == slug)
+}
+
+/// 读取某个 topic 的 path。
+pub fn topic_path(doc: &DocumentMut, slug: &str) -> Option<String> {
+    topics(doc)
+        .into_iter()
+        .find(|topic| topic.slug == slug)
+        .map(|topic| topic.path)
+}
+
+/// 读取 project 中 active topics 的数量。
+pub fn active_topic_count(doc: &DocumentMut) -> usize {
+    topics(doc)
+        .iter()
+        .filter(|topic| topic.lifecycle == "active")
+        .count()
+}
+
+/// 设置 project topic lifecycle。
+pub fn set_project_topic_lifecycle(
+    doc: &mut DocumentMut,
+    slug: &str,
+    lifecycle: TopicLifecycle,
+) -> Result<()> {
+    let Some(array) = doc.get_mut("topics").and_then(Item::as_array_of_tables_mut) else {
+        return Err(DaedalusError::TopicNotFound(slug.to_owned()));
+    };
+    for topic in array.iter_mut() {
+        if topic["slug"].as_str() == Some(slug) {
+            topic["lifecycle"] = value(lifecycle.as_str());
+            return Ok(());
+        }
+    }
+    Err(DaedalusError::TopicNotFound(slug.to_owned()))
+}
+
+/// 将除目标 topic 外的 active topic 标记为 blocked。
+pub fn block_other_active_topics(doc: &mut DocumentMut, slug: &str) {
+    if let Some(array) = doc.get_mut("topics").and_then(Item::as_array_of_tables_mut) {
+        for topic in array.iter_mut() {
+            if topic["slug"].as_str() != Some(slug) && topic["lifecycle"].as_str() == Some("active")
+            {
+                topic["lifecycle"] = value("blocked");
+            }
+        }
+    }
+}
+
+/// 追加 project topic 记录。
+pub fn append_project_topic(doc: &mut DocumentMut, topic: TopicSnapshot) {
+    let mut table = Table::new();
+    table["slug"] = value(topic.slug);
+    table["title"] = value(topic.title);
+    table["lifecycle"] = value(topic.lifecycle);
+    table["path"] = value(topic.path);
+    let mut inherits = Array::new();
+    for item in topic.inherits {
+        inherits.push(item);
+    }
+    table["inherits"] = Item::Value(inherits.into());
+
+    if !doc.as_table().contains_key("topics") {
+        doc["topics"] = Item::ArrayOfTables(Default::default());
+    }
+    if let Some(array) = doc["topics"].as_array_of_tables_mut() {
+        array.push(table);
+    }
+}
+
+/// 读取 topic lifecycle。
+pub fn topic_lifecycle(doc: &DocumentMut) -> Result<TopicLifecycle> {
+    let value = doc
+        .get("topic")
+        .and_then(|topic| topic.get("lifecycle"))
+        .and_then(Item::as_str)
+        .ok_or_else(|| {
+            DaedalusError::InvalidTopicLifecycleTransition("missing topic lifecycle".into())
+        })?;
+    TopicLifecycle::parse(value)
+        .ok_or_else(|| DaedalusError::InvalidTopicLifecycleTransition(value.to_owned()))
+}
+
+/// 设置 topic lifecycle。
+pub fn set_topic_lifecycle(doc: &mut DocumentMut, lifecycle: TopicLifecycle) {
+    doc["topic"]["lifecycle"] = value(lifecycle.as_str());
+}
+
+/// 读取 topic slug。
+pub fn topic_slug(doc: &DocumentMut) -> String {
+    doc.get("topic")
+        .and_then(|topic| topic.get("slug"))
+        .and_then(Item::as_str)
+        .unwrap_or("unknown")
+        .to_owned()
+}
+
+/// 读取 topic title。
+pub fn topic_title(doc: &DocumentMut) -> String {
+    doc.get("topic")
+        .and_then(|topic| topic.get("title"))
+        .and_then(Item::as_str)
+        .unwrap_or("unknown")
+        .to_owned()
 }
 
 /// 读取所有阶段快照。
 pub fn stages(doc: &DocumentMut) -> Vec<StageSnapshot> {
-    doc["stages"]
-        .as_array_of_tables()
+    doc.get("stages")
+        .and_then(Item::as_array_of_tables)
         .map(|array| {
             array
                 .iter()
@@ -178,7 +347,7 @@ pub fn stage_required_artifacts(doc: &DocumentMut, stage_id: &str) -> Result<Vec
 
 /// 设置某个阶段的状态。
 pub fn set_stage_state(doc: &mut DocumentMut, stage_id: &str, state: StageState) -> Result<()> {
-    let Some(array) = doc["stages"].as_array_of_tables_mut() else {
+    let Some(array) = doc.get_mut("stages").and_then(Item::as_array_of_tables_mut) else {
         return Err(DaedalusError::InvalidStageId(stage_id.to_owned()));
     };
 
@@ -194,7 +363,7 @@ pub fn set_stage_state(doc: &mut DocumentMut, stage_id: &str, state: StageState)
 
 /// 将除目标阶段外的 active 阶段标记为 blocked。
 pub fn set_other_active_to_blocked(doc: &mut DocumentMut, stage_id: &str) {
-    if let Some(array) = doc["stages"].as_array_of_tables_mut() {
+    if let Some(array) = doc.get_mut("stages").and_then(Item::as_array_of_tables_mut) {
         for stage in array.iter_mut() {
             if stage["id"].as_str() != Some(stage_id) && stage["status"].as_str() == Some("active")
             {
@@ -206,7 +375,7 @@ pub fn set_other_active_to_blocked(doc: &mut DocumentMut, stage_id: &str) {
 
 /// 回退到目标阶段：目标阶段设为 active，目标之后的阶段全部重置为 pending。
 pub fn rollback_to_stage(doc: &mut DocumentMut, stage_id: &str) -> Result<()> {
-    let Some(array) = doc["stages"].as_array_of_tables_mut() else {
+    let Some(array) = doc.get_mut("stages").and_then(Item::as_array_of_tables_mut) else {
         return Err(DaedalusError::InvalidStageId(stage_id.to_owned()));
     };
 
@@ -229,7 +398,7 @@ pub fn rollback_to_stage(doc: &mut DocumentMut, stage_id: &str) -> Result<()> {
 
 /// 关闭任务时将仍处于 active 的阶段标记为 paused，避免 closed task 继续呈现进行中状态。
 pub fn pause_active_stages(doc: &mut DocumentMut) {
-    if let Some(array) = doc["stages"].as_array_of_tables_mut() {
+    if let Some(array) = doc.get_mut("stages").and_then(Item::as_array_of_tables_mut) {
         for stage in array.iter_mut() {
             if stage["status"].as_str() == Some("active") {
                 stage["status"] = value(StageState::Paused.as_str());
@@ -260,8 +429,8 @@ pub fn append_transition(doc: &mut DocumentMut, transition: Transition) {
 
 /// 读取状态流转历史。
 pub fn transitions(doc: &DocumentMut) -> Vec<Transition> {
-    doc["transitions"]
-        .as_array_of_tables()
+    doc.get("transitions")
+        .and_then(Item::as_array_of_tables)
         .map(|array| {
             array
                 .iter()
@@ -302,8 +471,14 @@ pub fn task_name(doc: &DocumentMut) -> String {
 
 /// 读取面向 Agent 的下一步动作提示。
 pub fn next_action(doc: &DocumentMut) -> String {
-    doc["task"]["next_action"]
-        .as_str()
+    doc.get("topic")
+        .and_then(|topic| topic.get("next_action"))
+        .and_then(Item::as_str)
+        .or_else(|| {
+            doc.get("task")
+                .and_then(|task| task.get("next_action"))
+                .and_then(Item::as_str)
+        })
         .unwrap_or("Review current stage and update todo.md.")
         .to_owned()
 }

@@ -14,6 +14,8 @@ phase: repo.phase3-practice
 
 本 prompt 只定义 repo 学习结果迁移回业务问题的动作。迁移问题生成、因果链解释和总结方式来自上方 `@` 引用。
 
+业务迁移产物默认写入 active topic；跨专题通用模式再同步到 project root 的 `shared/transfer-patterns.md`。
+
 ## Repo-Specific Trigger
 
 - mini demo 已实现或核心模式已被验证。
@@ -25,7 +27,7 @@ phase: repo.phase3-practice
 1. 重述用户最初的问题和约束。
 2. 提取 repo/demo 中真正可迁移的模式。
 3. 判断哪些模式可以直接用，哪些需要改造，哪些不能用。
-4. 给出一个最小业务方案：架构、接口、数据流、风险和验证方式，并写入 `notes/09-biz-solver/README.md` 或同目录专题文件。
+4. 给出一个最小业务方案：架构、接口、数据流、风险和验证方式，并写入 active topic 的 `notes/09-biz-solver/README.md` 或同目录专题文件。
 5. 标注还需要补学或实验的内容。
 
 ## Output Delta

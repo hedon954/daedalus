@@ -182,6 +182,12 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
                 .add_modifier(Modifier::BOLD),
         ),
         Span::raw("    "),
+        Span::styled("Topic  ", muted()),
+        Span::styled(
+            overview.active_topic.as_str(),
+            Style::default().fg(TODO_ACCENT),
+        ),
+        Span::raw("    "),
         Span::styled("Path  ", muted()),
         Span::styled(
             overview.task_dir.display().to_string(),
@@ -292,7 +298,11 @@ fn render_task_list(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary],
                         .fg(bucket_accent(&task.bucket))
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(format!("{:<28}", task.task_name), Style::default().fg(TEXT)),
+                Span::styled(format!("{:<24}", task.task_name), Style::default().fg(TEXT)),
+                Span::styled(
+                    format!("{:<18}", task.active_topic),
+                    Style::default().fg(TODO_ACCENT),
+                ),
                 Span::styled(format!("{:<11}", task.lifecycle), muted()),
                 Span::styled(
                     format!("{:<18}", task.current_phase),

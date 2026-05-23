@@ -14,6 +14,8 @@ phase: repo.phase4-closing
 
 本 prompt 只定义 repo 学习闭环的完成门槛。阶段总结、知识归档和长期上下文压缩来自上方 `@` 引用。
 
+关闭时先关闭 active topic，再在所有 topic 都关闭后关闭 project。不要把一个专题完成误判为整个 project 完成。
+
 ## Repo-Specific Trigger
 
 - repo 学习阶段完成。
@@ -22,7 +24,7 @@ phase: repo.phase4-closing
 
 ## Repo Completion Evidence
 
-- 学习任务卡和最终结果。
+- active topic 的学习任务卡和最终结果。
 - repo 选择理由与放弃的候选项。
 - 核心问题路线图。
 - 运行手册、调试链路、架构图、代码阅读笔记。
@@ -32,7 +34,7 @@ phase: repo.phase4-closing
 
 ## Repo-Specific Workflow
 
-1. 检查学习任务是否满足 completed 条件。
+1. 检查 active topic 是否满足 completed 条件；如要关闭 project，必须确认所有 topic 都已 completed 或 abandoned。
 2. 汇总产物清单和位置。
 3. 区分已验证结论、未解决问题和后续建议。
 4. 使用 `Export Verified Knowledge` 判断可迁移知识的归档位置。
@@ -53,6 +55,12 @@ phase: repo.phase4-closing
 ## Completion Gate
 
 如果没有 demo、没有运行验证或没有业务迁移，不能标记为 completed，只能标记为 paused 或 abandoned。
+
+CLI 操作必须遵守：
+
+- 专题完成：`daedalus topic complete <topic-slug>`。
+- 专题放弃：`daedalus topic abandon <topic-slug>`。
+- 整个 project 完成：确认没有 active topic 后再运行 `daedalus task complete <project-dir> --reason <reason>`。
 
 ## Repo-Specific Constraints
 

@@ -105,15 +105,17 @@ impl TuiApp {
 /// 选择页展示的学习任务摘要。
 #[derive(Debug, Clone)]
 pub struct TuiTaskSummary {
-    /// 学习任务名称。
+    /// 学习项目名称。
     pub task_name: String,
-    /// 学习任务目录。
+    /// 学习项目目录。
     pub path: PathBuf,
     /// 实际所在 workspace bucket。
     pub bucket: String,
     /// 生命周期。
     pub lifecycle: String,
-    /// 当前阶段。
+    /// Active topic。
+    pub active_topic: String,
+    /// 当前 topic 阶段。
     pub current_phase: String,
     /// 当前阶段状态。
     pub current_status: String,
@@ -126,10 +128,16 @@ pub struct TuiTaskSummary {
 /// TUI 只读总览所需的数据。
 #[derive(Debug, Clone)]
 pub struct TuiOverview {
-    /// 学习任务名称。
+    /// 学习项目名称。
     pub task_name: String,
-    /// 学习任务目录。
+    /// 学习项目目录。
     pub task_dir: PathBuf,
+    /// Active topic slug。
+    pub active_topic: String,
+    /// Active topic title。
+    pub active_topic_title: String,
+    /// Active topic 目录。
+    pub topic_dir: Option<PathBuf>,
     /// 任务生命周期状态。
     pub lifecycle: String,
     /// workspace bucket。
@@ -157,8 +165,20 @@ pub struct TuiOverview {
 /// 从学习任务目录加载 TUI 只读总览数据。
 pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
     let doc = state_toml::load_state_doc(&state_toml::state_path(task_dir))?;
-    let current_phase = state_toml::current_phase(&doc).unwrap_or_else(|| "unknown".to_owned());
-    let stages = state_toml::stages(&doc);
+    let (topic_dir, topic_doc) = active_topic_doc(task_dir, &doc)?;
+    let active_topic = topic_doc
+        .as_ref()
+        .map(state_toml::topic_slug)
+        .or_else(|| state_toml::active_topic(&doc))
+        .unwrap_or_else(|| "none".to_owned());
+    let active_topic_title = topic_doc
+        .as_ref()
+        .map(state_toml::topic_title)
+        .unwrap_or_else(|| "none".to_owned());
+    let progress_doc = topic_doc.as_ref().unwrap_or(&doc);
+    let current_phase =
+        state_toml::current_phase(progress_doc).unwrap_or_else(|| "unknown".to_owned());
+    let stages = state_toml::stages(progress_doc);
     let current_status = stages
         .iter()
         .find(|stage| stage.id == current_phase)
@@ -170,15 +190,16 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
     let workspace_bucket = actual_bucket(task_dir);
 
     let mut missing_artifacts = Vec::new();
+    let artifact_root = topic_dir.as_deref().unwrap_or(task_dir);
     for stage in stages {
         for artifact in stage.required_artifacts {
-            if !task_dir.join(&artifact).exists() {
+            if !artifact_root.join(&artifact).exists() {
                 missing_artifacts.push(format!("{artifact} ({})", stage.id));
             }
         }
     }
 
-    let todo_summary = fs::read_to_string(task_dir.join(".daedalus").join("todo.md"))
+    let todo_summary = fs::read_to_string(artifact_root.join(".daedalus").join("todo.md"))
         .ok()
         .map(|content| {
             content
@@ -190,7 +211,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         })
         .unwrap_or_default();
 
-    let transitions = state_toml::transitions(&doc);
+    let transitions = state_toml::transitions(progress_doc);
     let start = transitions.len().saturating_sub(RECENT_TRANSITION_LIMIT);
     let recent_transitions = transitions[start..]
         .iter()
@@ -213,6 +234,9 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
         task_dir: task_dir.to_path_buf(),
+        active_topic,
+        active_topic_title,
+        topic_dir,
         lifecycle,
         workspace_bucket,
         current_phase,
@@ -229,20 +253,10 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
 
 /// 查找当前目录是否处于某个学习任务目录或其子目录下。
 pub fn enclosing_task_dir(cwd: &Path, repo_root: &Path) -> Option<PathBuf> {
-    let mut current = cwd.to_path_buf();
-    loop {
-        if current.join(".daedalus").join("state.toml").exists() {
-            return Some(current);
-        }
-        if current.file_name().and_then(|name| name.to_str()) == Some(".daedalus")
-            && current.join("state.toml").exists()
-        {
-            return current.parent().map(Path::to_path_buf);
-        }
-        if current == repo_root || !current.pop() {
-            return None;
-        }
+    if let Some(topic_dir) = workspace_fs::enclosing_topic_dir(cwd) {
+        return workspace_fs::project_dir_from_topic_dir(&topic_dir).ok();
     }
+    workspace_fs::enclosing_project_dir(cwd).filter(|path| path.starts_with(repo_root))
 }
 
 /// 扫描当前已具备明确 lifecycle 语义的 workspace bucket。
@@ -278,8 +292,16 @@ pub fn scan_task_summaries(repo_root: &Path) -> Result<Vec<TuiTaskSummary>> {
 
 fn summary_from_task_dir(task_dir: &Path, bucket: &str) -> Result<TuiTaskSummary> {
     let doc = state_toml::load_state_doc(&state_toml::state_path(task_dir))?;
-    let current_phase = state_toml::current_phase(&doc).unwrap_or_else(|| "unknown".to_owned());
-    let stages = state_toml::stages(&doc);
+    let (_, topic_doc) = active_topic_doc(task_dir, &doc)?;
+    let progress_doc = topic_doc.as_ref().unwrap_or(&doc);
+    let active_topic = topic_doc
+        .as_ref()
+        .map(state_toml::topic_slug)
+        .or_else(|| state_toml::active_topic(&doc))
+        .unwrap_or_else(|| "none".to_owned());
+    let current_phase =
+        state_toml::current_phase(progress_doc).unwrap_or_else(|| "unknown".to_owned());
+    let stages = state_toml::stages(progress_doc);
     let current_status = stages
         .iter()
         .find(|stage| stage.id == current_phase)
@@ -290,11 +312,27 @@ fn summary_from_task_dir(task_dir: &Path, bucket: &str) -> Result<TuiTaskSummary
         path: task_dir.to_path_buf(),
         bucket: bucket.to_owned(),
         lifecycle: task_field(&doc, "lifecycle").unwrap_or_else(|| "unknown".to_owned()),
+        active_topic,
         current_phase,
         current_status,
         done_stage_count: stages.iter().filter(|stage| stage.status == "done").count(),
         total_stage_count: stages.len(),
     })
+}
+
+fn active_topic_doc(
+    project_dir: &Path,
+    project_doc: &toml_edit::DocumentMut,
+) -> Result<(Option<PathBuf>, Option<toml_edit::DocumentMut>)> {
+    let Some(slug) = state_toml::active_topic(project_doc).filter(|slug| !slug.is_empty()) else {
+        return Ok((None, None));
+    };
+    let Some(path) = state_toml::topic_path(project_doc, &slug) else {
+        return Ok((None, None));
+    };
+    let topic_dir = project_dir.join(path);
+    let topic_doc = state_toml::load_state_doc(&state_toml::state_path(&topic_dir))?;
+    Ok((Some(topic_dir), Some(topic_doc)))
 }
 
 fn task_field(doc: &toml_edit::DocumentMut, field: &str) -> Option<String> {

@@ -1,21 +1,15 @@
-# 决策记录
+# Project 决策记录
 
-记录会影响学习方向、任务范围或状态流转的关键决策。
+记录会影响 project 范围、topic 路线、shared context 或状态流转的关键决策。
 
 ## 2026-05-09 15:58:52
 
-- 决策：初始化 repo 学习任务 `openai-codex-cli-deep-learning`。
-- 原因：开启一次 filesystem-first 的 daedalus 学习闭环。
-- 影响：当前阶段为 `01-goal-aligner`。
+- 决策：初始化 repo learning project `openai-codex-cli-deep-learning`。
+- 原因：开启 OpenAI Codex CLI 的 filesystem-first 深度学习闭环。
+- 影响：原 single-topic 进度后续迁入 `topics/tools-permissions`。
 
-## 2026-05-10 13:15:00
+## 2026-05-23
 
-- 决策：将任务状态推进到 `06-code-reader` active。
-- 原因：`04-debugger-guide` 已有 `notes/runbook.md` 和用户运行证据；`05-arch-analyzer` 已有 `notes/codex-agent-loop-architecture.md` 作为等价架构产物。
-- 影响：下一步聚焦核心代码深读；当前已完成上下文管理 / compact 专题，待选择继续深读 `auth/approval/sandbox` 或开始提炼 mini demo 不变量。
-
-## 2026-05-11 23:44:20
-
-- 决策：回退到 `06-code-reader` 阶段。
-- 原因：用户指出当前 code-reader 仍偏机制说明，缺少工业级项目在生产环境真实失败模式下的设计压力分析。
-- 影响：后续源码阅读必须按“生产问题 -> naive 失败 -> 源码应对 -> 保护的不变量 -> trade-off -> 可迁移模式”推进；已通过 `daedalus state rollback 06-code-reader` 记录状态流转。
+- 决策：将 project 改造成多专题结构，并把当前学习迁移为 `tools-permissions` topic。
+- 原因：同一个 Codex repo 后续还需要学习 sub-agent 调度、prompt/context engineering 等独立专题；每个 topic 需要独立 10-stage，又要共享源码索引和证据。
+- 影响：project root 只保存 project state、topic board 和 shared context；专题进度、notes、guides、demo 移入 `topics/tools-permissions/`。
