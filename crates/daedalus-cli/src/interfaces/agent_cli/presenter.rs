@@ -2,8 +2,14 @@ use serde_json::json;
 
 use crate::application::close_task::CloseTaskOutput;
 use crate::application::init_task::InitTaskOutput;
+use crate::application::knowledge::{
+    KnowledgeListOutput, KnowledgeOutput, KnowledgeValidationOutput,
+};
 use crate::application::migrate::MigrateRepoLearningOutput;
 use crate::application::render::RenderedState;
+use crate::application::review::{
+    ReviewListOutput, ReviewOutput, ReviewSessionOutput, ReviewValidationOutput,
+};
 use crate::application::topic::TopicOutput;
 use crate::application::transition_stage::TransitionStageOutput;
 use crate::application::validate_workspace::ValidationOutput;
@@ -223,6 +229,193 @@ pub fn print_topic_validation(project_dir: &std::path::Path, slug: &str, format:
                 "action": "topic-validate",
                 "project_dir": project_dir,
                 "topic": slug
+            })
+        ),
+    }
+}
+
+/// 输出 review 操作结果。
+pub fn print_review(output: &ReviewOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: review operation completed");
+            println!("action: {}", output.action);
+            println!("review: {}", output.review_id);
+            println!("project_dir: {}", output.project_dir.display());
+            println!("review_dir: {}", output.review_dir.display());
+            if let Some(state_md) = &output.state_md {
+                println!("state_md: {}", state_md.display());
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "review": output.review_id,
+                "project_dir": output.project_dir,
+                "review_dir": output.review_dir,
+                "state_md": output.state_md
+            })
+        ),
+    }
+}
+
+/// 输出 review 列表。
+pub fn print_review_list(output: &ReviewListOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: reviews");
+            println!("project_dir: {}", output.project_dir.display());
+            for review in &output.reviews {
+                println!(
+                    "review: {} | {}:{} | {} | {} | {}",
+                    review.id,
+                    review.target_type,
+                    review.target,
+                    review.mode,
+                    review.lifecycle,
+                    review.path
+                );
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "project_dir": output.project_dir,
+                "reviews": output.reviews.iter().map(|review| {
+                    json!({
+                        "id": &review.id,
+                        "target_type": &review.target_type,
+                        "target": &review.target,
+                        "mode": &review.mode,
+                        "lifecycle": &review.lifecycle,
+                        "path": &review.path,
+                        "next_action": &review.next_action
+                    })
+                }).collect::<Vec<_>>()
+            })
+        ),
+    }
+}
+
+/// 输出 review session 操作结果。
+pub fn print_review_session(output: &ReviewSessionOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: review session operation completed");
+            println!("action: {}", output.action);
+            println!("review: {}", output.review_id);
+            println!("session: {}", output.session_id);
+            println!("project_dir: {}", output.project_dir.display());
+            println!("review_dir: {}", output.review_dir.display());
+            println!("session_path: {}", output.session_path.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "review": output.review_id,
+                "session": output.session_id,
+                "project_dir": output.project_dir,
+                "review_dir": output.review_dir,
+                "session_path": output.session_path
+            })
+        ),
+    }
+}
+
+/// 输出 review 校验结果。
+pub fn print_review_validation(output: &ReviewValidationOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: review valid");
+            println!("project_dir: {}", output.project_dir.display());
+            println!("review: {}", output.review_id);
+            println!("review_dir: {}", output.review_dir.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "review-validate",
+                "project_dir": output.project_dir,
+                "review": output.review_id,
+                "review_dir": output.review_dir
+            })
+        ),
+    }
+}
+
+/// 输出 knowledge 操作结果。
+pub fn print_knowledge(output: &KnowledgeOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: knowledge operation completed");
+            println!("action: {}", output.action);
+            println!("project_dir: {}", output.project_dir.display());
+            println!("path: {}", output.path.display());
+            println!("next: {}", output.next);
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "project_dir": output.project_dir,
+                "path": output.path,
+                "next": output.next
+            })
+        ),
+    }
+}
+
+/// 输出 knowledge 列表。
+pub fn print_knowledge_list(output: &KnowledgeListOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: knowledge items");
+            println!("project_dir: {}", output.project_dir.display());
+            for item in &output.items {
+                println!(
+                    "knowledge: {} | {} | {} | {}",
+                    item.level, item.name, item.status, item.path
+                );
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "project_dir": output.project_dir,
+                "items": output.items.iter().map(|item| {
+                    json!({
+                        "level": &item.level,
+                        "name": &item.name,
+                        "path": &item.path,
+                        "status": &item.status
+                    })
+                }).collect::<Vec<_>>()
+            })
+        ),
+    }
+}
+
+/// 输出 knowledge 校验结果。
+pub fn print_knowledge_validation(output: &KnowledgeValidationOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: knowledge valid");
+            println!("project_dir: {}", output.project_dir.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "knowledge-validate",
+                "project_dir": output.project_dir
             })
         ),
     }

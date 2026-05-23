@@ -18,13 +18,25 @@ pub struct ValidateCommand {
     /// 校验所有 topics；缺省只校验 active topic。
     #[arg(long)]
     pub all_topics: bool,
+    /// 同时校验 review plans。
+    #[arg(long)]
+    pub reviews: bool,
+    /// 同时校验 knowledge-system 产物。
+    #[arg(long)]
+    pub knowledge: bool,
 }
 
 impl CmdExecutor for ValidateCommand {
     async fn execute(self, ctx: AgentCliContext) -> Result<()> {
         debug!("校验学习任务 workspace");
         let task_dir = workspace_fs::default_project_dir(self.project_dir)?;
-        let output = validate_workspace(&task_dir, Some(&ctx.repo_root), self.all_topics)?;
+        let output = validate_workspace(
+            &task_dir,
+            Some(&ctx.repo_root),
+            self.all_topics,
+            self.reviews,
+            self.knowledge,
+        )?;
         if !output.is_ok() {
             return Err(DaedalusError::WorkspaceValidationFailed(output.issues));
         }

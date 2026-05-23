@@ -7,8 +7,12 @@
 pub mod artifact;
 /// 领域错误和统一结果类型。
 pub mod error;
+/// 知识体系萃取领域类型。
+pub mod knowledge;
 /// 学习任务聚合的基础信息。
 pub mod learning_task;
+/// 复习计划领域类型。
+pub mod review;
 /// 学习阶段和阶段状态。
 pub mod stage;
 /// repo learning topic 领域类型。
@@ -17,6 +21,8 @@ pub mod topic;
 pub mod transition;
 
 pub use error::{ApprovalSource, DaedalusError, Result};
+pub use knowledge::{KnowledgePromotionTarget, KnowledgeSnapshot};
 pub use learning_task::{TaskLifecycle, WorkspaceBucket};
+pub use review::{ReviewLifecycle, ReviewMode, ReviewSnapshot, ReviewTarget};
 pub use stage::{StageSnapshot, StageState, StageTransitionKind};
 pub use topic::{TopicLifecycle, TopicSnapshot};

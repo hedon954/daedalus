@@ -94,7 +94,11 @@ pub fn draw_overview(
         .split(body[0]);
     let right = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(48), Constraint::Percentage(52)])
+        .constraints([
+            Constraint::Percentage(32),
+            Constraint::Percentage(28),
+            Constraint::Percentage(40),
+        ])
         .split(body[1]);
 
     render_list(
@@ -109,8 +113,21 @@ pub fn draw_overview(
     render_list(
         frame,
         right[0],
-        bucket_todo_title(&overview.workspace_bucket),
-        &overview.todo_summary,
+        " Review Focus ",
+        &overview.review_summary,
+        TERTIARY,
+        "No review plans yet.",
+    );
+    let knowledge_values = if overview.knowledge_summary.is_empty() {
+        overview.todo_summary.clone()
+    } else {
+        overview.knowledge_summary.clone()
+    };
+    render_list(
+        frame,
+        right[1],
+        " Knowledge Focus ",
+        &knowledge_values,
         bucket_todo_accent(&overview.workspace_bucket),
         bucket_todo_empty(&overview.workspace_bucket),
     );
@@ -124,7 +141,7 @@ pub fn draw_overview(
     };
     render_list(
         frame,
-        right[1],
+        right[2],
         transitions_title,
         &transitions,
         TERTIARY,
@@ -470,15 +487,6 @@ fn bucket_next_title(bucket: &str) -> &'static str {
         "03-completed" => " Reuse / Knowledge Export ",
         "04-abandoned" => " Revival Decision ",
         _ => " Next Action ",
-    }
-}
-
-fn bucket_todo_title(bucket: &str) -> &'static str {
-    match bucket {
-        "02-learning" => " Todo Focus ",
-        "03-completed" => " Follow-up Ideas ",
-        "04-abandoned" => " Reactivation Todos ",
-        _ => " Todo Focus ",
     }
 }
 

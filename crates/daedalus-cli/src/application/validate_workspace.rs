@@ -1,6 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::application::knowledge::validate_project_knowledge;
+use crate::application::review::validate_all_reviews;
 use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::{state_toml, workspace_fs};
 
@@ -28,6 +30,8 @@ pub fn validate_workspace(
     task_dir: &Path,
     repo_root: Option<&Path>,
     all_topics: bool,
+    reviews: bool,
+    knowledge: bool,
 ) -> Result<ValidationOutput> {
     let mut issues = Vec::new();
     let required = [
@@ -143,6 +147,18 @@ pub fn validate_workspace(
     for topic in topic_targets {
         let topic_dir = task_dir.join(&topic.path);
         issues.extend(validate_topic_workspace(&topic_dir, &topic.slug)?);
+    }
+
+    if reviews {
+        issues.extend(validate_all_reviews(task_dir)?);
+    }
+
+    if knowledge {
+        if let Some(repo_root) = repo_root {
+            issues.extend(validate_project_knowledge(task_dir, repo_root)?);
+        } else {
+            issues.push("knowledge validation requires repo_root".to_owned());
+        }
     }
 
     if let Some(repo_root) = repo_root {

@@ -27,6 +27,24 @@ fn repo_fixture() -> TempDir {
         &source_topic_template,
         &repo.join("system/templates/repo-topic"),
     );
+    let source_review_template = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("repo root")
+        .join("system/templates/review");
+    copy_dir(
+        &source_review_template,
+        &repo.join("system/templates/review"),
+    );
+    let source_knowledge_template = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("repo root")
+        .join("system/templates/knowledge-system");
+    copy_dir(
+        &source_knowledge_template,
+        &repo.join("system/templates/knowledge-system"),
+    );
     temp
 }
 
@@ -46,6 +64,25 @@ fn copy_dir(source: &Path, target: &Path) {
 
 fn active_topic_dir(task_dir: &Path) -> PathBuf {
     task_dir.join("topics/main")
+}
+
+fn first_review_id(reviews_root: &Path) -> String {
+    let mut ids: Vec<String> = fs::read_dir(reviews_root)
+        .expect("reviews root")
+        .filter_map(|entry| {
+            let entry = entry.expect("review entry");
+            let path = entry.path();
+            if path.is_dir() {
+                path.file_name()
+                    .and_then(|value| value.to_str())
+                    .map(ToOwned::to_owned)
+            } else {
+                None
+            }
+        })
+        .collect();
+    ids.sort();
+    ids.into_iter().next().expect("review id")
 }
 
 #[test]
@@ -116,8 +153,11 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(task_dir.join("CLAUDE.md").exists());
     assert!(!task_dir.join(".daedalus/CLAUDE.md").exists());
     assert!(task_dir.join("shared/README.md").exists());
+    assert!(task_dir.join("shared/knowledge-system/README.md").exists());
     assert!(task_dir.join("shared/source-index.md").exists());
+    assert!(task_dir.join(".daedalus/reviews/README.md").exists());
     assert!(task_dir.join("topics/.gitkeep").exists());
+    assert!(topic_dir.join(".daedalus/reviews/README.md").exists());
     assert!(topic_dir.join("demo/.gitkeep").exists());
     assert!(topic_dir.join("guides/.gitkeep").exists());
     assert!(topic_dir.join("notes/.gitkeep").exists());
@@ -169,6 +209,311 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     );
     assert!(artifact_index.contains("`草稿`"));
     assert!(artifact_index.contains("`不适用`"));
+}
+
+#[test]
+fn review_start_creates_topic_review_without_reopening_learning_state() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "review-topic",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/02-learning/review-topic");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "start",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--topic",
+            "main",
+            "--mode",
+            "rebuild",
+            "--goal",
+            "重建工具权限状态机。",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: review-start"));
+
+    let reviews_root = active_topic_dir(&task_dir).join(".daedalus/reviews");
+    let review_id = first_review_id(&reviews_root);
+    let review_dir = reviews_root.join(&review_id);
+    assert!(review_dir.join("state.toml").exists());
+    assert!(review_dir.join("state.md").exists());
+    assert!(review_dir.join("review-plan.md").exists());
+    assert!(review_dir.join("mastery-map.md").exists());
+    assert!(review_dir.join("question-bank.md").exists());
+    let review_state = fs::read_to_string(review_dir.join("state.toml")).expect("review state");
+    assert!(review_state.contains("target_type = \"topic\""));
+    assert!(review_state.contains("target = \"main\""));
+    assert!(review_state.contains("mode = \"rebuild\""));
+
+    let topic_state = fs::read_to_string(active_topic_dir(&task_dir).join(".daedalus/state.toml"))
+        .expect("topic state");
+    assert!(topic_state.contains("lifecycle = \"active\""));
+    assert!(topic_state.contains("current_phase = \"01-goal-aligner\""));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "list",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("topic:main"))
+        .stdout(predicates::str::contains(&review_id));
+}
+
+#[test]
+fn review_session_complete_requires_user_answers_before_review_completion() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "review-session",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/02-learning/review-session");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "start",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--topic",
+            "main",
+            "--mode",
+            "recall",
+            "--goal",
+            "检查核心概念主动回忆。",
+        ])
+        .assert()
+        .success();
+    let reviews_root = active_topic_dir(&task_dir).join(".daedalus/reviews");
+    let review_id = first_review_id(&reviews_root);
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "session",
+            "start",
+            &review_id,
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--session-id",
+            "first",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "session",
+            "complete",
+            &review_id,
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--session-id",
+            "first",
+            "--reason",
+            "Session has been discussed.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "complete",
+            &review_id,
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Try to close without user answers.",
+        ])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("lacks user answers"));
+
+    let session_path = reviews_root
+        .join(&review_id)
+        .join("sessions")
+        .join("first.md");
+    let mut session = fs::read_to_string(&session_path).expect("session");
+    session = session.replace(
+        "## User Answers\n",
+        "## User Answers\n\n用户能从现实制约解释核心抽象。\n",
+    );
+    session = session.replace(
+        "## Calibration\n",
+        "## Calibration\n\nAgent 校准：回答覆盖了不变量和 trade-off。\n",
+    );
+    fs::write(&session_path, session).expect("write session");
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "complete",
+            &review_id,
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Review session contains user answers and calibration.",
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "review",
+            "validate",
+            &review_id,
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("ok: review valid"));
+}
+
+#[test]
+fn knowledge_extract_promote_export_and_validate() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "knowledge-flow",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/02-learning/knowledge-flow");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "knowledge",
+            "extract",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--topic",
+            "main",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: knowledge-extract"));
+    let topic_knowledge = active_topic_dir(&task_dir).join("notes/knowledge-system");
+    assert!(topic_knowledge.join("extraction.md").exists());
+    assert!(topic_knowledge.join("invariant-map.md").exists());
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "knowledge",
+            "promote",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--topic",
+            "main",
+            "--to",
+            "shared",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: knowledge-promote"));
+    let promotion_log =
+        fs::read_to_string(task_dir.join("shared/knowledge-system/promotion-log.md"))
+            .expect("promotion log");
+    assert!(promotion_log.contains("main"));
+    assert!(promotion_log.contains("shared verified candidate"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "knowledge",
+            "export",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--to",
+            "knowledge-base",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: knowledge-export"));
+    let candidates_dir = repo.path().join("knowledge-base/00-candidates");
+    assert!(
+        candidates_dir
+            .join("knowledge-flow-knowledge-candidate.md")
+            .exists()
+    );
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "knowledge",
+            "list",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("knowledge: topic"))
+        .stdout(predicates::str::contains("knowledge: shared"))
+        .stdout(predicates::str::contains("knowledge: knowledge-base"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate", task_dir.to_str().expect("utf8"), "--knowledge"])
+        .assert()
+        .success();
 }
 
 #[test]

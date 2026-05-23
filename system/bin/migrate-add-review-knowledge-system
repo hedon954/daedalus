@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+  echo "usage: migrate-add-review-knowledge-system <project-dir>" >&2
+  exit 2
+fi
+
+PROJECT_DIR="$1"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+copy_missing_dir() {
+  local source_dir="$1"
+  local target_dir="$2"
+  mkdir -p "$target_dir"
+  while IFS= read -r source_path; do
+    local relative="${source_path#"$source_dir"/}"
+    local target_path="$target_dir/$relative"
+    mkdir -p "$(dirname "$target_path")"
+    if [[ ! -e "$target_path" ]]; then
+      cp "$source_path" "$target_path"
+    fi
+  done < <(find "$source_dir" -type f | sort)
+}
+
+if [[ ! -f "$PROJECT_DIR/.daedalus/state.toml" ]]; then
+  echo "error: not a daedalus project: $PROJECT_DIR" >&2
+  exit 1
+fi
+
+mkdir -p "$PROJECT_DIR/.daedalus/reviews"
+if [[ ! -f "$PROJECT_DIR/.daedalus/reviews/README.md" ]]; then
+  cp "$ROOT/system/templates/repo/.daedalus/reviews/README.md" \
+    "$PROJECT_DIR/.daedalus/reviews/README.md"
+fi
+
+copy_missing_dir "$ROOT/system/templates/knowledge-system" \
+  "$PROJECT_DIR/shared/knowledge-system"
+
+if [[ -d "$PROJECT_DIR/topics" ]]; then
+  while IFS= read -r topic_dir; do
+    mkdir -p "$topic_dir/.daedalus/reviews"
+    if [[ ! -f "$topic_dir/.daedalus/reviews/README.md" ]]; then
+      cp "$ROOT/system/templates/repo-topic/.daedalus/reviews/README.md" \
+        "$topic_dir/.daedalus/reviews/README.md"
+    fi
+  done < <(find "$PROJECT_DIR/topics" -mindepth 1 -maxdepth 1 -type d | sort)
+fi
+
+echo "ok: review and knowledge-system scaffolding added"

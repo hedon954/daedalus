@@ -13,6 +13,24 @@ pub fn copy_template_dir(
     target_dir: &Path,
     replacements: &[(&str, &str)],
 ) -> Result<()> {
+    copy_template_dir_inner(template_dir, target_dir, replacements, true)
+}
+
+/// 复制模板目录，只创建缺失文件，不覆盖已有用户内容。
+pub fn copy_template_dir_missing(
+    template_dir: &Path,
+    target_dir: &Path,
+    replacements: &[(&str, &str)],
+) -> Result<()> {
+    copy_template_dir_inner(template_dir, target_dir, replacements, false)
+}
+
+fn copy_template_dir_inner(
+    template_dir: &Path,
+    target_dir: &Path,
+    replacements: &[(&str, &str)],
+    overwrite: bool,
+) -> Result<()> {
     for entry in WalkDir::new(template_dir) {
         let entry = entry.map_err(|source| DaedalusError::Io {
             path: template_dir.to_path_buf(),
@@ -29,6 +47,9 @@ pub fn copy_template_dir(
                 path: target_path,
                 source,
             })?;
+            continue;
+        }
+        if !overwrite && target_path.exists() {
             continue;
         }
 

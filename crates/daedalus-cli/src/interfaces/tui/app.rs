@@ -158,6 +158,10 @@ pub struct TuiOverview {
     pub todo_summary: Vec<String>,
     /// 最近几条状态流转摘要。
     pub recent_transitions: Vec<String>,
+    /// Review 摘要。
+    pub review_summary: Vec<String>,
+    /// Knowledge 摘要。
+    pub knowledge_summary: Vec<String>,
     /// 任务关闭信息摘要。
     pub closure_summary: Vec<String>,
 }
@@ -247,6 +251,8 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         missing_artifacts,
         todo_summary,
         recent_transitions,
+        review_summary: review_summary(task_dir),
+        knowledge_summary: knowledge_summary(task_dir),
         closure_summary,
     })
 }
@@ -350,6 +356,62 @@ fn actual_bucket(task_dir: &Path) -> String {
                 .unwrap_or("unknown")
                 .to_owned()
         })
+}
+
+fn review_summary(task_dir: &Path) -> Vec<String> {
+    let mut values = Vec::new();
+    collect_review_labels(
+        &task_dir.join(".daedalus").join("reviews"),
+        "project",
+        &mut values,
+    );
+    if let Ok(doc) = state_toml::load_state_doc(&state_toml::state_path(task_dir)) {
+        for topic in state_toml::topics(&doc) {
+            collect_review_labels(
+                &task_dir.join(&topic.path).join(".daedalus").join("reviews"),
+                &topic.slug,
+                &mut values,
+            );
+        }
+    }
+    values.into_iter().take(6).collect()
+}
+
+fn collect_review_labels(root: &Path, owner: &str, values: &mut Vec<String>) {
+    let Ok(entries) = fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() && path.join("state.toml").exists() {
+            let id = path
+                .file_name()
+                .and_then(|value| value.to_str())
+                .unwrap_or("unknown");
+            values.push(format!("{owner}: {id}"));
+        }
+    }
+}
+
+fn knowledge_summary(task_dir: &Path) -> Vec<String> {
+    let mut values = Vec::new();
+    let shared = task_dir.join("shared").join("knowledge-system");
+    if shared.exists() {
+        values.push("shared knowledge-system present".to_owned());
+    }
+    if let Ok(doc) = state_toml::load_state_doc(&state_toml::state_path(task_dir)) {
+        for topic in state_toml::topics(&doc) {
+            let extraction = task_dir
+                .join(&topic.path)
+                .join("notes")
+                .join("knowledge-system")
+                .join("extraction.md");
+            if extraction.exists() {
+                values.push(format!("{}: extraction candidates", topic.slug));
+            }
+        }
+    }
+    values.into_iter().take(6).collect()
 }
 
 fn bucket_order(bucket: &str) -> usize {

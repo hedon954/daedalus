@@ -28,6 +28,46 @@ Knowledge System Extraction
 
 核心判断：**复习不是 repo-learning 的第 11 阶段，而是挂载在 completed 或 active 学习对象上的独立生命周期。知识萃取也不是简单归档，而是有证据门槛的 promotion pipeline。**
 
+## Implementation Status
+
+状态：已完成第一版完整落地。
+
+已实现范围：
+
+- Review filesystem templates：`system/templates/review/`。
+- Knowledge system templates：`system/templates/knowledge-system/`。
+- Project/topic review 入口模板：`.daedalus/reviews/README.md`。
+- Shared knowledge-system 入口：`shared/knowledge-system/`。
+- Review domain / application / CLI：
+  - `daedalus review start`
+  - `daedalus review list`
+  - `daedalus review show`
+  - `daedalus review session start`
+  - `daedalus review session complete`
+  - `daedalus review complete`
+  - `daedalus review abandon`
+  - `daedalus review render`
+  - `daedalus review validate`
+- Knowledge domain / application / CLI：
+  - `daedalus knowledge extract`
+  - `daedalus knowledge promote --to shared`
+  - `daedalus knowledge export --to knowledge-base`
+  - `daedalus knowledge list`
+  - `daedalus knowledge validate`
+- `daedalus validate --reviews --knowledge`。
+- TUI read-only Review Focus / Knowledge Focus。
+- 迁移脚本：`system/bin/migrate-add-review-knowledge-system`。
+- 当前 Codex learning project 已补充 review / knowledge-system scaffolding。
+
+仍然刻意不做的范围：
+
+- 不自动生成已验证知识正文。
+- 不自动评分用户掌握度。
+- 不做后台 scheduler。
+- 不自动重构 knowledge-base taxonomy。
+
+这些边界不是未完成，而是产品约束：确定性 CLI 只负责结构、状态、索引和校验；知识内容仍由 Agent coaching + 用户校准产生。
+
 ## First Principles
 
 ### 1. 学完不等于掌握
@@ -455,8 +495,10 @@ daedalus review list
 daedalus review show
 daedalus review session start
 daedalus review session complete
+daedalus review complete
 daedalus review abandon
 daedalus review render
+daedalus review validate
 ```
 
 建议接口：
@@ -469,10 +511,12 @@ daedalus review list
 daedalus review show <review-id>
 
 daedalus review session start <review-id>
-daedalus review session complete <review-id> --mastery-update mastery-map.md
+daedalus review session complete <review-id> --reason "用户回答与校准已写入 session 文件"
 
+daedalus review complete <review-id> --reason "至少一个 session 已完成且包含用户回答和校准"
 daedalus review abandon <review-id> --reason "不再需要"
 daedalus review render <review-id>
+daedalus review validate <review-id>
 ```
 
 解析规则：
@@ -673,7 +717,7 @@ system/templates/knowledge-system/
 
 ### Review validation
 
-新增 `daedalus review validate <review-id>` 或并入 `daedalus validate --reviews`。
+已实现 `daedalus review validate <review-id>` 和 `daedalus validate --reviews`。
 
 第一版校验：
 
@@ -687,7 +731,7 @@ system/templates/knowledge-system/
 
 ### Knowledge validation
 
-新增 `daedalus knowledge validate` 或并入 `daedalus validate --knowledge`。
+已实现 `daedalus knowledge validate` 和 `daedalus validate --knowledge`。
 
 第一版校验：
 

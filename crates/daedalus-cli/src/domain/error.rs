@@ -81,6 +81,18 @@ pub enum DaedalusError {
     /// Topic 不存在。
     #[error("topic not found: {0}")]
     TopicNotFound(String),
+    /// Review 不存在。
+    #[error("review not found: {0}")]
+    ReviewNotFound(String),
+    /// Review 已存在。
+    #[error("review already exists: {0}")]
+    ReviewAlreadyExists(PathBuf),
+    /// Review 操作不合法。
+    #[error("invalid review operation: {0}")]
+    InvalidReviewOperation(String),
+    /// Knowledge 操作不合法。
+    #[error("invalid knowledge operation: {0}")]
+    InvalidKnowledgeOperation(String),
     /// Topic lifecycle 状态不允许当前流转。
     #[error("invalid topic lifecycle transition: {0}")]
     InvalidTopicLifecycleTransition(String),

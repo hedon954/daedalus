@@ -83,7 +83,20 @@ task complete closes the whole project.
 
 If the Agent is unsure which topic is active, it must read `.daedalus/topic-board.md` and project `.daedalus/state.toml` before running state commands.
 
-Review and knowledge command groups are planned but not implemented in the deterministic CLI yet. Until they exist, do not invent `daedalus review ...` or `daedalus knowledge ...` commands in execution steps. Use the filesystem templates and common prompts for review and knowledge-system work.
+Review and knowledge command groups are part of the deterministic CLI. Use them for filesystem scaffolding, state, listing, rendering, and validation. The CLI still does not generate knowledge conclusions by itself; content must come from Agent coaching plus user calibration.
+
+```text
+daedalus review start --topic <topic-slug> --mode <mode> --goal <goal>
+daedalus review session start <review-id>
+daedalus review session complete <review-id> --reason <reason>
+daedalus review complete <review-id> --reason <reason>
+daedalus review validate <review-id>
+
+daedalus knowledge extract --topic <topic-slug>
+daedalus knowledge promote --topic <topic-slug> --to shared
+daedalus knowledge export --to knowledge-base
+daedalus knowledge validate
+```
 
 Every repo learning step must start from real production pressure:
 
