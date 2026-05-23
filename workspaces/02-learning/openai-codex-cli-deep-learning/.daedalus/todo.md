@@ -19,8 +19,8 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - 当前问题：Slice 6 Agent Orchestrator 进入 LLM streaming adapter 子步骤，但还未串起完整 ReAct loop。
 - 为什么现在做它：approval、runner、retry 都已经可以独立决策；当前先把真实 OpenAI-compatible streaming 响应稳定映射成 `StreamEvent`，再让 orchestrator 消费 tool call。
 - 完成后解锁：进入 approval / sandbox / retry 的 orchestrator 串联，并最终进入 Slice 7 README / Runbook。
-- 当前已做：新增 `agent::llm` 与 `OpenAiCompatibleLlm`，使用 `async_stream` + `reqwest::bytes_stream()` 逐步产出 `StreamEvent`；新增 Rust/OpenAI integration guide。
-- 当前待解决：`take_sse_events` 仍只支持 `data: ...` 首行事件；guide 讲 OpenAI Responses API，但代码实际实现 DeepSeek/OpenAI-compatible Chat Completions 形态；`Default` 缺少 env 时仍 panic；parser/tool-call 聚合缺少默认 fixture 单测；多 tool 切换事件顺序可继续整理。
+- 当前已做：新增 `agent::llm` 与 `OpenAiCompatibleLlm`，使用 `async_stream` + `reqwest::bytes_stream()` 逐步产出 `StreamEvent`；已将 Rust/OpenAI integration guide 收敛为 DeepSeek / OpenAI-compatible Chat Completions 口径。
+- 当前待解决：`take_sse_events` 目前有意限定为常见 `data: ...` stream，仍需要 fixture 单测锁定边界；`Default` 缺少 env 时仍 panic；parser/tool-call 聚合缺少默认 fixture 单测。
 
 ## Gaps Blocking Next Stage
 

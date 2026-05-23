@@ -7,7 +7,7 @@
 实现一个 Phase 1 mini demo：
 
 ```text
-real OpenAI streaming loop
+real OpenAI-compatible Chat Completions streaming loop
   -> capability registry
   -> command request
   -> approval decision
@@ -143,7 +143,7 @@ decide_retry(request, requirement, failure, approval_state) -> RetryDecision
 实现：
 
 ```text
-OpenAI Responses API stream
+OpenAI-compatible Chat Completions stream
   -> ModelStreamEvent
   -> tool call
   -> approval / sandbox / retry
@@ -159,7 +159,7 @@ OpenAI Responses API stream
 
 实现前阅读：
 
-- [`rust-openai-integration.md`](rust-openai-integration.md)：Rust 中使用 OpenAI Responses API、streaming 和 function calling 的最小接入方案。
+- [`rust-openai-integration.md`](rust-openai-integration.md)：Rust 中使用 DeepSeek / OpenAI-compatible Chat Completions、streaming 和 function calling 的最小接入方案。
 
 ### Slice 7: Demo README And Runbook
 

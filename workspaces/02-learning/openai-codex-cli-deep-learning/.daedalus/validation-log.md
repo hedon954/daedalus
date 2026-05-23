@@ -96,5 +96,5 @@
 - 用户亲自完成的实践：用户实现了 `async_stream::try_stream!` 包装 `reqwest::bytes_stream()` 的流式 adapter，并通过真实 raw stream 样本摸索 Chat Completions chunk 中的 `content`、`reasoning_content` 和 `tool_calls` 字段。
 - Agent 代替用户过多的地方：Agent 只做 review、指出边界和 parser 风险；未直接修改 LLM adapter 实现。
 - 当前验证：`cargo test --manifest-path demo/Cargo.toml` 通过，结果为 24 passed、2 ignored；ignored 测试为真实联网 LLM 调用。
-- 当前待解决：代码实现 DeepSeek / OpenAI-compatible Chat Completions stream，而 guide 主要写 OpenAI Responses API；需要收敛协议目标。`take_sse_events` 仍只支持 `data: ...` 首行事件；`Default` 缺 env 时 panic；parser 和 tool-call 聚合缺少默认 fixture 单测；orchestrator 尚未串起 approval / sandbox / retry。
+- 当前待解决：guide 已收敛为 DeepSeek / OpenAI-compatible Chat Completions stream。`take_sse_events` 目前有意限定为常见 `data: ...` stream，不作为当前 blocker，但需要 recorded fixture 单测锁定边界；`Default` 缺 env 时 panic；parser 和 tool-call 聚合缺少默认 fixture 单测；orchestrator 尚未串起 approval / sandbox / retry。
 - 是否足以进入下一步：可以提交当前检查点，但 Slice 6 不能标完成。下一步应先补 parser / map_chunk fixture tests，再接 orchestrator。
