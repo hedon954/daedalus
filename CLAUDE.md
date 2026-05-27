@@ -44,6 +44,7 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 - Avoid adding broad abstractions before a concrete learning workflow requires them.
 - When adding deterministic logic, prefer Rust code under `crates/` and keep generated or runtime state out of source control.
 - When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed so `make ci` continues to cover formatting, check, clippy, and tests for the whole Rust workspace.
+- Git commit messages should follow `type(scope): 中文描述` when a scope is useful, or `type: 中文描述` for broad changes, matching Conventional Commit style.
 - Before marking a learning task completed, verify that it has at least: goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit reason for no demo, business transfer, and knowledge export.
 
 ## Knowledge Base Rules
