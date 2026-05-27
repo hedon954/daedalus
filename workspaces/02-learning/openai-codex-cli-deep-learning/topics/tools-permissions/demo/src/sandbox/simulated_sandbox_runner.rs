@@ -88,6 +88,12 @@ impl SimulatedSandboxRunner {
     }
 }
 
+impl Default for SimulatedSandboxRunner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SandboxRunner for SimulatedSandboxRunner {
     fn run(&self, request: &CommandRequest, attempt: &ExecutionAttempt) -> ExecutionResult {
         let attempt = SimulatedAttempt::from(attempt);

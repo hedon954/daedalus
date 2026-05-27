@@ -93,6 +93,9 @@ pub enum DaedalusError {
     /// Knowledge 操作不合法。
     #[error("invalid knowledge operation: {0}")]
     InvalidKnowledgeOperation(String),
+    /// IDE 投影同步操作不合法。
+    #[error("invalid ide operation: {0}")]
+    InvalidIdeOperation(String),
     /// Topic lifecycle 状态不允许当前流转。
     #[error("invalid topic lifecycle transition: {0}")]
     InvalidTopicLifecycleTransition(String),
@@ -155,5 +158,14 @@ pub enum DaedalusError {
         #[source]
         /// `toml_edit` 返回的解析错误。
         source: toml_edit::TomlError,
+    },
+    /// JSON 解析或序列化失败。
+    #[error("json error in {path}: {source}")]
+    Json {
+        /// 发生错误的 JSON 文件路径。
+        path: PathBuf,
+        #[source]
+        /// `serde_json` 返回的解析或序列化错误。
+        source: serde_json::Error,
     },
 }

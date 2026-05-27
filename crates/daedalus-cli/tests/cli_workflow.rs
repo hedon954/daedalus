@@ -212,6 +212,74 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
 }
 
 #[test]
+fn ide_sync_rust_analyzer_updates_topic_demo_manifest() {
+    let repo = repo_fixture();
+    fs::create_dir_all(repo.path().join("crates")).expect("crates dir");
+    fs::write(repo.path().join("crates/Cargo.toml"), "[workspace]\n").expect("crates manifest");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "Ide Demo",
+            "--topic",
+            "tools-permissions",
+            "--title",
+            "Tools Permissions",
+        ])
+        .assert()
+        .success();
+
+    let settings_dir = repo.path().join(".vscode");
+    fs::create_dir_all(&settings_dir).expect("settings dir");
+    fs::write(
+        settings_dir.join("settings.json"),
+        r#"{
+  "editor.formatOnSave": true,
+  "rust-analyzer.linkedProjects": [
+    "crates/Cargo.toml",
+    "workspaces/02-learning/ide-demo/demo/Cargo.toml"
+  ]
+}
+"#,
+    )
+    .expect("settings");
+
+    let demo_manifest = repo
+        .path()
+        .join("workspaces/02-learning/ide-demo/topics/tools-permissions/demo/Cargo.toml");
+    fs::write(
+        &demo_manifest,
+        "[package]\nname = \"ide-demo\"\nversion = \"0.1.0\"\n",
+    )
+    .expect("demo manifest");
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["ide", "sync-rust-analyzer"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "ok: rust-analyzer linkedProjects synced",
+        ))
+        .stdout(predicates::str::contains(
+            "workspaces/02-learning/ide-demo/topics/tools-permissions/demo/Cargo.toml",
+        ));
+
+    let settings = fs::read_to_string(settings_dir.join("settings.json")).expect("synced settings");
+    assert!(settings.contains("\"editor.formatOnSave\": true"));
+    assert!(settings.contains("\"crates/Cargo.toml\""));
+    assert!(
+        settings.contains(
+            "\"workspaces/02-learning/ide-demo/topics/tools-permissions/demo/Cargo.toml\""
+        )
+    );
+    assert!(!settings.contains("\"workspaces/02-learning/ide-demo/demo/Cargo.toml\""));
+}
+
+#[test]
 fn review_start_creates_topic_review_without_reopening_learning_state() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")

@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use crate::agent::{
-    llm::{EventStream, LLmRequest, Llm},
-    stream_event::StreamEvent,
+    llm::{LLmRequest, Llm},
+    stream_event::{EventStream, StreamEvent, ToolCallFinished},
 };
 use async_stream::try_stream;
 use async_trait::async_trait;
@@ -60,7 +60,7 @@ impl Llm for OpenAiCompatibleLlm {
 
         let mut first = true;
         let mut bytes_stream = response.bytes_stream();
-        let mut tool_call = None;
+        let mut tool_calls = vec![];
 
         let event_stream = try_stream! {
             let mut buffer = String::new();
@@ -72,7 +72,7 @@ impl Llm for OpenAiCompatibleLlm {
 
                 for raw_event in take_sse_events(&mut buffer) {
                     let value = sse_event_to_json(&raw_event)?;
-                    for e in map_chunk(&value, &mut first, &mut tool_call) {
+                    for e in map_chunk(&value, &mut first, &mut tool_calls) {
                         yield e;
                     }
                 }
@@ -86,11 +86,11 @@ impl Llm for OpenAiCompatibleLlm {
 fn map_chunk(
     value: &serde_json::Value,
     first: &mut bool,
-    tool_calls: &mut Option<ToolCallCache>,
+    tool_calls: &mut Vec<ToolCallCache>,
 ) -> Vec<StreamEvent> {
     let mut result = vec![];
 
-    let events = map_openai_event(&value);
+    let events = map_openai_event(value);
 
     if *first {
         result.push(StreamEvent::Started);
@@ -104,59 +104,28 @@ fn map_chunk(
                 call_id,
                 name,
                 delta,
-            } => match tool_calls {
-                None => {
-                    result.push(StreamEvent::ToolCallStarted {
-                        index,
-                        call_id: call_id.clone(),
-                        name: name.clone().unwrap_or_default(),
-                    });
-
-                    *tool_calls = Some(ToolCallCache {
+            } => {
+                if tool_calls.len() <= index as usize {
+                    tool_calls.push(ToolCallCache {
                         index,
                         id: call_id,
                         name: name.unwrap_or_default(),
                         arguments: delta,
                     });
+                } else {
+                    tool_calls[index as usize].arguments.push_str(&delta);
                 }
-                Some(tc) => {
-                    let name = name.unwrap_or_default();
-                    if index != tc.index {
-                        result.push(StreamEvent::ToolCallFinished {
-                            index: tc.index,
-                            call_id: tc.id.clone(),
-                            name: tc.name.clone(),
-                            arguments: tc.arguments.clone(),
-                        });
-
-                        result.push(StreamEvent::ToolCallStarted {
-                            index,
-                            call_id: call_id.clone(),
-                            name: name.clone(),
-                        });
-
-                        *tool_calls = Some(ToolCallCache {
-                            index,
-                            id: call_id,
-                            name: name,
-                            arguments: delta,
-                        });
-                    } else {
-                        *&tc.arguments.push_str(&delta);
-                    }
-                }
-            },
+            }
             StreamEvent::Completed => {
-                if let Some(tc) = tool_calls {
-                    result.push(StreamEvent::ToolCallFinished {
+                for tc in tool_calls.iter() {
+                    result.push(StreamEvent::ToolCallFinished(ToolCallFinished {
                         index: tc.index,
                         call_id: tc.id.clone(),
                         name: tc.name.clone(),
                         arguments: tc.arguments.clone(),
-                    });
-
-                    *tool_calls = None;
+                    }));
                 }
+                tool_calls.clear();
                 result.push(StreamEvent::Completed);
             }
             other => result.push(other),
@@ -312,8 +281,7 @@ fn map_openai_event(value: &serde_json::Value) -> Vec<StreamEvent> {
     }
 
     // tool_call
-    if !delta["tool_calls"].is_null() {
-        let tool_call = &delta["tool_calls"][0];
+    for tool_call in delta["tool_calls"].as_array().unwrap_or(&vec![]) {
         let tool_call_index = tool_call["index"].as_i64().unwrap_or_default();
         let tool_call_id = value_as_str(&tool_call["id"]);
         let tool_call_name = value_as_str(&tool_call["function"]["name"]);
@@ -338,56 +306,14 @@ fn map_openai_event(value: &serde_json::Value) -> Vec<StreamEvent> {
     result
 }
 
-use openai_tool_project::openai_tool;
-
-/// 计算两数之和，在需要做加法计算时，请调用它
-#[openai_tool]
-fn add(a: i64, b: i64) -> i64 {
-    a + b
-}
-
-/// 计算两数之差，在需要做减法计算时，请调用它
-#[openai_tool]
-fn sub(a: i64, b: i64) -> i64 {
-    a - b
-}
-
-#[allow(unused)]
-fn run_tool(name: &str, arguments: &str) -> anyhow::Result<String> {
-    let arguments = serde_json::Value::from_str(arguments)?;
-    match name {
-        "add" => {
-            let a = arguments["a"]
-                .as_i64()
-                .ok_or(anyhow::anyhow!("a should be i64: {:?}", arguments["a"]))?;
-
-            let b = arguments["b"]
-                .as_i64()
-                .ok_or(anyhow::anyhow!("b should be i64: {:?}", arguments["b"]))?;
-
-            Ok(add(a, b).to_string())
-        }
-        "sub" => {
-            let a = arguments["a"]
-                .as_i64()
-                .ok_or(anyhow::anyhow!("a should be i64: {:?}", arguments["a"]))?;
-
-            let b = arguments["b"]
-                .as_i64()
-                .ok_or(anyhow::anyhow!("b should be i64: {:?}", arguments["b"]))?;
-
-            Ok(sub(a, b).to_string())
-        }
-        _ => anyhow::bail!("unknown tool: {name}"),
-    }
-}
-
 fn value_as_str(v: &serde_json::Value) -> String {
     v.as_str().unwrap_or("").to_string()
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::agent::tool::{add_spec, run_tool, sub_spec};
+
     use super::*;
 
     async fn stream(user_text: &str) -> anyhow::Result<()> {
@@ -473,11 +399,14 @@ mod tests {
                 }
                 StreamEvent::ThinkingDelta(s) => print!("{s}"),
                 StreamEvent::TextDelta(s) => print!("{s}"),
-                StreamEvent::ToolCallFinished {
-                    name, arguments, ..
-                } => {
+                StreamEvent::ToolCallFinished(ToolCallFinished {
+                    index: _,
+                    call_id: _,
+                    name,
+                    arguments,
+                }) => {
                     let out = run_tool(&name, &arguments)?;
-                    println!("tool {name}: {out}");
+                    println!("\ntool {name}: {out}");
                 }
                 StreamEvent::Completed => break,
                 other => println!("{other:?}"),

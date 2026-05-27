@@ -4,6 +4,8 @@
 
 /// 关闭学习任务并移动 workspace。
 pub mod close_task;
+/// IDE 派生配置同步。
+pub mod ide;
 /// 初始化学习任务 workspace。
 pub mod init_task;
 /// 知识体系萃取与晋升。

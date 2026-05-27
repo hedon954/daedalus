@@ -121,6 +121,12 @@ impl CapabilityRegistry {
     }
 }
 
+impl Default for CapabilityRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

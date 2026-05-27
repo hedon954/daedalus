@@ -1,5 +1,6 @@
 //! Agent CLI 命令集合。
 
+pub mod ide;
 pub mod init;
 pub mod knowledge;
 pub mod migrate;
@@ -12,6 +13,7 @@ pub mod validate;
 use clap::Subcommand;
 use enum_dispatch::enum_dispatch;
 
+pub use ide::{IdeCommand, IdeSubcommand, IdeSyncRustAnalyzerArgs};
 pub use init::{InitCommand, InitKind, InitRepoLearningArgs};
 pub use knowledge::{
     KnowledgeCommand, KnowledgeExportArgs, KnowledgeListArgs, KnowledgePromoteArgs,
@@ -40,6 +42,8 @@ pub use validate::ValidateCommand;
 pub enum Command {
     /// 初始化学习任务。
     Init(InitCommand),
+    /// 同步 IDE 派生配置。
+    Ide(IdeCommand),
     /// 迁移学习 workspace。
     Migrate(MigrateCommand),
     /// 管理复习计划。

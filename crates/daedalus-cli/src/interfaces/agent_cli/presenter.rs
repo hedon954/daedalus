@@ -1,6 +1,7 @@
 use serde_json::json;
 
 use crate::application::close_task::CloseTaskOutput;
+use crate::application::ide::RustAnalyzerSyncOutput;
 use crate::application::init_task::InitTaskOutput;
 use crate::application::knowledge::{
     KnowledgeListOutput, KnowledgeOutput, KnowledgeValidationOutput,
@@ -148,6 +149,28 @@ pub fn print_validation(output: &ValidationOutput, format: OutputFormat) {
                 "issues": output.issues,
                 "note": "validate checks structure and required files only; notes still need user-owned evidence",
                 "next": if output.is_ok() { "continue" } else { "fix listed issues or regenerate derived state with daedalus state render" }
+            })
+        ),
+    }
+}
+
+/// 输出 rust-analyzer linkedProjects 同步结果。
+pub fn print_rust_analyzer_sync(output: &RustAnalyzerSyncOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: rust-analyzer linkedProjects synced");
+            println!("settings: {}", output.settings_path.display());
+            for project in &output.linked_projects {
+                println!("linked_project: {project}");
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "ide-sync-rust-analyzer",
+                "settings": output.settings_path,
+                "linked_projects": output.linked_projects
             })
         ),
     }

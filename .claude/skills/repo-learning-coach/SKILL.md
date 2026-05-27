@@ -358,6 +358,7 @@ For long-running work:
 - Preserve the distinction between user understanding, Agent calibration, and verified source-code conclusions.
 - Do not create a complete code-reading note from Agent-only source reading. If there is no fresh user answer for the current round, ask questions and wait.
 - Do not create or edit demo implementation files during `08-demo-coder` unless the user explicitly asks the Agent to implement that slice. Treat implementation as user practice by default.
+- When a Rust demo `Cargo.toml` is created, moved, or migrated under a topic, run `daedalus ide sync-rust-analyzer` so VSCode / rust-analyzer follows the current filesystem layout instead of stale demo paths.
 - Do not label Agent-only source inspection as "verified learning". Use separate states such as `待用户回答`, `待源码验证`, `源码已核对`, `用户已复述`, and `用户已实践`.
 - Do not make source-code claims from analogy or product intuition alone. Every repo behavior claim needs a source/test anchor, or it must be explicitly marked as a hypothesis.
 - Do not accept a code-reading note that only explains call chains. It must explain production constraints, failure handling, invariants, trade-offs, and migration limits.
