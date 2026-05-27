@@ -235,6 +235,13 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         closure_summary.push(format!("reason: {close_reason}"));
     }
 
+    let next_action = build_next_action(
+        artifact_root,
+        &current_phase,
+        &current_status,
+        state_toml::next_action(progress_doc),
+    );
+
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
         task_dir: task_dir.to_path_buf(),
@@ -245,7 +252,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         workspace_bucket,
         current_phase,
         current_status,
-        next_action: state_toml::next_action(&doc),
+        next_action,
         done_stage_count,
         total_stage_count,
         missing_artifacts,
@@ -255,6 +262,130 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         knowledge_summary: knowledge_summary(task_dir),
         closure_summary,
     })
+}
+
+fn build_next_action(
+    artifact_root: &Path,
+    current_phase: &str,
+    current_status: &str,
+    fallback: String,
+) -> String {
+    let guide_dir = artifact_root.join("guides").join(current_phase);
+    if let Some(guide) = find_action_guide(&guide_dir)
+        && let Ok(content) = fs::read_to_string(&guide)
+    {
+        let mut lines = Vec::new();
+        let relative_guide = relative_display(artifact_root, &guide);
+        lines.push(format!("Current: {current_phase} / {current_status}"));
+        if let Some(slice) = markdown_value(&content, "Current slice") {
+            lines.push(format!("Slice: {slice}"));
+        }
+        if let Some(gap) = markdown_value(&content, "Current gap") {
+            lines.push(format!("Gap: {gap}"));
+        }
+        let actions = action_card_items(&content);
+        if !actions.is_empty() {
+            lines.push(format!("Next: {}", actions.join(" -> ")));
+        }
+        if let Some(after) = markdown_value(&content, "After this") {
+            lines.push(format!("Unlocks: {after}"));
+        }
+        lines.push(format!("Guide: {relative_guide}"));
+        return lines.join("\n");
+    }
+
+    if let Some(todo_summary) = todo_now_summary(&artifact_root.join(".daedalus").join("todo.md")) {
+        return todo_summary;
+    }
+
+    fallback
+}
+
+fn find_action_guide(guide_dir: &Path) -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+    let entries = fs::read_dir(guide_dir).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+            continue;
+        };
+        if path.is_file() && name.starts_with("slice-") && name.ends_with(".md") {
+            candidates.push(path);
+        }
+    }
+    candidates.sort();
+    candidates.pop()
+}
+
+fn markdown_value(content: &str, key: &str) -> Option<String> {
+    let prefix = format!("- {key}:");
+    content.lines().find_map(|line| {
+        line.trim()
+            .strip_prefix(&prefix)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    })
+}
+
+fn action_card_items(content: &str) -> Vec<String> {
+    let mut in_action_card = false;
+    let mut values = Vec::new();
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed == "## Action Card" {
+            in_action_card = true;
+            continue;
+        }
+        if in_action_card && trimmed.starts_with("## ") {
+            break;
+        }
+        if in_action_card
+            && trimmed.starts_with("### ")
+            && let Some((_, title)) = trimmed.trim_start_matches("### ").split_once(". ")
+        {
+            values.push(title.to_owned());
+        }
+        if values.len() >= 3 {
+            break;
+        }
+    }
+    values
+}
+
+fn todo_now_summary(path: &Path) -> Option<String> {
+    let content = fs::read_to_string(path).ok()?;
+    let mut in_now = false;
+    let mut lines = Vec::new();
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed == "## Now" {
+            in_now = true;
+            continue;
+        }
+        if in_now && trimmed.starts_with("## ") {
+            break;
+        }
+        if in_now
+            && trimmed.starts_with("- ")
+            && (trimmed.contains("当前问题")
+                || trimmed.contains("当前待解决")
+                || trimmed.contains("完成后解锁"))
+        {
+            lines.push(trimmed.trim_start_matches("- ").to_owned());
+        }
+        if lines.len() >= 4 {
+            break;
+        }
+    }
+    (!lines.is_empty()).then(|| lines.join("\n"))
+}
+
+fn relative_display(root: &Path, path: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .replace(std::path::MAIN_SEPARATOR, "/")
 }
 
 /// 查找当前目录是否处于某个学习任务目录或其子目录下。
@@ -419,4 +550,49 @@ fn bucket_order(bucket: &str) -> usize {
         .iter()
         .position(|candidate| *candidate == bucket)
         .unwrap_or(WORKSPACE_BUCKETS.len())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn next_action_prefers_slice_action_guide() {
+        let temp = tempfile::TempDir::new().expect("temp dir");
+        let root = temp.path();
+        let guide_dir = root.join("guides/08-demo-coder");
+        fs::create_dir_all(&guide_dir).expect("guide dir");
+        fs::write(
+            guide_dir.join("slice-6-hardening.md"),
+            r#"# Slice 6 Hardening Guide
+
+## Learning Navigation
+
+- Current slice: Slice 6 Agent Orchestrator
+- Current gap: live path 已跑通，但 deterministic tests 和安全阀不足
+- After this: 可以把 approval / sandbox / retry 接入 ReAct loop
+
+## Action Card
+
+### 1. Add `max_turns`
+
+### 2. Emit `ToolCallFinished`
+
+### 3. Add Fake LLM Tests
+
+## Completion Criteria
+"#,
+        )
+        .expect("guide");
+
+        let next_action =
+            build_next_action(root, "08-demo-coder", "active", "short fallback".to_owned());
+
+        assert!(next_action.contains("Current: 08-demo-coder / active"));
+        assert!(next_action.contains("Slice: Slice 6 Agent Orchestrator"));
+        assert!(next_action.contains("Gap: live path 已跑通"));
+        assert!(next_action.contains("Next: Add `max_turns` -> Emit `ToolCallFinished`"));
+        assert!(next_action.contains("Guide: guides/08-demo-coder/slice-6-hardening.md"));
+        assert!(!next_action.contains("short fallback"));
+    }
 }

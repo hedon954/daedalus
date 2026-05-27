@@ -259,14 +259,40 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
 }
 
 fn render_next_action(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
-    let paragraph = Paragraph::new(overview.next_action.as_str())
-        .style(Style::default().fg(TEXT))
+    let paragraph = Paragraph::new(next_action_lines(overview))
         .wrap(Wrap { trim: true })
         .block(chrome_block(
             bucket_next_title(&overview.workspace_bucket),
             bucket_next_accent(&overview.workspace_bucket),
         ));
     frame.render_widget(paragraph, area);
+}
+
+fn next_action_lines(overview: &TuiOverview) -> Vec<Line<'_>> {
+    let label_style = Style::default()
+        .fg(bucket_next_accent(&overview.workspace_bucket))
+        .add_modifier(Modifier::BOLD);
+
+    overview
+        .next_action
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| {
+            if let Some((label, value)) = line.split_once(':') {
+                let value_style = if label == "Guide" {
+                    Style::default().fg(MUTED)
+                } else {
+                    Style::default().fg(TEXT)
+                };
+                Line::from(vec![
+                    Span::styled(format!("{}: ", label.trim()), label_style),
+                    Span::styled(value.trim().to_owned(), value_style),
+                ])
+            } else {
+                Line::from(Span::styled(line.to_owned(), Style::default().fg(TEXT)))
+            }
+        })
+        .collect()
 }
 
 fn render_list(
