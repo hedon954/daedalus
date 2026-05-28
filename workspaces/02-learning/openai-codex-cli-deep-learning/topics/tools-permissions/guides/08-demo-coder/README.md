@@ -164,6 +164,7 @@ OpenAI-compatible Chat Completions stream
 下一步行动：
 
 - [`slice-6-hardening.md`](slice-6-hardening.md)：在 live LLM 主链路跑通后，把 Slice 6 收敛到可验收状态。
+- [`slice-6-approval-sandbox-retry-integration.md`](slice-6-approval-sandbox-retry-integration.md)：把 approval / sandbox / retry 接入 ReAct tool execution path。
 
 ### Slice 7: Demo README And Runbook
 
