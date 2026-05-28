@@ -6,6 +6,7 @@ phase: repo.phase3-practice
 
 @system/prompts/common/first-principles.md
 @system/prompts/common/summarize.md
+@system/prompts/common/micro-checkpoint.md
 
 # Implement Repo Mini Demo
 
@@ -70,6 +71,8 @@ Agent 不可以：
 - Rust demo 的 `Cargo.toml` 创建、移动或迁移后，运行 `daedalus ide sync-rust-analyzer`，让 VSCode / rust-analyzer 的 linkedProjects 从 filesystem state 自动刷新。
 - 用户练习优先于 Agent 速度。每个 slice 先给行动卡，等用户实现或明确授权后再改代码。
 - Review 或验证通过后必须同步学习进度：更新 active topic 的 `.daedalus/outcome-map.md` 和 `.daedalus/todo.md`，并告诉用户当前 slice 是否完成、下一步解锁什么。
+- 每个小步骤形成闭环后必须执行 `Micro Checkpoint Protocol`：更新学习状态、运行最小验证、按主题拆分提交，并给出下一步行动卡或下一轮问题。
+- 当前闭环产物和下一步规划产物不要混在一个 commit 里；例如 demo hardening 和下一轮 integration guide 应拆成两个提交。
 
 ## Output Delta
 
@@ -80,6 +83,18 @@ Agent 不可以：
 - 验证命令：
 - 学到的 repo 模式：
 - 下一步：
+```
+
+如果本轮形成 micro checkpoint，输出还必须包含：
+
+```markdown
+## Micro Checkpoint
+- Current:
+- Completed:
+- Updated artifacts:
+- Validation:
+- Commit:
+- Next:
 ```
 
 ## Repo-Specific Constraints

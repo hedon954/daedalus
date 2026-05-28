@@ -168,6 +168,29 @@ Minimum sync:
 
 This gate is required after code reviews in `08-demo-coder`. A passing test result alone is not enough; the user must be re-oriented on the learning path.
 
+## Micro Checkpoint Gate
+
+Load:
+
+- `system/prompts/common/micro-checkpoint.md`
+
+Use this gate after any small learning step, slice subgoal, review, validation, user-accepted design decision, or Agent-assisted implementation forms a closed loop.
+
+The Agent must proactively close the loop; the user should not need to say "更新当前学习进度，然后提交代码，并进行下一步规划吧" after every step.
+
+Minimum checkpoint:
+
+1. Classify what changed: implementation, learning progress, knowledge evidence, next-plan guide, or a combination.
+2. Update filesystem learning state: active topic `.daedalus/outcome-map.md`, `.daedalus/todo.md`, and relevant `notes/` / `guides/` indexes.
+3. Run the smallest relevant validation.
+4. Commit completed changes unless the user explicitly asks not to.
+5. Split commits by meaning:
+   - current implementation / tests / progress checkpoint
+   - future guide / next-step planning
+6. End with the current stage/slice/gap, validation result, commit hash if committed, and the next action or next coaching question.
+
+Do not mix "what is now true" with "what we plan to do next" in the same commit unless they are inseparable. A clean checkpoint should make the next session recoverable from files and git history, not from chat memory.
+
 ## Review Guidance Gate
 
 Review is an independent lifecycle attached to a learned topic or project. It is not stage 11, and it must not reopen a completed topic.
