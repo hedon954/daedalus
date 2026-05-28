@@ -27,7 +27,7 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 6 Agent Orchestrator 进行中；真实 LLM -> 多 tool call -> tool result observation -> 下一轮 LLM 的 ReAct 主链路已由用户 live test 跑通，但还缺 deterministic fake LLM tests、`max_turns`、`ToolCallFinished` 事件透出和 parser fixture tests。
+- 当前障碍：Slice 6 Agent Orchestrator 进行中；真实 LLM -> 多 tool call -> tool result observation -> 下一轮 LLM 的 ReAct 主链路已跑通，ReAct hardening 已补齐 `max_turns`、`ToolCallFinished` 事件透出、fake LLM deterministic tests 和 OpenAI-compatible parser fixture tests；剩余缺口是把 approval / sandbox / retry 接入 ReAct loop。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
 
 ## Artifact Dependency Graph
@@ -56,14 +56,15 @@ question-roadmap
 - [x] Slice 3 Approval Decision：用户已实现 `decide_approval`，覆盖 capability mismatch fail closed、`Prompt + Never -> Forbidden`、approval scope 绑定 request context、`Skip != bypass sandbox`，`cargo test` 通过 11 个测试。
 - [x] Slice 4 SimulatedSandboxRunner：用户已实现规则表驱动的模拟 runner，使用 `request.argv + ExecutionAttempt` 匹配规则，区分 `Success`、`CommandFailed`、`SandboxDenied`；Agent 补充 5 个 runner unit tests，`cargo test` 通过 16 个测试。
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，区分 `CommandFailed`、`SandboxDenied`、`already_retried`、`ApprovalPolicy` 与 `NetworkPolicy`；Agent 补充 8 个 retry unit tests，`cargo test` 通过 24 个测试。
-- [ ] Slice 6 Agent Orchestrator：已新增 `agent::llm`、`OpenAiCompatibleLlm`、`agent::react`、`agent::tool` 和 ReAct loop implementation notes；当前能以 DeepSeek / OpenAI-compatible Chat Completions 形态将流式 chunk 映射为 `StreamEvent`，并已用 live test 跑通多轮 tool call 与 observation 回灌；但尚未完成 deterministic fake LLM tests、`max_turns`、`ToolCallFinished` 事件透出、parser fixture tests，也尚未串起 approval / runner / retry。
+- [ ] Slice 6 Agent Orchestrator：已新增 `agent::llm`、`OpenAiCompatibleLlm`、`agent::react`、`agent::tool` 和 ReAct loop implementation notes；当前能以 DeepSeek / OpenAI-compatible Chat Completions 形态将流式 chunk 映射为 `StreamEvent`，并已用 live test 跑通多轮 tool call 与 observation 回灌；ReAct hardening 已完成，仍需串起 approval / runner / retry。
 
 ### Slice 6 当前待解决问题
 
-- `react.rs` 需要补 `max_turns`，避免模型持续 tool call 时无限循环。
-- `ToolCallFinished` 当前用于内部 pending tool calls，需要继续 emit 给外部事件流，保持“模型决策”和“runtime 执行”分层可观察。
-- live LLM test 已改为手动验收入口，但仍需要 fake LLM deterministic tests 覆盖一轮多个 tool call、多轮 tool call、tool failure 和 final answer without tool。
-- `take_sse_events` / `map_chunk` / `map_openai_event` 仍需要 recorded fixture 单测锁定 DeepSeek / OpenAI-compatible `data: ...` stream 边界。
+- [x] `react.rs` 已补 `max_turns`，超限时返回错误而不是伪装成 `Completed`。
+- [x] `ToolCallFinished` 已透出到外部事件流，保持“模型决策”和“runtime 执行”分层可观察。
+- [x] fake LLM deterministic tests 已覆盖 final answer without tool、一轮多个 tool call、多轮 tool call、tool failure observation 和 max turns exceeded。
+- [x] `take_sse_events` / `map_chunk` 已补 fixture tests，锁定 DeepSeek / OpenAI-compatible `data: ...` stream、`[DONE]`、tool args 分片聚合和单 chunk 多 tool calls 边界。
+- [ ] 下一步：把 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry` 串进 `react.rs` 的 tool execution path。
 - `OpenAiCompatibleLlm::default()` 缺少 env 时 panic 作为 demo 约束暂时接受；Phase 2 或库化时再考虑 `from_env()` / `try_from_env()`。
 
 ## Why This Step Matters

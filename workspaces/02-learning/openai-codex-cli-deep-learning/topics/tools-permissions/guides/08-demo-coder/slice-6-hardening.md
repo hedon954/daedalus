@@ -7,7 +7,7 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
 - Current slice: Slice 6 Agent Orchestrator
-- Current gap: live path 已跑通，但 deterministic tests 和安全阀不足
+- Current gap: ReAct hardening 已完成；下一步进入 approval / sandbox / retry integration
 - Evidence already available: [`../../notes/08-demo-coder/react-loop-implementation-issues.md`](../../notes/08-demo-coder/react-loop-implementation-issues.md)
 - After this: 可以把 approval / sandbox / retry 接入 ReAct loop，然后进入 Slice 7 README / Runbook
 
@@ -46,6 +46,15 @@ ReActAgent {
 ### 2. Emit `ToolCallFinished`
 
 目标：让模型决策和 runtime 执行都可观察。
+
+保留这个事件边界的理由：
+
+- 解释未执行的 tool call：模型可能提出了调用，但被参数解析、capability、approval、用户拒绝或 `max_turns` 拦截。
+- 对齐 approval 输入：approval 判断发生在“模型提出 tool call”之后、“runtime 真实执行”之前。
+- 验证 streaming parser：`ToolCallFinished` 能单独证明分片 arguments 已聚合成完整 tool call。
+- 区分决策和副作用：它表达 model tool choice；`ToolRunStarted/Finished/Failed` 才表达真实执行。
+
+普通用户视图可以只展示 runtime 事件；debug / audit / learning 视图建议保留 `ToolCallFinished`。
 
 当前问题：
 
@@ -109,8 +118,8 @@ ToolRunFinished / ToolRunFailed
 
 ## Completion Criteria
 
-- [ ] `cargo test` 默认不访问网络。
-- [ ] fake LLM tests 覆盖 ReAct loop 关键路径。
-- [ ] live LLM test 仍可手动运行。
-- [ ] event stream 同时能观察 model decision 和 runtime execution。
-- [ ] `.daedalus/outcome-map.md` 和 `.daedalus/todo.md` 同步 Slice 6 状态。
+- [x] `cargo test` 默认不访问网络。
+- [x] fake LLM tests 覆盖 ReAct loop 关键路径。
+- [x] live LLM test 仍可手动运行。
+- [x] event stream 同时能观察 model decision 和 runtime execution。
+- [x] `.daedalus/outcome-map.md` 和 `.daedalus/todo.md` 同步 Slice 6 状态。

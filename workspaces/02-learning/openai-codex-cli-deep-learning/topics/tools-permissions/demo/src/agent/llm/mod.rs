@@ -1,5 +1,8 @@
 pub mod openai;
 
+#[cfg(test)]
+pub(crate) mod fake;
+
 use async_trait::async_trait;
 
 use crate::agent::stream_event::EventStream;

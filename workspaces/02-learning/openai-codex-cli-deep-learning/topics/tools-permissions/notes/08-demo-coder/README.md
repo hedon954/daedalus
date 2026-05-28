@@ -9,7 +9,7 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
 - Current slice: Slice 6 Agent Orchestrator
-- Current path: real model stream -> ReAct loop -> tool execution event -> observation feedback -> final answer
+- Current path: real/fake model stream -> ReAct loop -> tool decision event -> tool execution event -> observation feedback -> bounded next turn
 
 ## Topic Index
 
@@ -20,8 +20,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 
 ## Stage Exit Criteria
 
-- [ ] `react.rs` 有 deterministic fake LLM 单测覆盖多 tool call、多轮 tool call、tool failure。
-- [ ] live LLM 测试默认 `#[ignore]`，只作为手动验收。
-- [ ] `max_turns` 阻止无限 agent loop。
-- [ ] tool call event 和 tool run event 都能对外透出。
+- [x] `react.rs` 有 deterministic fake LLM 单测覆盖多 tool call、多轮 tool call、tool failure。
+- [x] live LLM 测试默认 `#[ignore]`，只作为手动验收。
+- [x] `max_turns` 阻止无限 agent loop。
+- [x] tool call event 和 tool run event 都能对外透出。
 - [ ] `demo/README.md` 能说明 Slice 6 的运行方式和 Phase 1 简化边界。

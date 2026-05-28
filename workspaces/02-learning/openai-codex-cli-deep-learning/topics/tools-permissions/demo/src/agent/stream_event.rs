@@ -38,7 +38,7 @@ pub enum StreamEvent {
     Error(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ToolCallFinished {
     pub index: i64,
     pub call_id: String,

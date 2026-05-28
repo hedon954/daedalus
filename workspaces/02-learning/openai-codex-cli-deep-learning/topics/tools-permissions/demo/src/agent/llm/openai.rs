@@ -316,6 +316,229 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn take_sse_events_should_extract_complete_data_events() {
+        let mut buffer =
+            "data: {\"type\":\"first\"}\n\ndata: {\"type\":\"second\"}\n\npartial".to_string();
+
+        let events = take_sse_events(&mut buffer);
+
+        assert_eq!(
+            events,
+            vec![
+                "{\"type\":\"first\"}".to_string(),
+                "{\"type\":\"second\"}".to_string()
+            ]
+        );
+        assert_eq!(buffer, "partial");
+    }
+
+    #[test]
+    fn take_sse_events_should_ignore_done_flag() {
+        let mut buffer = "data: [DONE]\n\n".to_string();
+
+        let events = take_sse_events(&mut buffer);
+
+        assert!(events.is_empty());
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn map_chunk_should_emit_started_once_and_text_delta() {
+        let mut first = true;
+        let mut tool_calls = vec![];
+
+        let first_chunk = json!({
+            "choices": [
+                {
+                    "delta": {
+                        "content": "hello",
+                        "reasoning_content": null
+                    },
+                    "finish_reason": null
+                }
+            ]
+        });
+        let second_chunk = json!({
+            "choices": [
+                {
+                    "delta": {
+                        "content": " world",
+                        "reasoning_content": null
+                    },
+                    "finish_reason": null
+                }
+            ]
+        });
+
+        let first_events = map_chunk(&first_chunk, &mut first, &mut tool_calls);
+        let second_events = map_chunk(&second_chunk, &mut first, &mut tool_calls);
+
+        assert!(matches!(first_events[0], StreamEvent::Started));
+        assert!(matches!(&first_events[1], StreamEvent::TextDelta(text) if text == "hello"));
+        assert_eq!(first_events.len(), 2);
+        assert!(matches!(&second_events[0], StreamEvent::TextDelta(text) if text == " world"));
+        assert_eq!(second_events.len(), 1);
+    }
+
+    #[test]
+    fn map_chunk_should_aggregate_split_tool_arguments_until_completed() {
+        let mut first = true;
+        let mut tool_calls = vec![];
+
+        let tool_start = json!({
+            "choices": [
+                {
+                    "delta": {
+                        "tool_calls": [
+                            {
+                                "index": 0,
+                                "id": "call_add",
+                                "type": "function",
+                                "function": {
+                                    "name": "add",
+                                    "arguments": ""
+                                }
+                            }
+                        ]
+                    },
+                    "finish_reason": null
+                }
+            ]
+        });
+        let args_part_1 = json!({
+            "choices": [
+                {
+                    "delta": {
+                        "tool_calls": [
+                            {
+                                "index": 0,
+                                "function": {
+                                    "arguments": "{\"a\":1"
+                                }
+                            }
+                        ]
+                    },
+                    "finish_reason": null
+                }
+            ]
+        });
+        let args_part_2 = json!({
+            "choices": [
+                {
+                    "delta": {
+                        "tool_calls": [
+                            {
+                                "index": 0,
+                                "function": {
+                                    "arguments": ",\"b\":2}"
+                                }
+                            }
+                        ]
+                    },
+                    "finish_reason": null
+                }
+            ]
+        });
+        let completed = json!({
+            "choices": [
+                {
+                    "delta": {},
+                    "finish_reason": "tool_calls"
+                }
+            ]
+        });
+
+        let start_events = map_chunk(&tool_start, &mut first, &mut tool_calls);
+        let args_1_events = map_chunk(&args_part_1, &mut first, &mut tool_calls);
+        let args_2_events = map_chunk(&args_part_2, &mut first, &mut tool_calls);
+        let completed_events = map_chunk(&completed, &mut first, &mut tool_calls);
+
+        assert!(matches!(start_events[0], StreamEvent::Started));
+        assert!(args_1_events.is_empty());
+        assert!(args_2_events.is_empty());
+        assert!(matches!(
+            &completed_events[0],
+            StreamEvent::ToolCallFinished(ToolCallFinished {
+                index: 0,
+                call_id,
+                name,
+                arguments,
+            }) if call_id == "call_add" && name == "add" && arguments == r#"{"a":1,"b":2}"#
+        ));
+        assert!(matches!(completed_events[1], StreamEvent::Completed));
+        assert_eq!(completed_events.len(), 2);
+    }
+
+    #[test]
+    fn map_chunk_should_collect_multiple_tool_calls_from_one_chunk() {
+        let mut first = true;
+        let mut tool_calls = vec![];
+
+        let tool_chunk = json!({
+            "choices": [
+                {
+                    "delta": {
+                        "tool_calls": [
+                            {
+                                "index": 0,
+                                "id": "call_add",
+                                "type": "function",
+                                "function": {
+                                    "name": "add",
+                                    "arguments": "{\"a\":1,\"b\":2}"
+                                }
+                            },
+                            {
+                                "index": 1,
+                                "id": "call_sub",
+                                "type": "function",
+                                "function": {
+                                    "name": "sub",
+                                    "arguments": "{\"a\":5,\"b\":3}"
+                                }
+                            }
+                        ]
+                    },
+                    "finish_reason": null
+                }
+            ]
+        });
+        let completed = json!({
+            "choices": [
+                {
+                    "delta": {},
+                    "finish_reason": "tool_calls"
+                }
+            ]
+        });
+
+        let start_events = map_chunk(&tool_chunk, &mut first, &mut tool_calls);
+        let completed_events = map_chunk(&completed, &mut first, &mut tool_calls);
+
+        assert!(matches!(start_events[0], StreamEvent::Started));
+        assert!(matches!(
+            &completed_events[0],
+            StreamEvent::ToolCallFinished(ToolCallFinished {
+                index: 0,
+                call_id,
+                name,
+                arguments,
+            }) if call_id == "call_add" && name == "add" && arguments == r#"{"a":1,"b":2}"#
+        ));
+        assert!(matches!(
+            &completed_events[1],
+            StreamEvent::ToolCallFinished(ToolCallFinished {
+                index: 1,
+                call_id,
+                name,
+                arguments,
+            }) if call_id == "call_sub" && name == "sub" && arguments == r#"{"a":5,"b":3}"#
+        ));
+        assert!(matches!(completed_events[2], StreamEvent::Completed));
+        assert_eq!(completed_events.len(), 3);
+    }
+
     async fn stream(user_text: &str) -> anyhow::Result<()> {
         let body = json!({
             "model": "deepseek-v4-flash",

@@ -14,11 +14,17 @@ type EventSender = mpsc::Sender<anyhow::Result<StreamEvent>>;
 
 pub struct ReActAgent {
     llm: Arc<dyn Llm + Send + Sync>,
+    max_turns: u8,
 }
 
+const DEFAULT_MAX_TURNS: u8 = 32;
+
 impl ReActAgent {
-    pub fn new(llm: Arc<dyn Llm + Send + Sync>) -> Self {
-        Self { llm }
+    pub fn new(llm: Arc<dyn Llm + Send + Sync>, max_turns: Option<u8>) -> Self {
+        Self {
+            llm,
+            max_turns: max_turns.unwrap_or(DEFAULT_MAX_TURNS),
+        }
     }
 
     pub fn run(&self, prompt: String) -> anyhow::Result<EventStream> {
@@ -28,9 +34,10 @@ impl ReActAgent {
 
         let llm = self.llm.clone();
         let (tx, rx) = mpsc::channel(64);
+        let max_turns = self.max_turns;
 
         tokio::spawn(async move {
-            if let Err(err) = run_agent_loop(llm, prompt, tx.clone()).await {
+            if let Err(err) = run_agent_loop(llm, prompt, max_turns, tx.clone()).await {
                 let _ = tx.send(Err(err)).await;
             }
         });
@@ -46,6 +53,7 @@ impl ReActAgent {
 async fn run_agent_loop(
     llm: Arc<dyn Llm + Send + Sync>,
     prompt: String,
+    max_turns: u8,
     tx: EventSender,
 ) -> anyhow::Result<()> {
     let mut messages = vec![
@@ -53,7 +61,14 @@ async fn run_agent_loop(
         json!({"role": "user", "content": prompt}),
     ];
 
+    let mut run_turns = 0;
+
     loop {
+        if run_turns >= max_turns {
+            anyhow::bail!("max turns exceeded: {max_turns}");
+        }
+        run_turns += 1;
+
         let mut stream = llm
             .stream(LLmRequest {
                 messages: messages.clone(),
@@ -75,7 +90,10 @@ async fn run_agent_loop(
                     reasoning_content.push_str(&text);
                     emit(&tx, StreamEvent::ThinkingDelta(text)).await?;
                 }
-                StreamEvent::ToolCallFinished(tc) => pending_tool_calls.push(tc),
+                StreamEvent::ToolCallFinished(tc) => {
+                    pending_tool_calls.push(tc.clone());
+                    emit(&tx, StreamEvent::ToolCallFinished(tc)).await?;
+                }
                 StreamEvent::Completed => break,
                 StreamEvent::Error(err) => anyhow::bail!(err),
                 other => emit(&tx, other).await?,
@@ -107,6 +125,8 @@ async fn run_agent_loop(
 
         // 逐个工具执行
         run_tools(&tx, pending_tool_calls, &mut messages).await?;
+
+        // TODO: logger
     }
 
     emit(&tx, StreamEvent::Completed).await
@@ -184,8 +204,10 @@ async fn emit(tx: &EventSender, event: StreamEvent) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::agent::{
-        llm::openai::OpenAiCompatibleLlmBuilder,
+        llm::{fake::FakeLlm, openai::OpenAiCompatibleLlmBuilder},
         tool::{add_spec, sub_spec},
     };
 
@@ -198,7 +220,7 @@ mod tests {
             .tools(vec![add_spec(), sub_spec()])
             .build()?;
 
-        let agent = ReActAgent::new(Arc::new(llm));
+        let agent = ReActAgent::new(Arc::new(llm), None);
 
         let mut stream = agent.run("计算一下999+666和321-123,将把它们俩的结果相加".to_string())?;
 
@@ -240,6 +262,199 @@ mod tests {
                 other => println!("{other:?}"),
             }
         }
+
+        Ok(())
+    }
+
+    fn tool_call(index: i64, call_id: &str, name: &str, arguments: &str) -> StreamEvent {
+        StreamEvent::ToolCallFinished(ToolCallFinished {
+            index,
+            call_id: call_id.to_string(),
+            name: name.to_string(),
+            arguments: arguments.to_string(),
+        })
+    }
+
+    async fn collect_events(agent: &ReActAgent, prompt: &str) -> anyhow::Result<Vec<StreamEvent>> {
+        let mut stream = agent.run(prompt.to_string())?;
+        let mut events = vec![];
+
+        while let Some(event) = stream.next().await {
+            events.push(event?);
+        }
+
+        Ok(events)
+    }
+
+    async fn collect_until_error(
+        agent: &ReActAgent,
+        prompt: &str,
+    ) -> anyhow::Result<(Vec<StreamEvent>, String)> {
+        let mut stream = agent.run(prompt.to_string())?;
+        let mut events = vec![];
+
+        while let Some(event) = stream.next().await {
+            match event {
+                Ok(event) => events.push(event),
+                Err(err) => return Ok((events, err.to_string())),
+            }
+        }
+
+        anyhow::bail!("expected stream error, but stream completed")
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_return_final_answer_without_tool_call() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![vec![
+            StreamEvent::Started,
+            StreamEvent::TextDelta("final answer".to_string()),
+            StreamEvent::Completed,
+        ]]);
+        let agent = ReActAgent::new(llm.clone(), Some(3));
+
+        let events = collect_events(&agent, "hello").await?;
+
+        assert!(matches!(events[0], StreamEvent::Started));
+        assert!(matches!(&events[1], StreamEvent::TextDelta(text) if text == "final answer"));
+        assert!(matches!(events[2], StreamEvent::Completed));
+        assert_eq!(events.len(), 3);
+        assert_eq!(llm.requests().len(), 1);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_run_multiple_tool_calls_in_index_order() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                StreamEvent::Started,
+                tool_call(1, "call_sub", "sub", r#"{"a": 5, "b": 2}"#),
+                tool_call(0, "call_add", "add", r#"{"a": 1, "b": 2}"#),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("final answer".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = ReActAgent::new(llm.clone(), Some(3));
+
+        let events = collect_events(&agent, "calculate").await?;
+
+        let started_indexes = events
+            .iter()
+            .filter_map(|event| match event {
+                StreamEvent::ToolRunStarted { index, .. } => Some(*index),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(started_indexes, vec![0, 1]);
+
+        let outputs = events
+            .iter()
+            .filter_map(|event| match event {
+                StreamEvent::ToolRunFinished { output, .. } => Some(output.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(outputs, vec!["3", "3"]);
+
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1][2]["tool_calls"][0]["id"], "call_add");
+        assert_eq!(requests[1][2]["tool_calls"][1]["id"], "call_sub");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_continue_after_multiple_tool_rounds() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(0, "call_add_1", "add", r#"{"a": 1, "b": 2}"#),
+                StreamEvent::Completed,
+            ],
+            vec![
+                tool_call(0, "call_add_2", "add", r#"{"a": 3, "b": 4}"#),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("done".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = ReActAgent::new(llm.clone(), Some(3));
+
+        let events = collect_events(&agent, "calculate").await?;
+
+        let outputs = events
+            .iter()
+            .filter_map(|event| match event {
+                StreamEvent::ToolRunFinished { output, .. } => Some(output.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(outputs, vec!["3", "7"]);
+        assert!(matches!(events.last(), Some(StreamEvent::Completed)));
+        assert_eq!(llm.requests().len(), 3);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_feed_tool_failure_back_as_observation() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(0, "call_mul", "mul", r#"{"a": 2, "b": 3}"#),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("handled failure".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = ReActAgent::new(llm.clone(), Some(3));
+
+        let events = collect_events(&agent, "calculate").await?;
+
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFailed { name, error, .. }
+                if name == "mul" && error == "unknown tool: mul"
+        )));
+
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1][3]["role"], "tool");
+        assert_eq!(requests[1][3]["tool_call_id"], "call_mul");
+        assert_eq!(requests[1][3]["content"], "tool failed: unknown tool: mul");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_error_when_max_turns_exceeded() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(0, "call_add", "add", r#"{"a": 1, "b": 2}"#),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("should not be requested".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = ReActAgent::new(llm.clone(), Some(1));
+
+        let (events, error) = collect_until_error(&agent, "calculate").await?;
+
+        assert!(error.contains("max turns exceeded: 1"));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFinished { call_id, output, .. }
+                if call_id == "call_add" && output == "3"
+        )));
+        assert_eq!(llm.requests().len(), 1);
 
         Ok(())
     }
