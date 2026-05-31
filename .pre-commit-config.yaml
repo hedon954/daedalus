@@ -41,3 +41,10 @@ repos:
         language: system
         files: ^crates/.*\.(rs|toml)$
         pass_filenames: false
+      - id: commit-msg-format
+        name: commit msg format
+        description: Check commit message follows daedalus convention.
+        entry: system/bin/check-commit-msg
+        language: system
+        stages: [commit-msg]
+        pass_filenames: true
