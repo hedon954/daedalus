@@ -4,10 +4,12 @@ use futures_util::{StreamExt, stream};
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
-use crate::agent::{
-    llm::{LLmRequest, Llm},
-    stream_event::{EventStream, StreamEvent, ToolCallFinished},
-    tool::run_tool,
+use crate::{
+    agent::{
+        llm::{LLmRequest, Llm},
+        stream_event::{EventStream, StreamEvent, ToolCallFinished},
+    },
+    tool::runtime::{ToolRuntime, ToolRuntimeResult},
 };
 
 type EventSender = mpsc::Sender<anyhow::Result<StreamEvent>>;
@@ -15,15 +17,21 @@ type EventSender = mpsc::Sender<anyhow::Result<StreamEvent>>;
 pub struct ReActAgent {
     llm: Arc<dyn Llm + Send + Sync>,
     max_turns: u8,
+    tool_runtime: Arc<ToolRuntime>,
 }
 
 const DEFAULT_MAX_TURNS: u8 = 32;
 
 impl ReActAgent {
-    pub fn new(llm: Arc<dyn Llm + Send + Sync>, max_turns: Option<u8>) -> Self {
+    pub fn new(
+        llm: Arc<dyn Llm + Send + Sync>,
+        max_turns: Option<u8>,
+        tool_runtime: Arc<ToolRuntime>,
+    ) -> Self {
         Self {
             llm,
             max_turns: max_turns.unwrap_or(DEFAULT_MAX_TURNS),
+            tool_runtime,
         }
     }
 
@@ -33,11 +41,14 @@ impl ReActAgent {
         }
 
         let llm = self.llm.clone();
+        let tool_runtime = self.tool_runtime.clone();
         let (tx, rx) = mpsc::channel(64);
         let max_turns = self.max_turns;
 
         tokio::spawn(async move {
-            if let Err(err) = run_agent_loop(llm, prompt, max_turns, tx.clone()).await {
+            if let Err(err) =
+                run_agent_loop(llm, prompt, max_turns, tx.clone(), &tool_runtime).await
+            {
                 let _ = tx.send(Err(err)).await;
             }
         });
@@ -55,6 +66,7 @@ async fn run_agent_loop(
     prompt: String,
     max_turns: u8,
     tx: EventSender,
+    tool_runtime: &ToolRuntime,
 ) -> anyhow::Result<()> {
     let mut messages = vec![
         json!({"role": "system", "content": ""}),
@@ -124,7 +136,7 @@ async fn run_agent_loop(
         }));
 
         // 逐个工具执行
-        run_tools(&tx, pending_tool_calls, &mut messages).await?;
+        run_tools(&tx, pending_tool_calls, &mut messages, tool_runtime).await?;
 
         // TODO: logger
     }
@@ -136,6 +148,7 @@ async fn run_tools(
     tx: &EventSender,
     tool_calls: Vec<ToolCallFinished>,
     messages: &mut Vec<Value>,
+    tool_runtime: &ToolRuntime,
 ) -> anyhow::Result<()> {
     for call in tool_calls {
         emit(
@@ -152,8 +165,8 @@ async fn run_tools(
         // TODO: 权限检查？
         // 1 个工具没有权限，是后面的工具都不执行，还是跳过它先执行后面的工具？
 
-        match run_tool(&call.name, &call.arguments) {
-            Ok(output) => {
+        match tool_runtime.run(&call) {
+            ToolRuntimeResult::Finished { output } => {
                 emit(
                     tx,
                     StreamEvent::ToolRunFinished {
@@ -171,8 +184,7 @@ async fn run_tools(
                     "content": output,
                 }));
             }
-            Err(e) => {
-                let error = e.to_string();
+            ToolRuntimeResult::Failed { error } => {
                 emit(
                     tx,
                     StreamEvent::ToolRunFailed {
@@ -187,7 +199,43 @@ async fn run_tools(
                 messages.push(json!({
                     "role": "tool",
                     "tool_call_id": call.call_id,
-                    "content": format!("tool failed: {error}")
+                    "content": error
+                }));
+            }
+            ToolRuntimeResult::Denied { reason } => {
+                emit(
+                    tx,
+                    StreamEvent::ToolRunFailed {
+                        index: call.index,
+                        call_id: call.call_id.clone(),
+                        name: call.name.clone(),
+                        error: reason.clone(),
+                    },
+                )
+                .await?;
+
+                messages.push(json!({
+                    "role": "tool",
+                    "tool_call_id": call.call_id,
+                    "content": format!("tool denied: {reason}")
+                }));
+            }
+            ToolRuntimeResult::Skipped { reason } => {
+                emit(
+                    tx,
+                    StreamEvent::ToolRunFailed {
+                        index: call.index,
+                        call_id: call.call_id.clone(),
+                        name: call.name.clone(),
+                        error: reason.clone(),
+                    },
+                )
+                .await?;
+
+                messages.push(json!({
+                    "role": "tool",
+                    "tool_call_id": call.call_id,
+                    "content": format!("tool skipped: {reason}")
                 }));
             }
         }
@@ -206,9 +254,9 @@ async fn emit(tx: &EventSender, event: StreamEvent) -> anyhow::Result<()> {
 mod tests {
     use std::sync::Arc;
 
-    use crate::agent::{
-        llm::{fake::FakeLlm, openai::OpenAiCompatibleLlmBuilder},
-        tool::{add_spec, sub_spec},
+    use crate::{
+        agent::llm::{fake::FakeLlm, openai::OpenAiCompatibleLlmBuilder},
+        tool::function::{add_spec, sub_spec},
     };
 
     use super::*;
@@ -220,7 +268,7 @@ mod tests {
             .tools(vec![add_spec(), sub_spec()])
             .build()?;
 
-        let agent = ReActAgent::new(Arc::new(llm), None);
+        let agent = ReActAgent::new(Arc::new(llm), None, Arc::new(ToolRuntime::default()));
 
         let mut stream = agent.run("计算一下999+666和321-123,将把它们俩的结果相加".to_string())?;
 
@@ -310,7 +358,7 @@ mod tests {
             StreamEvent::TextDelta("final answer".to_string()),
             StreamEvent::Completed,
         ]]);
-        let agent = ReActAgent::new(llm.clone(), Some(3));
+        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
 
         let events = collect_events(&agent, "hello").await?;
 
@@ -337,7 +385,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3));
+        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
 
         let events = collect_events(&agent, "calculate").await?;
 
@@ -383,7 +431,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3));
+        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
 
         let events = collect_events(&agent, "calculate").await?;
 
@@ -413,21 +461,20 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3));
+        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
 
         let events = collect_events(&agent, "calculate").await?;
 
         assert!(events.iter().any(|event| matches!(
             event,
-            StreamEvent::ToolRunFailed { name, error, .. }
-                if name == "mul" && error == "unknown tool: mul"
+            StreamEvent::ToolRunFailed { name, .. } if name == "mul"
         )));
 
         let requests = llm.requests();
         assert_eq!(requests.len(), 2);
         assert_eq!(requests[1][3]["role"], "tool");
         assert_eq!(requests[1][3]["tool_call_id"], "call_mul");
-        assert_eq!(requests[1][3]["content"], "tool failed: unknown tool: mul");
+        assert!(requests[1][3]["content"].is_string());
 
         Ok(())
     }
@@ -444,7 +491,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(1));
+        let agent = ReActAgent::new(llm.clone(), Some(1), Arc::new(ToolRuntime::default()));
 
         let (events, error) = collect_until_error(&agent, "calculate").await?;
 

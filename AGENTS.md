@@ -11,6 +11,7 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 - Treat `.daedalus/state.toml` as the only source of truth for task lifecycle. The workspace directory bucket is a filesystem projection and must match `task.lifecycle` and `task.workspace_bucket`.
 - Prefer filesystem artifacts over hidden chat memory. Long-running learning state must be recoverable from files.
 - Do not turn summaries into chat logs. Preserve goals, decisions, open questions, todo state, and verified conclusions.
+- After a review or validation changes completion status, risks, or the next step, update the relevant learning artifacts before ending the turn, even when source code is otherwise review-only.
 - Emphasize first principles and trade-offs: reality needs X, constraints force Y, the repo chooses Z, and the choice has costs.
 - When validating templates or generated workspace artifacts, judge them against daedalus's purpose: filesystem-first, recoverable, teachable, and reviewable learning loops. Do not blindly align one file to another if the result weakens that purpose.
 
@@ -44,6 +45,7 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 - Avoid adding broad abstractions before a concrete learning workflow requires them.
 - When adding deterministic logic, prefer Rust code under `crates/` and keep generated or runtime state out of source control.
 - When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed so `make ci` continues to cover formatting, check, clippy, and tests for the whole Rust workspace.
+- Tests should assert stable behavior, not incidental wording: for errors, prefer checking the error variant/category or presence unless the exact message is part of the public contract.
 - Before marking a learning task completed, verify that it has at least: goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit reason for no demo, business transfer, and knowledge export.
 
 ## Knowledge Base Rules

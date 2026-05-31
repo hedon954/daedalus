@@ -16,7 +16,7 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 | Topic | File | Status | Demo impact |
 | --- | --- | --- | --- |
 | ReAct loop implementation issues | [`react-loop-implementation-issues.md`](react-loop-implementation-issues.md) | 用户实践中 / 已初步验证 | 决定 `react.rs` 的 streaming、tool call、event、test 边界 |
-| Tool runtime boundary and multi-call policy | [`tool-runtime-boundary-and-multi-call-policy.md`](tool-runtime-boundary-and-multi-call-policy.md) | 已记录 / 待实现验证 | 决定 `ToolRuntime` 分层、pure tool 与 shell tool 的权限链路、多 tool call 被拒后的 observation 策略 |
+| Tool runtime boundary and multi-call policy | [`tool-runtime-boundary-and-multi-call-policy.md`](tool-runtime-boundary-and-multi-call-policy.md) | pure function path 已验证 / command path 待实现 | 决定 `ToolRuntime` 分层、pure tool 与 shell tool 的权限链路、多 tool call 被拒后的 observation 策略 |
 | Git commit message rewrite | [`git-commit-message-rewrite.md`](git-commit-message-rewrite.md) | 已记录 | 沉淀 demo 开发分支历史整理与验收方法 |
 
 ## Stage Exit Criteria
@@ -25,4 +25,5 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - [x] live LLM 测试默认 `#[ignore]`，只作为手动验收。
 - [x] `max_turns` 阻止无限 agent loop。
 - [x] tool call event 和 tool run event 都能对外透出。
+- [x] `ToolRuntime` pure function path 有单测覆盖 add/sub 成功、参数错误和未知工具；错误路径只断言失败存在，不锁定错误文案。
 - [ ] `demo/README.md` 能说明 Slice 6 的运行方式和 Phase 1 简化边界。

@@ -7,9 +7,9 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
 - Current slice: Slice 6 Agent Orchestrator
-- Current gap: `react.rs` 可以真实调用工具，但仍直接调用 `tool::function::run_tool`，还没有通过 `ToolRuntime` 保留 Codex 的权限 / 沙箱不变量。
+- Current gap: `react.rs` 已通过 `ToolRuntime` 调用 `add/sub` pure function path，但 command tool 尚未接入 approval / sandbox / retry。
 - Current code shape:
-  - [`agent/react.rs`](../../demo/src/agent/react.rs)：收集 tool calls、回灌 messages、当前仍直接执行 pure function。
+  - [`agent/react.rs`](../../demo/src/agent/react.rs)：收集 tool calls、回灌 messages、通过 `ToolRuntime` 执行工具。
   - [`tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
   - [`tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP，下一步核心文件。
   - [`tool/shell.rs`](../../demo/src/tool/shell.rs)：command tool 预留入口。
@@ -42,7 +42,7 @@ ToolCallFinished
 
 ### 1. Stabilize ToolRuntime Boundary
 
-目标：先让 `react.rs` 不再直接依赖 `tool::function::run_tool`。
+状态：已完成 pure function path。`react.rs` 已不再直接依赖 `tool::function::run_pure_function`。
 
 当前入口：
 
@@ -72,6 +72,7 @@ impl ToolRuntime {
 - `add/sub` 仍能通过 fake LLM tests 跑通。
 - 未知 tool 不 panic，返回可回灌给模型的失败或拒绝结果。
 - `react.rs` 只关心 `ToolRuntimeResult -> StreamEvent / role=tool message`。
+- ToolRuntime pure function 单测只锁定成功输出；错误路径只断言 `Failed` 变体，不锁具体错误文案。
 
 ### 2. Add Tool Definition Layer
 
@@ -114,7 +115,7 @@ shell -> Command
 ToolCallFinished(add/sub)
   -> ToolRuntime.find_tool
   -> ToolRuntimePlan::RunPureFunction
-  -> tool/function.rs::run_tool
+  -> tool/function.rs::run_pure_function
   -> ToolRuntimeResult::Finished or Failed
 ```
 
@@ -216,8 +217,8 @@ Approval passed
 
 ## Completion Criteria
 
-- [ ] `react.rs` 通过 `ToolRuntime` 执行工具。
-- [ ] pure function path 仍可用。
+- [x] `react.rs` 通过 `ToolRuntime` 执行工具。
+- [x] pure function path 仍可用。
 - [ ] 至少一个 command tool 走完整 approval / sandbox / retry 链路。
 - [ ] fake LLM tests 覆盖 forbidden、sandbox success、sandbox denied retry、command failed no retry。
 - [ ] event stream 能解释 tool 为什么没执行、为什么 retry、最终 observation 是什么。

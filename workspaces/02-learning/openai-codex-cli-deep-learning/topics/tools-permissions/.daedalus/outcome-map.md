@@ -27,7 +27,7 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 6 Agent Orchestrator 进行中；真实 LLM -> 多 tool call -> tool result observation -> 下一轮 LLM 的 ReAct 主链路已跑通，ReAct hardening 已补齐 `max_turns`、`ToolCallFinished` 事件透出、fake LLM deterministic tests 和 OpenAI-compatible parser fixture tests；剩余缺口是把 approval / sandbox / retry 接入 ReAct loop。
+- 当前障碍：Slice 6 Agent Orchestrator 进行中；真实 LLM -> 多 tool call -> tool result observation -> 下一轮 LLM 的 ReAct 主链路已跑通，ReAct hardening 已补齐 `max_turns`、`ToolCallFinished` 事件透出、fake LLM deterministic tests 和 OpenAI-compatible parser fixture tests；`ToolRuntime` pure function path 已接入并补齐单测；剩余缺口是把 command tool 的 approval / sandbox / retry 接入 ReAct loop。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
 
 ## Artifact Dependency Graph
@@ -56,7 +56,7 @@ question-roadmap
 - [x] Slice 3 Approval Decision：用户已实现 `decide_approval`，覆盖 capability mismatch fail closed、`Prompt + Never -> Forbidden`、approval scope 绑定 request context、`Skip != bypass sandbox`，`cargo test` 通过 11 个测试。
 - [x] Slice 4 SimulatedSandboxRunner：用户已实现规则表驱动的模拟 runner，使用 `request.argv + ExecutionAttempt` 匹配规则，区分 `Success`、`CommandFailed`、`SandboxDenied`；Agent 补充 5 个 runner unit tests，`cargo test` 通过 16 个测试。
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，区分 `CommandFailed`、`SandboxDenied`、`already_retried`、`ApprovalPolicy` 与 `NetworkPolicy`；Agent 补充 8 个 retry unit tests，`cargo test` 通过 24 个测试。
-- [ ] Slice 6 Agent Orchestrator：已新增 `agent::llm`、`OpenAiCompatibleLlm`、`agent::react` 和顶层 `tool` module；当前 `tool/function.rs` 承载 `add/sub` pure tools，`tool/runtime.rs` 是 `ToolRuntime` WIP，`tool/shell.rs` 是 command tool 预留入口。真实 LLM ReAct 主链路和 ReAct hardening 已完成，仍需让 `react.rs` 通过 `ToolRuntime` 串起 approval / runner / retry。
+- [ ] Slice 6 Agent Orchestrator：已新增 `agent::llm`、`OpenAiCompatibleLlm`、`agent::react` 和顶层 `tool` module；当前 `tool/function.rs` 承载 `add/sub` pure tools，`tool/runtime.rs` 已承接 `ToolRuntime::run(call)` 的 pure function path 并补齐 add/sub/invalid args/unknown tool 单测，`tool/shell.rs` 是 command tool 预留入口。真实 LLM ReAct 主链路和 ReAct hardening 已完成，仍需通过 command path 串起 approval / runner / retry。
 
 ### Slice 6 当前待解决问题
 
@@ -64,7 +64,8 @@ question-roadmap
 - [x] `ToolCallFinished` 已透出到外部事件流，保持“模型决策”和“runtime 执行”分层可观察。
 - [x] fake LLM deterministic tests 已覆盖 final answer without tool、一轮多个 tool call、多轮 tool call、tool failure observation 和 max turns exceeded。
 - [x] `take_sse_events` / `map_chunk` 已补 fixture tests，锁定 DeepSeek / OpenAI-compatible `data: ...` stream、`[DONE]`、tool args 分片聚合和单 chunk 多 tool calls 边界。
-- [ ] 下一步：先稳定 `tool/runtime.rs` 的 `ToolRuntime::run(call)` 边界，让 `react.rs` 不再直接调用 `tool::function::run_tool`；随后把 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry` 串进 command tool path。
+- [x] `tool/runtime.rs` 的 `ToolRuntime::run(call)` pure function 边界已稳定，`react.rs` 不再直接调用 pure function runner。
+- [ ] 下一步：把 `shell` command tool path 接入 `ToolRuntime`，并串起 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry`。
 - `OpenAiCompatibleLlm::default()` 缺少 env 时 panic 作为 demo 约束暂时接受；Phase 2 或库化时再考虑 `from_env()` / `try_from_env()`。
 
 ## Why This Step Matters

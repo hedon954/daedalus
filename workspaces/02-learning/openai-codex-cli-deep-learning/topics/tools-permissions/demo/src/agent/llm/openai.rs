@@ -312,7 +312,7 @@ fn value_as_str(v: &serde_json::Value) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::agent::tool::{add_spec, run_tool, sub_spec};
+    use crate::tool::function::{add_spec, run_pure_function, sub_spec};
 
     use super::*;
 
@@ -628,7 +628,7 @@ mod tests {
                     name,
                     arguments,
                 }) => {
-                    let out = run_tool(&name, &arguments)?;
+                    let out = run_pure_function(&name, &arguments)?;
                     println!("\ntool {name}: {out}");
                 }
                 StreamEvent::Completed => break,

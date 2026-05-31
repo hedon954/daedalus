@@ -33,6 +33,8 @@ scope: common
 
 ## Required Actions
 
+Review-only 不等于 learning-state-only。只要 review 或验证改变了完成度、风险清单、阻塞点、下一步行动或验收状态，即使用户没有要求改源码，也必须同步学习产物。源码是否可改由用户授权决定；学习地图是否过期由事实决定。
+
 1. 更新学习状态：
    - active topic `.daedalus/outcome-map.md`
    - active topic `.daedalus/todo.md`
@@ -49,13 +51,18 @@ scope: common
    - 状态/模板变更运行 `daedalus validate` 或相关审计脚本。
    - 如果无法验证，说明阻塞原因和未验证风险。
 
-4. 提交 checkpoint，除非用户明确要求不要提交：
+4. 测试断言保持稳健：
+   - 错误路径优先断言错误类别、枚举变体、是否存在错误，或公开 contract 中稳定的字段。
+   - 不要默认断言完整错误文案、debug 字符串或内部格式；只有当错误文案本身是用户可见 API / CLI contract 时才锁定精确文本。
+   - 如果为了诊断需要检查文案，优先使用最小稳定关键词，并在测试名里说明这是 contract。
+
+5. 提交 checkpoint，除非用户明确要求不要提交：
    - 使用 `type(scope): 中文描述`。
    - 当前闭环产物和下一步规划产物应分开提交。
    - 不要把“已完成实现”和“后续 guide”混在一个 commit 里，除非二者不可分割。
    - 不要把未验证假设写进提交信息。
 
-5. 最终回复必须给出：
+6. 最终回复必须给出：
    - 当前 stage / slice / gap。
    - 本轮完成了什么。
    - 更新了哪些学习产物。

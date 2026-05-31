@@ -14,8 +14,8 @@ pub fn sub(a: i64, b: i64) -> i64 {
     a - b
 }
 
-#[allow(unused)]
-pub fn run_tool(name: &str, arguments: &str) -> anyhow::Result<String> {
+/// 执行纯编译函数
+pub fn run_pure_function(name: &str, arguments: &str) -> anyhow::Result<String> {
     let arguments = serde_json::Value::from_str(arguments)?;
     match name {
         "add" => {

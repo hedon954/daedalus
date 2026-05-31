@@ -165,13 +165,13 @@ OpenAI-compatible Chat Completions stream
 
 - [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)：ReAct loop、tool call 收集和 message 回灌。
 - [`../../demo/src/tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
-- [`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP，下一步把 pure function 和 command path 统一接入这里。
+- [`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP；pure function path 已接入，下一步补 command path。
 - [`../../demo/src/tool/shell.rs`](../../demo/src/tool/shell.rs)：command tool 预留入口。
 
 下一步行动：
 
 - [`slice-6-hardening.md`](slice-6-hardening.md)：在 live LLM 主链路跑通后，把 Slice 6 收敛到可验收状态。
-- [`slice-6-approval-sandbox-retry-integration.md`](slice-6-approval-sandbox-retry-integration.md)：把 approval / sandbox / retry 接入 ReAct tool execution path。
+- [`slice-6-approval-sandbox-retry-integration.md`](slice-6-approval-sandbox-retry-integration.md)：把 command tool 的 approval / sandbox / retry 接入 ReAct tool execution path。
 - [`tool-runtime-data-relationships.md`](tool-runtime-data-relationships.md)：解释 `ToolCallFinished -> ToolDefinition -> CommandRequest -> ApprovalRequirement -> ExecutionResult` 的数据关系，帮助实现 `ToolRuntime::run`。
 
 ### Slice 7: Demo README And Runbook

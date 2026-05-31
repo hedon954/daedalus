@@ -168,6 +168,8 @@ Minimum sync:
 
 This gate is required after code reviews in `08-demo-coder`. A passing test result alone is not enough; the user must be re-oriented on the learning path.
 
+Review-only is not progress-sync-only. If a review changes completion status, exposes a blocker, alters the next action, or identifies a test gap, update the active topic's learning artifacts even when implementation files should remain untouched.
+
 ## Micro Checkpoint Gate
 
 Load:
@@ -190,6 +192,8 @@ Minimum checkpoint:
 6. End with the current stage/slice/gap, validation result, commit hash if committed, and the next action or next coaching question.
 
 Do not mix "what is now true" with "what we plan to do next" in the same commit unless they are inseparable. A clean checkpoint should make the next session recoverable from files and git history, not from chat memory.
+
+Test assertions should protect stable behavior rather than incidental wording. For error paths, assert the error variant, category, or presence by default; only pin exact error text when that text is a deliberate public contract.
 
 ## Review Guidance Gate
 

@@ -4,6 +4,7 @@ pub mod model;
 pub mod registry;
 pub mod retry;
 pub mod sandbox;
+pub mod tool;
 pub mod util;
 
 #[cfg(test)]

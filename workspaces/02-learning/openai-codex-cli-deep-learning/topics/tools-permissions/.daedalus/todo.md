@@ -16,11 +16,11 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 6 ReAct hardening 已完成，用户已把旧 `agent/tool.rs` 重构为顶层 `tool/` module；剩余问题是先稳定 `ToolRuntime::run(call)` 边界，再把 approval / sandbox / retry 接入 command tool path。
+- 当前问题：Slice 6 ReAct hardening 已完成，用户已把旧 `agent/tool.rs` 重构为顶层 `tool/` module；`ToolRuntime::run(call)` 的 pure function path 已接入并补齐单测；剩余问题是把 `shell` command path 接入 approval / sandbox / retry。
 - 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
 - 完成后解锁：Slice 6 Agent Orchestrator 达到 Phase 1 主链路验收，然后进入 Slice 7 README / Runbook。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`cargo test` 通过 34 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：让 `react.rs` 从直接调用 `tool::function::run_tool` 改为调用 `tool::runtime::ToolRuntime`；`add/sub` 先走 pure function path，`shell` 走 command path，再接 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry`；`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具四个 pure function 边界；`cargo test` 通过 38 个默认测试，3 个 live LLM 测试保持 ignored。
+- 当前待解决：`shell` 走 command path，再接 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry`；接入前先消掉 `Command` 分支里的 `unimplemented!()`；`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Gaps Blocking Next Stage
 
@@ -36,7 +36,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 3 Approval Decision：用户已实现 `decide_approval` 并完成 review；`cargo test` 通过 11 个测试，覆盖 approval scope、forbidden、prompt policy、capability mismatch fail closed。
 - [x] Slice 4 SimulatedSandboxRunner：用户已实现规则表驱动 runner，Agent 补充 read success、command failed、sandbox denied、no-sandbox retry success、unknown command failed 五个测试；`cargo test` 通过 16 个测试。
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，Agent 补充 command failed、already retried、never/on-request、network prompt/allow/deny、non-network sandbox denied 等 8 个测试；`cargo test` 通过 24 个测试。
-- [ ] Slice 6 Agent Orchestrator：真实 LLM ReAct 主链路已 live test 跑通；ReAct hardening 已补齐 `max_turns`、`ToolCallFinished`、fake LLM tests 和 parser fixture tests；用户已重构为 `tool/function.rs`、`tool/runtime.rs`、`tool/shell.rs`，仍需把 `ToolRuntime` 接入 `react.rs`，再串起 approval、runner、retry 和 event stream。
+- [ ] Slice 6 Agent Orchestrator：真实 LLM ReAct 主链路已 live test 跑通；ReAct hardening 已补齐 `max_turns`、`ToolCallFinished`、fake LLM tests 和 parser fixture tests；用户已重构为 `tool/function.rs`、`tool/runtime.rs`、`tool/shell.rs`，`ToolRuntime` pure function path 已接入 `react.rs` 并补齐单测，仍需实现 command path 串起 approval、runner、retry 和 event stream。
 - [ ] Slice 7 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
 
 ## 06 Code Reader Gaps
