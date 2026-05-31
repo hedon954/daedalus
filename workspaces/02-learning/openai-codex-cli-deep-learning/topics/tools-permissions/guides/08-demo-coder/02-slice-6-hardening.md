@@ -8,7 +8,7 @@
 - Current stage: `08-demo-coder`
 - Current slice: Slice 6 Agent Orchestrator
 - Current gap: ReAct hardening 已完成；下一步进入 approval / sandbox / retry integration
-- Evidence already available: [`../../notes/08-demo-coder/react-loop-implementation-issues.md`](../../notes/08-demo-coder/react-loop-implementation-issues.md)
+- Evidence already available: [`../../notes/08-demo-coder/01-react-loop-implementation-issues.md`](../../notes/08-demo-coder/01-react-loop-implementation-issues.md)
 - After this: 可以把 approval / sandbox / retry 接入 ReAct loop，然后进入 Slice 7 README / Runbook
 
 ## North Star

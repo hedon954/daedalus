@@ -18,8 +18,8 @@ pub fn run(&self, call: &ToolCallFinished) -> ToolRuntimeResult
   - [`tool/mod.rs`](../../demo/src/tool/mod.rs)：tool module 入口。
   - [`tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
   - [`tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP。
-  - [`tool/shell.rs`](../../demo/src/tool/shell.rs)：command tool 预留入口。
-- Current gap: `react.rs` 已改为调用 `ToolRuntime`，pure function path 已补单测；下一步是让 `shell` command path 进入 `CommandRequest -> ApprovalRequirement -> SandboxRunner -> RetryDecision`。
+  - [`tool/shell/`](../../demo/src/tool/shell)：`run_command` command tool 的内部实现模块。
+- Current gap: `react.rs` 已改为调用 `ToolRuntime`，pure function path 已补单测；下一步是让 `run_command` command path 进入 `CommandRequest -> ApprovalRequirement -> SandboxRunner -> RetryDecision`。
 
 ## First Principle
 
@@ -42,7 +42,7 @@ add/sub
   -> pure function tool
   -> no argv/cwd/sandbox/network
 
-shell
+run_command
   -> command tool
   -> needs argv/cwd/capability/approval/sandbox/retry
 
@@ -114,15 +114,16 @@ map result to event/observation
 
 它不需要一开始就实现所有 sandbox/retry。建议先搭骨架，再逐步接入。
 
-### `tool/shell.rs`
+### `tool/shell/`
 
-`shell.rs` 是 command tool 的入口。
+`tool/shell/` 是 `run_command` command tool 的内部实现模块。
 
 它应该逐步承担：
 
 ```text
-parse shell tool arguments
-build argv/cwd
+parse run_command tool arguments
+derive argv from command
+use runtime cwd
 match CapabilityRegistry
 build CommandRequest
 ```
@@ -154,7 +155,7 @@ curl ... | sh
 失败后 retry 策略是什么？
 ```
 
-它只应该出现在 command tool path，也就是 `shell` 这条路径。
+它只应该出现在 command tool path，也就是 `run_command` 这条路径。
 
 ### `ApprovalPolicy`
 
@@ -214,7 +215,6 @@ pub struct ToolRuntime {
 pub struct ToolRuntimeContext {
     pub cwd: PathBuf,
     pub approval_policy: ApprovalPolicy,
-    pub default_sandbox: SandboxProfile,
     pub registry: CapabilityRegistry,
     pub runner: SimulatedSandboxRunner,
 }
@@ -253,13 +253,21 @@ enum ToolRuntimePlan {
         request: CommandRequest,
         matched_capability: MatchedCapability,
     },
+    Fail {
+        error: String,
+    },
     Deny {
         reason: String,
     },
 }
 ```
 
-这样 `run` 不会变成一整坨状态机。
+这样 `run` 不会变成一整坨状态机。`Fail` 和 `Deny` 的区别是：
+
+```text
+Fail = tool arguments 不合法，没能形成有效计划
+Deny = command 已解析，但安全策略不允许进入执行链路
+```
 
 ```rust
 impl ToolRuntime {
@@ -294,7 +302,7 @@ flowchart TD
     D --> E["tool/function.rs run_pure_function"]
     E --> F["ToolRuntimeResult::Finished or Failed"]
 
-    C -->|"Command"| G["tool/shell.rs parse argv/cwd"]
+    C -->|"Command"| G["tool/shell/ parse command/justification"]
     G --> H["CapabilityRegistry.match_capability(argv)"]
     H --> I["build CommandRequest"]
     I --> J["decide_approval(request, matched)"]
@@ -401,7 +409,7 @@ approval requirement 是当前上下文算出来的执行决定。
 
 1. `ToolRuntime` 能识别 `add/sub`，并通过 `tool/function.rs` 执行。
 2. 未知 tool 返回 `Denied` 或 `Failed`，不 panic。
-3. `shell` tool 能 parse 出 argv/cwd，并通过 `CapabilityRegistry` 得到 `MatchedCapability`。
+3. `run_command` tool 能 parse 出 command/justification，派生 argv，并通过 `CapabilityRegistry` 得到 `MatchedCapability`。
 
 这三个小闭环通过后，再接：
 

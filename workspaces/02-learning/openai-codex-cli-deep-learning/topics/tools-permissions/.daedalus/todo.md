@@ -57,10 +57,10 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 ## Done
 
 - [x] 完成 `04-debugger-guide`：用户已执行最小 runbook，`codex-exec` 测试通过。
-- [x] 完成 `05-arch-analyzer`：形成 `notes/codex-agent-loop-architecture.md`，覆盖 agent loop、工具、权限、沙箱和事件回流。
-- [x] 完成上下文管理专题：形成 `notes/codex-context-and-compaction.md`，覆盖 history、prompt view、rollout、tool result 回灌和 compact。
+- [x] 完成 `05-arch-analyzer`：形成 `notes/05-codex-agent-loop-architecture.md`，覆盖 agent loop、工具、权限、沙箱和事件回流。
+- [x] 完成上下文管理专题：形成 `notes/06-codex-context-and-compaction.md`，覆盖 history、prompt view、rollout、tool result 回灌和 compact。
 - [x] 回滚 Agent 代学式 code-reading 记录，并把规则改成用户先形成假设、Agent 再校准。
-- [x] 重塑 `notes/code-reading.md`，把 auth/approval/sandbox 阅读整理成生产问题、源码证据、不变量、代价和迁移模式。
+- [x] 重塑 `notes/07-code-reading.md`，把 auth/approval/sandbox 阅读整理成生产问题、源码证据、不变量、代价和迁移模式。
 - [x] 新增 [`outcome-map.md`](outcome-map.md)，明确当前只补 3 个 demo 缺口。
 - [x] 新增 [`demo/design.md`](../demo/design.md) 草案，用源码阅读逐步填字段。
 - [x] 补齐 Decision 合成缺口：用户已复述 `Forbidden` 聚合、`Decision::Allow != bypass_sandbox`，并抽象出 demo 的 `approval_requirement_for_command` 输入/输出。
@@ -74,7 +74,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] 用户完成 `08-demo-coder` Slice 3：实现 `decide_approval`，明确 `DefaultDecision`、`ApprovalPolicy`、request context 的综合优先级；将 capability mismatch 设计为安全边界上的 `Forbidden` fail closed；`cargo test` 通过。
 - [x] 用户完成 `08-demo-coder` Slice 4：实现 `SimulatedSandboxRunner`，用 `command_prefix + simulated_attempt + simulated_result` 表达模拟执行规则；区分 `CommandFailed` 与 `SandboxDenied`，并支持 no-sandbox retry success；`cargo test` 通过。
 - [x] 用户完成 `08-demo-coder` Slice 5：实现 `Retry Gate`，将 sandbox denied 后的策略收敛为 `DoNotRetry`、`RetryWithoutApproval`、`RetryWithApproval`；`cargo test` 通过。
-- [x] 用户推进 `08-demo-coder` Slice 6：实现 `OpenAiCompatibleLlm` 多 tool call 聚合、`tool/function.rs` 示例工具、`react.rs` channel-based ReAct loop；live LLM 手动测试跑通多轮 tool call 和 observation 回灌，相关实现问题已沉淀到 `notes/08-demo-coder/react-loop-implementation-issues.md`。
+- [x] 用户推进 `08-demo-coder` Slice 6：实现 `OpenAiCompatibleLlm` 多 tool call 聚合、`tool/function.rs` 示例工具、`react.rs` channel-based ReAct loop；live LLM 手动测试跑通多轮 tool call 和 observation 回灌，相关实现问题已沉淀到 `notes/08-demo-coder/01-react-loop-implementation-issues.md`。
 - [x] 完成 Slice 6 ReAct hardening：`max_turns` 超限返回错误、`ToolCallFinished` 对外透出、`FakeLlm` test double 下沉到 `agent::llm::fake`、fake LLM tests 覆盖 ReAct 关键路径、OpenAI-compatible parser fixture tests 覆盖 SSE 与 tool call 聚合边界。
 
 ## Canceled

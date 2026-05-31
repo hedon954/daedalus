@@ -15,9 +15,9 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 
 | Topic | File | Status | Demo impact |
 | --- | --- | --- | --- |
-| ReAct loop implementation issues | [`react-loop-implementation-issues.md`](react-loop-implementation-issues.md) | 用户实践中 / 已初步验证 | 决定 `react.rs` 的 streaming、tool call、event、test 边界 |
-| Tool runtime boundary and multi-call policy | [`tool-runtime-boundary-and-multi-call-policy.md`](tool-runtime-boundary-and-multi-call-policy.md) | pure function path 已验证 / command path 待实现 | 决定 `ToolRuntime` 分层、pure tool 与 shell tool 的权限链路、多 tool call 被拒后的 observation 策略 |
-| Git commit message rewrite | [`git-commit-message-rewrite.md`](git-commit-message-rewrite.md) | 已记录 | 沉淀 demo 开发分支历史整理与验收方法 |
+| ReAct loop implementation issues | [`01-react-loop-implementation-issues.md`](01-react-loop-implementation-issues.md) | 用户实践中 / 已初步验证 | 决定 `react.rs` 的 streaming、tool call、event、test 边界 |
+| Tool runtime boundary and multi-call policy | [`02-tool-runtime-boundary-and-multi-call-policy.md`](02-tool-runtime-boundary-and-multi-call-policy.md) | pure function path 已验证 / command path 待实现 | 决定 `ToolRuntime` 分层、pure tool 与 shell tool 的权限链路、多 tool call 被拒后的 observation 策略 |
+| Git commit message rewrite | [`03-git-commit-message-rewrite.md`](03-git-commit-message-rewrite.md) | 已记录 | 沉淀 demo 开发分支历史整理与验收方法 |
 
 ## Stage Exit Criteria
 

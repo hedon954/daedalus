@@ -13,11 +13,11 @@
 
 | Topic | File | Status | Demo impact |
 | --- | --- | --- | --- |
-| Legacy code-reading synthesis | [`../code-reading.md`](../code-reading.md) | legacy / active reference | auth/approval/sandbox 总结与复盘 |
-| Context and compaction | [`../codex-context-and-compaction.md`](../codex-context-and-compaction.md) | 已验证 | demo 暂不实现完整 compact |
-| Decision composition | [`../code-reading.md#9-decision-合成从多段命令到总审批结论`](../code-reading.md#9-decision-合成从多段命令到总审批结论) | 已映射到 demo 接口 | `approval_requirement_for_command` |
-| Runtime request assembly | `runtime-request-assembly.md` | 用户已复述 / 源码已核对 | `CommandRequest` 字段来源 |
-| Orchestrator retry | `orchestrator-retry.md` | 用户已复述 / 源码已核对 | `SandboxRetryState` |
+| Legacy code-reading synthesis | [`../07-code-reading.md`](../07-code-reading.md) | legacy / active reference | auth/approval/sandbox 总结与复盘 |
+| Context and compaction | [`../06-codex-context-and-compaction.md`](../06-codex-context-and-compaction.md) | 已验证 | demo 暂不实现完整 compact |
+| Decision composition | [`../07-code-reading.md#9-decision-合成从多段命令到总审批结论`](../07-code-reading.md#9-decision-合成从多段命令到总审批结论) | 已映射到 demo 接口 | `approval_requirement_for_command` |
+| Runtime request assembly | `01-runtime-request-assembly.md` | 用户已复述 / 源码已核对 | `CommandRequest` 字段来源 |
+| Orchestrator retry | `02-orchestrator-retry.md` | 用户已复述 / 源码已核对 | `SandboxRetryState` |
 
 ## Stage Exit Criteria
 

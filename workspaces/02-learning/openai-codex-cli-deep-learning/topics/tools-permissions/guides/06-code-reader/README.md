@@ -14,7 +14,7 @@
 | Topic | File | Status |
 | --- | --- | --- |
 | auth / approval / sandbox legacy guide | [`../06-code-reader-guide.md`](../06-code-reader-guide.md) | legacy |
-| Runtime request assembly | [`runtime-request-assembly.md`](runtime-request-assembly.md) | active |
+| Runtime request assembly | [`01-runtime-request-assembly.md`](01-runtime-request-assembly.md) | active |
 
 ## Stop Rules
 

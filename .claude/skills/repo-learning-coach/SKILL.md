@@ -259,12 +259,15 @@ guides/<stage-id>/README.md
 notes/<stage-id>/README.md
 ```
 
-The README is the stage navigation and evidence index. It should not absorb every detail. Put topic-level material in sibling files such as `runtime-request-assembly.md`, `decision-composition.md`, or `orchestrator-retry.md`.
+The README is the stage navigation and evidence index. It should not absorb every detail. Put topic-level material in sibling files such as `01-runtime-request-assembly.md`, `02-decision-composition.md`, or `03-orchestrator-retry.md`.
 
 Writing rules:
 
-- Agent-only pre-reading and question maps go to `guides/<stage-id>/<topic>.md`.
-- User answers, Agent calibration, source evidence, and validation status go to `notes/<stage-id>/<topic>.md`.
+- Agent-only pre-reading and question maps go to `guides/<stage-id>/<nn-topic>.md`.
+- User answers, Agent calibration, source evidence, and validation status go to `notes/<stage-id>/<nn-topic>.md`.
+- Topic artifacts in `guides/` and `notes/` use an ordered filename prefix by default: `01-`, `02-`, `03-`. The prefix means recommended reading or execution order, not importance.
+- `README.md`, `.gitkeep`, assets, generated diagrams, and stable index/reference files may remain unnumbered.
+- Avoid frequent renumbering of stable files. If the order must change, do it at a checkpoint and update all links in the same turn.
 - Each time a topic file is added or materially changed, update the stage README.
 - Legacy single files may remain linked from the README; do not rewrite history just to satisfy the new layout.
 

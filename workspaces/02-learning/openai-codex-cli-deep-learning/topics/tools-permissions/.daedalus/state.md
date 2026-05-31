@@ -47,7 +47,7 @@
 - `2026-05-09 16:19:02` 由 `agent` 对 `04-debugger-guide` 执行 `enter`：开始围绕 codex exec 建立可复现运行 runbook 和核心路径追踪。
 - `2026-05-10 13:15:08` 由 `daedalus-cli` 对 `04-debugger-guide` 执行 `complete`：runbook 已验证，用户已执行最小命令并记录 codex-exec 测试通过；后续调试项保留为补充任务。
 - `2026-05-10 13:15:09` 由 `daedalus-cli` 对 `05-arch-analyzer` 执行 `enter`：开始分析 Codex agent loop、工具系统、权限审批、沙箱和事件流架构。
-- `2026-05-10 13:15:09` 由 `daedalus-cli` 对 `05-arch-analyzer` 执行 `complete`：notes/codex-agent-loop-architecture.md 已作为 architecture.md 的等价架构笔记，覆盖核心 loop、架构分层、tool/auth/sandbox/event 关系，并配套 Excalidraw/Mermaid 图。，批准来源：`artifact-equivalent`
+- `2026-05-10 13:15:09` 由 `daedalus-cli` 对 `05-arch-analyzer` 执行 `complete`：notes/05-codex-agent-loop-architecture.md 已作为 notes/04-architecture.md 的等价架构笔记，覆盖核心 loop、架构分层、tool/auth/sandbox/event 关系，并配套 Excalidraw/Mermaid 图。，批准来源：`artifact-equivalent`
 - `2026-05-10 13:15:09` 由 `daedalus-cli` 对 `06-code-reader` 执行 `enter`：开始围绕上下文管理、压缩机制、工具结果回灌和 rollout 恢复深读核心代码。
 - `2026-05-11 23:44:20` 由 `daedalus-cli` 对 `06-code-reader` 执行 `rollback`：根据用户要求回到 code-reader 阶段，用生产失败模式驱动的源码阅读规则重新审视 Codex。
 - `2026-05-16 19:25:45` 由 `daedalus-cli` 对 `06-code-reader` 执行 `complete`：Decision 合成、Runtime request assembly、Orchestrator retry 三个 demo 缺口已由用户复述并经源码核对，足以进入 demo architecture。

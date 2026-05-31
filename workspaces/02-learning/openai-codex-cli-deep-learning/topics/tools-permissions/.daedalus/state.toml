@@ -9,25 +9,25 @@ required_artifacts = [".daedalus/task-card.md"]
 id = "02-repo-scout"
 title = "选择学习仓库"
 status = "done"
-required_artifacts = ["notes/repo-selection.md"]
+required_artifacts = ["notes/01-repo-selection.md"]
 
 [[stages]]
 id = "03-socratic-coach"
 title = "提出 Repo 递进问题"
 status = "done"
-required_artifacts = ["notes/question-roadmap.md"]
+required_artifacts = ["notes/02-question-roadmap.md"]
 
 [[stages]]
 id = "04-debugger-guide"
 title = "运行并调试 Repo"
 status = "done"
-required_artifacts = ["notes/runbook.md"]
+required_artifacts = ["notes/03-runbook.md"]
 
 [[stages]]
 id = "05-arch-analyzer"
 title = "分析 Repo 架构"
 status = "done"
-required_artifacts = ["notes/architecture.md"]
+required_artifacts = ["notes/04-architecture.md"]
 
 [[stages]]
 id = "06-code-reader"
@@ -113,7 +113,7 @@ stage = "03-socratic-coach"
 action = "complete"
 timestamp = "2026-05-09 16:19:02"
 actor = "agent"
-reason = "用户回答已写入 notes/question-roadmap.md，并转化为后续运行调试和架构分析的可验证假设。"
+reason = "用户回答已写入 notes/02-question-roadmap.md，并转化为后续运行调试和架构分析的可验证假设。"
 
 [[transitions]]
 stage = "04-debugger-guide"
@@ -141,7 +141,7 @@ stage = "05-arch-analyzer"
 action = "complete"
 timestamp = "2026-05-10 13:15:09"
 actor = "daedalus-cli"
-reason = "notes/codex-agent-loop-architecture.md 已作为 architecture.md 的等价架构笔记，覆盖核心 loop、架构分层、tool/auth/sandbox/event 关系，并配套 Excalidraw/Mermaid 图。"
+reason = "notes/05-codex-agent-loop-architecture.md 已作为 notes/04-architecture.md 的等价架构笔记，覆盖核心 loop、架构分层、tool/auth/sandbox/event 关系，并配套 Excalidraw/Mermaid 图。"
 approval_source = "artifact-equivalent"
 
 [[transitions]]

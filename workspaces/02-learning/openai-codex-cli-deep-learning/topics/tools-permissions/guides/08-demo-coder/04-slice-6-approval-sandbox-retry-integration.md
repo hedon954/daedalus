@@ -12,7 +12,7 @@
   - [`agent/react.rs`](../../demo/src/agent/react.rs)：收集 tool calls、回灌 messages、通过 `ToolRuntime` 执行工具。
   - [`tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
   - [`tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP，下一步核心文件。
-  - [`tool/shell.rs`](../../demo/src/tool/shell.rs)：command tool 预留入口。
+  - [`tool/shell/`](../../demo/src/tool/shell)：`run_command` command tool 的内部实现模块。
 - After this: Slice 6 达到 Phase 1 主链路验收，可以进入 Slice 7 README / Runbook。
 
 ## North Star
@@ -33,7 +33,7 @@ ToolCallFinished
 已经确认的决策：
 
 1. `add/sub` 继续是 pure function tools，但也要进入统一 `ToolRuntime` 边界。
-2. `shell` 是 command tool，后续走完整 `CommandRequest -> ApprovalRequirement -> SandboxRunner -> RetryDecision` 链路。
+2. `run_command` 是模型可见的 command tool，内部由 `tool/shell/` 实现，后续走完整 `CommandRequest -> ApprovalRequirement -> SandboxRunner -> RetryDecision` 链路。
 3. `react.rs` 不长期承载 approval / sandbox / retry 细节，只负责 ReAct loop 和 message 回灌。
 4. Phase 1 多 tool call 先按 `index` 顺序执行。
 5. 如果某个 tool call 被 forbidden / rejected，后续 tool call 不真实执行，但要补 skipped observation，保证每个 `tool_call_id` 都有对应 tool message。
@@ -97,7 +97,7 @@ struct ToolDefinition {
 ```text
 add  -> PureFunction
 sub  -> PureFunction
-shell -> Command
+run_command -> Command
 ```
 
 验收：
@@ -124,24 +124,25 @@ ToolCallFinished(add/sub)
 - 现有 ReAct tests 仍通过。
 - `ToolRuntimeResult` 内部区分 `Finished`、`Failed`、`Denied`、`Skipped`，即使事件暂时仍映射到 `ToolRunFinished` / `ToolRunFailed`。
 
-### 4. Add Shell Planning Without Running Yet
+### 4. Add Command Planning Without Running Yet
 
-目标：先把 shell tool call 变成 `CommandRequest`，不要一步到位执行。
+目标：先把 `run_command` tool call 变成 `CommandRequest`，不要一步到位执行。
 
-建议 shell 参数最小形态：
+当前 `run_command` 参数形态：
 
 ```json
 {
-  "argv": ["npm", "test"],
-  "cwd": "/workspace"
+  "command": "npm test",
+  "justification": "为了验证当前 demo"
 }
 ```
 
 路径：
 
 ```text
-ToolCallFinished(shell)
-  -> parse argv/cwd
+ToolCallFinished(run_command)
+  -> parse command/justification
+  -> derive argv
   -> CapabilityRegistry.match_capability(argv)
   -> build CommandRequest
   -> ToolRuntimePlan::RunCommand
@@ -150,6 +151,7 @@ ToolCallFinished(shell)
 验收：
 
 - 模型不能自报 capability。
+- 模型不能自报 cwd / sandbox / network policy。
 - `CapabilityKind` 必须由 argv 匹配得出。
 - unknown command fail closed。
 
@@ -201,7 +203,7 @@ Approval passed
 建议新增：
 
 - model proposes `add/sub` -> pure function path success。
-- model proposes `shell cat package.json` -> approval skip -> sandbox success -> observation。
+- model proposes `run_command cat package.json` -> approval skip -> sandbox success -> observation。
 - model proposes dangerous shell -> forbidden -> runner not called。
 - `npm install` sandbox denied -> retry approval accepted -> no-sandbox success。
 - command failed -> no retry。

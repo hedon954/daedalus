@@ -44,6 +44,7 @@ Review-only 不等于 learning-state-only。只要 review 或验证改变了完�
 2. 记录学习证据：
    - 用户回答、观察、实践结果写入 `notes/`。
    - Agent-only 的下一步地图、行动卡、预读路径写入 `guides/`。
+   - 新增 `guides/` / `notes/` 专题文件默认使用 `01-`、`02-`、`03-` 这类顺序前缀；`README.md`、assets、generated diagrams 和稳定索引文件除外。
    - 不要把下一步计划伪装成已经完成的学习证据。
 
 3. 运行最小验证：

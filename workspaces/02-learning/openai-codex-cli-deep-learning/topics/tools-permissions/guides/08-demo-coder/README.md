@@ -23,8 +23,8 @@ real OpenAI-compatible Chat Completions streaming loop
 
 - [`demo/design.md`](../../demo/design.md)：07 阶段定稿的设计蓝图。
 - [`notes/06-code-reader/README.md`](../../notes/06-code-reader/README.md)：auth / approval / sandbox 的源码证据入口。
-- [`notes/06-code-reader/runtime-request-assembly.md`](../../notes/06-code-reader/runtime-request-assembly.md)：`CommandRequest` 字段来源依据。
-- [`notes/06-code-reader/orchestrator-retry.md`](../../notes/06-code-reader/orchestrator-retry.md)：sandbox denied 后 retry 状态机依据。
+- [`notes/06-code-reader/01-runtime-request-assembly.md`](../../notes/06-code-reader/01-runtime-request-assembly.md)：`CommandRequest` 字段来源依据。
+- [`notes/06-code-reader/02-orchestrator-retry.md`](../../notes/06-code-reader/02-orchestrator-retry.md)：sandbox denied 后 retry 状态机依据。
 
 ## Build Slices
 
@@ -159,20 +159,21 @@ OpenAI-compatible Chat Completions stream
 
 实现前阅读：
 
-- [`rust-openai-integration.md`](rust-openai-integration.md)：Rust 中使用 DeepSeek / OpenAI-compatible Chat Completions、streaming 和 function calling 的最小接入方案。
+- [`01-rust-openai-integration.md`](01-rust-openai-integration.md)：Rust 中使用 DeepSeek / OpenAI-compatible Chat Completions、streaming 和 function calling 的最小接入方案。
 
 当前代码结构：
 
 - [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)：ReAct loop、tool call 收集和 message 回灌。
 - [`../../demo/src/tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
 - [`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP；pure function path 已接入，下一步补 command path。
-- [`../../demo/src/tool/shell.rs`](../../demo/src/tool/shell.rs)：command tool 预留入口。
+- [`../../demo/src/tool/shell/`](../../demo/src/tool/shell)：`run_command` command tool 的 registry / approval / retry / orchestration 入口。
 
 下一步行动：
 
-- [`slice-6-hardening.md`](slice-6-hardening.md)：在 live LLM 主链路跑通后，把 Slice 6 收敛到可验收状态。
-- [`slice-6-approval-sandbox-retry-integration.md`](slice-6-approval-sandbox-retry-integration.md)：把 command tool 的 approval / sandbox / retry 接入 ReAct tool execution path。
-- [`tool-runtime-data-relationships.md`](tool-runtime-data-relationships.md)：解释 `ToolCallFinished -> ToolDefinition -> CommandRequest -> ApprovalRequirement -> ExecutionResult` 的数据关系，帮助实现 `ToolRuntime::run`。
+- [`02-slice-6-hardening.md`](02-slice-6-hardening.md)：在 live LLM 主链路跑通后，把 Slice 6 收敛到可验收状态。
+- [`03-tool-runtime-data-relationships.md`](03-tool-runtime-data-relationships.md)：解释 `ToolCallFinished -> ToolDefinition -> CommandRequest -> ApprovalRequirement -> ExecutionResult` 的数据关系，帮助实现 `ToolRuntime::run`。
+- [`04-slice-6-approval-sandbox-retry-integration.md`](04-slice-6-approval-sandbox-retry-integration.md)：把 command tool 的 approval / sandbox / retry 接入 ReAct tool execution path。
+- [`05-slice-6-command-runtime-review.md`](05-slice-6-command-runtime-review.md)：记录当前 `ToolRuntime` / `tool::shell` review 结论，明确 `Fail` / `Deny` / `Denied` / `Skipped` 边界和 `run_shell_command` 下一步实现路径。
 
 ### Slice 7: Demo README And Runbook
 
