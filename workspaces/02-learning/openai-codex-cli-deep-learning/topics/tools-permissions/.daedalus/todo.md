@@ -16,11 +16,18 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 6 ReAct hardening 已完成，用户已把旧 `agent/tool.rs` 重构为顶层 `tool/` module；`ToolRuntime::run(call)` 的 pure function path 已接入并补齐单测；剩余问题是把 `shell` command path 接入 approval / sandbox / retry。
+- 当前问题：Slice 6 ReAct hardening 已完成，用户已把旧 `agent/tool.rs` 重构为顶层 `tool/` module；`ToolRuntime::run(call)` 的 pure function path 已接入并补齐单测；`run_command` 已经能从 `ToolRuntimePlan::RunCommand` 委托到 `run_shell_command`；剩余问题是实现 `run_shell_command` 内部的 approval / sandbox / retry 编排。
 - 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
 - 完成后解锁：Slice 6 Agent Orchestrator 达到 Phase 1 主链路验收，然后进入 Slice 7 README / Runbook。
 - 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具四个 pure function 边界；`cargo test` 通过 38 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：`shell` 走 command path，再接 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry`；接入前先消掉 `Command` 分支里的 `unimplemented!()`；`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前待解决：在 `run_shell_command` 内编排 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry`，并把结果映射为 `RunCommandResult` / `ToolRuntimeResult`；`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+
+## Current Cursor
+
+- Code frontier：`demo/src/tool/shell/mod.rs::run_shell_command`。
+- Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command` 已在用户 WIP 中打通，待完整测试确认。
+- Current open decision：`run_shell_command` 内部如何按 `approval -> sandbox first -> retry decision -> no-sandbox retry -> result` 编排。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”；当前应直接讨论和实现 `run_shell_command` 内部状态流。
 
 ## Gaps Blocking Next Stage
 

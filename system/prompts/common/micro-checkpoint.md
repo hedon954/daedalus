@@ -20,6 +20,8 @@ scope: common
 - 用户接受某个设计结论或下一步方向。
 - 产生了会影响后续学习路径的代码、notes、guides、todo 或 outcome-map 变更。
 
+例外：如果用户只是说明当前已推进到新的实现/阅读边界，但尚未形成可验证闭环，优先执行轻量 `Current Cursor Sync`。它只更新 `todo.md` 中的当前光标，不要求创建 notes、不要求阶段状态变化，也不单独要求提交。
+
 ## Checkpoint Classification
 
 先判断本轮闭环属于哪些类型：

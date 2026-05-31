@@ -36,6 +36,7 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 - 当前目标：澄清 North Star、最终产物和验收标准。
 - 当前障碍：任务目标和最小 demo 尚未由用户确认。
 - 当前动作服务的产物：`.daedalus/task-card.md`、`.daedalus/outcome-map.md`
+- 当前光标：暂无具体源码或 demo 实现边界；以 `todo.md` 的 `Current Cursor` 为临时恢复坐标。
 
 ## Contribution Back To Project
 

@@ -22,6 +22,13 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - 为什么现在做它：没有 North Star，后续 repo 选择、问题路线图、源码阅读和 demo 都会失去取舍标准。
 - 完成后解锁：进入候选 repo 选择，并能判断哪些材料不值得读。
 
+## Current Cursor
+
+- Code frontier：暂无，尚未进入具体源码或 demo 实现边界。
+- Already wired：暂无。
+- Current open decision：暂无。
+- Do not suggest：不要跳过 goal alignment 直接进入 repo 阅读。
+
 ## Gaps Blocking Next Stage
 
 - [ ] 学习目标：阻塞 `.daedalus/task-card.md` 的当前目标和验收标准。

@@ -40,10 +40,11 @@ scope: common
 
 1. 先读取当前 workspace 的 project `.daedalus/project-map.md`、`.daedalus/topic-board.md` 和 project `.daedalus/state.toml`，确认 active topic。
 2. 再读取 active topic 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
-2. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
-3. 用路径坐标告诉用户：最终产物是什么、当前在哪个阶段、正在补哪个缺口、为什么这个缺口重要、哪些细节本轮停止阅读、完成后解锁什么。
-4. 如果用户只是说“继续学习”，恢复后优先提出下一轮 coaching question；不要直接进入 Agent-led 源码验证。
-5. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
+3. 如果 todo 有 `Current Cursor`，把它当作恢复光标，而不是完成事实；先快速读取对应代码或产物确认它是否仍然成立。
+4. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
+5. 用路径坐标告诉用户：最终产物是什么、当前在哪个阶段、正在补哪个缺口、为什么这个缺口重要、哪些细节本轮停止阅读、完成后解锁什么。
+6. 如果用户只是说“继续学习”，恢复后优先提出下一轮 coaching question；不要直接进入 Agent-led 源码验证。
+7. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
 
 ## Output
 
@@ -66,6 +67,7 @@ scope: common
 - Final artifact:
 - Current stage:
 - Current gap:
+- Current cursor:
 - Why this gap matters:
 - What we will stop reading:
 - What becomes possible after this:

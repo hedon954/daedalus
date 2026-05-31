@@ -170,6 +170,20 @@ This gate is required after code reviews in `08-demo-coder`. A passing test resu
 
 Review-only is not progress-sync-only. If a review changes completion status, exposes a blocker, alters the next action, or identifies a test gap, update the active topic's learning artifacts even when implementation files should remain untouched.
 
+## Current Cursor Sync Gate
+
+Use this gate when the user says they have reached a new implementation or reading frontier, but the step is still WIP and not ready to become a checkpoint.
+
+The goal is to keep recovery precise without turning Daedalus into a chat log. Sync only boundary changes, such as "ToolRuntime now delegates to run_shell_command", "the current reading frontier moved from approval decision to retry branch", or "the user is now debugging the parser fixture". Do not sync every small edit, line change, failed experiment, or transient thought.
+
+When the cursor changes:
+
+1. Update only the active topic's `.daedalus/todo.md` `Current Cursor` block, and update `.daedalus/outcome-map.md` only if the broader current position is now misleading.
+2. Mark WIP facts as `WIP / unverified` unless tests or source evidence already proved them.
+3. Record four fields at most: `Code frontier`, `Already wired`, `Current open decision`, and `Do not suggest`.
+4. Do not move items to `Done`, complete stages, create notes, or commit solely because of a cursor sync.
+5. On resume, treat cursor as a locator, then quickly verify it against code or artifacts before making claims.
+
 ## Micro Checkpoint Gate
 
 Load:
