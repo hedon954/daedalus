@@ -221,6 +221,57 @@ DefaultDecision::Prompt + OnRequest -> NeedsApproval
 
 推荐路线 A，因为它更严格，也符合“justification 不是授权条件”的约束。
 
+### 6. Phase 1 resolves `NeedsApproval` inside shell runtime
+
+当前 `run_shell_command(...) -> RunCommandResult` 返回的是终态：
+
+```text
+Finished
+Failed
+Denied
+```
+
+`ApprovalRequirement::NeedsApproval` 不是终态，而是执行过程中的暂停点 / 交互点。如果要把它“透出去”，就需要让 `react.rs` 或更上层 agent loop 理解：
+
+```text
+ToolApprovalStarted
+wait user decision
+ToolApprovalResolved
+resume command execution
+```
+
+这会把当前单命令主链路复杂度拉高。Phase 1 先不做 pause / resume，也不做真实审批 UI。
+
+当前推荐做法：在 `run_shell_command` 内部用一个最小 approval resolver 把 `NeedsApproval` 消费掉。
+
+可选最小形态：
+
+```rust
+pub enum ScriptedApproval {
+    Approve,
+    Reject,
+}
+```
+
+或者稍微可扩展一点：
+
+```rust
+pub trait ApprovalDecider {
+    fn decide(&self, reason: &str, scope: &ApprovalScope) -> UserApprovalDecision;
+}
+```
+
+Phase 1 流程：
+
+```text
+NeedsApproval
+  -> approval_decider decides
+  -> Approved: continue to execution
+  -> Rejected: RunCommandResult::Denied
+```
+
+`RetryDecision::RetryWithApproval` 也复用同一思路：先在 shell runtime 内 resolve，后续如果要做真实交互，再把 approval pause/resume 提升到 agent event loop。
+
 ## Suggested `run_shell_command` Flow
 
 `run_shell_command` 可以先写成一个直接的状态机，不急着拆太多 helper：
@@ -231,7 +282,7 @@ decide_approval(request, matched_capability)
        return Denied
 
   -> NeedsApproval
-       Phase 1 先用 scripted approval / TODO gate
+       Phase 1 先用 scripted approval / ApprovalDecider
        rejected -> Denied
        approved -> continue
 
@@ -255,7 +306,7 @@ runner.run(request, attempt)
          -> RetryWithoutApproval
               runner.run(NoSandboxRetry)
          -> RetryWithApproval
-              Phase 1 approval gate
+              Phase 1 approval decider
 ```
 
 第一版可以把 “NeedsApproval / RetryWithApproval 如何模拟用户批准” 做成最小策略。重点是不要让 `react.rs` 知道这些细节。
@@ -268,6 +319,8 @@ runner.run(request, attempt)
 - `run_command` 完全 unknown command -> `Failed`，不锁错误文案。
 - `run_command` `cat package.json` -> safe-read -> sandbox success -> `Finished`。
 - command failed -> `Failed`，不 retry。
+- approval needed + scripted reject -> `Denied`，runner 不执行。
+- approval needed + scripted approve -> 继续进入执行链路。
 - sandbox denied + retry approval accepted -> no-sandbox retry success。
 - sandbox denied + retry approval rejected -> `Denied` 或 `Failed`，但不执行 second attempt。
 - 后续多命令阶段：`cat README.md && cat package.json` -> 两段 safe-read 聚合后不重复审批。
