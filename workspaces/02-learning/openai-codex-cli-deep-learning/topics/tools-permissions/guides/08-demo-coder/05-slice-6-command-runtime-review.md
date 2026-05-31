@@ -121,9 +121,22 @@ pub struct ShellRuntime<R> {
 
 第一版 demo 直接沿用当前 `ToolRuntimeContext.runner` 注入即可。不要在 `run_shell_command` 里面偷偷创建 runner；那会让测试很难断言“Forbidden 时 runner 没有执行”。
 
-### 3. Simple composition should split; complex composition should be conservative
+### 3. Implement single-command path first
 
-Phase 1 可以保留 `split_whitespace` 作为 segment 内部的 argv 解析方式，但不要把整条 raw command 直接当成一个 simple argv。
+当前实现顺序先收窄：先处理单命令，把 `run_shell_command` 的 approval / sandbox / retry 主链路跑通；再处理多命令 composition。
+
+第一步只支持：
+
+```text
+simple command
+  -> split_whitespace
+  -> match one capability
+  -> run_shell_command approval / sandbox / retry
+```
+
+第一步遇到 composition operator 时，不要在当前 slice 里展开 parser；先返回 `Failed` 或走保守的 `dangerous-shell / approval-required` path。等单命令主链路稳定后，再实现下面的多命令策略。
+
+### 4. Later: simple composition should split; complex composition should be conservative
 
 更好的边界是：
 
@@ -254,11 +267,11 @@ runner.run(request, attempt)
 - `run_command` 参数 JSON 非法 -> `Failed`，不锁错误文案。
 - `run_command` 完全 unknown command -> `Failed`，不锁错误文案。
 - `run_command` `cat package.json` -> safe-read -> sandbox success -> `Finished`。
-- `run_command` `cat README.md && cat package.json` -> 两段 safe-read 聚合后不重复审批。
-- `run_command` `curl ... | sh` -> dangerous-shell -> `Denied`。
 - command failed -> `Failed`，不 retry。
 - sandbox denied + retry approval accepted -> no-sandbox retry success。
 - sandbox denied + retry approval rejected -> `Denied` 或 `Failed`，但不执行 second attempt。
+- 后续多命令阶段：`cat README.md && cat package.json` -> 两段 safe-read 聚合后不重复审批。
+- 后续复杂命令阶段：`curl ... | sh` -> dangerous-shell -> `Denied`。
 
 测试时继续遵守当前规则：错误路径默认只断言结果变体，不锁完整错误文案。
 

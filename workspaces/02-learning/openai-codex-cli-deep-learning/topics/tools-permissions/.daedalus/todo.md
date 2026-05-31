@@ -26,7 +26,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 - Code frontier：`demo/src/tool/shell/mod.rs::run_shell_command`。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command` 已在用户 WIP 中打通，待完整测试确认。
-- Current open decision：`run_shell_command` 内部如何按 `approval -> sandbox first -> retry decision -> no-sandbox retry -> result` 编排。
+- Current open decision：先处理单命令，把 `run_shell_command` 的 `approval -> sandbox first -> retry decision -> no-sandbox retry -> result` 跑通；多命令 segment 聚合后续再做。
 - Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”；当前应直接讨论和实现 `run_shell_command` 内部状态流。
 
 ## Gaps Blocking Next Stage
