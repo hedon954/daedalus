@@ -16,11 +16,11 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 6 ReAct hardening 已完成，剩余问题是把 approval / sandbox / retry 这三个已独立验证的模块接入 tool execution path。
+- 当前问题：Slice 6 ReAct hardening 已完成，用户已把旧 `agent/tool.rs` 重构为顶层 `tool/` module；剩余问题是先稳定 `ToolRuntime::run(call)` 边界，再把 approval / sandbox / retry 接入 command tool path。
 - 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
 - 完成后解锁：Slice 6 Agent Orchestrator 达到 Phase 1 主链路验收，然后进入 Slice 7 README / Runbook。
 - 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`cargo test` 通过 34 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：设计并实现 `run_approved_tool` / command tool adapter，把 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry` 串入 ReAct loop；`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前待解决：让 `react.rs` 从直接调用 `tool::function::run_tool` 改为调用 `tool::runtime::ToolRuntime`；`add/sub` 先走 pure function path，`shell` 走 command path，再接 `decide_approval`、`SimulatedSandboxRunner`、`decide_retry`；`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Gaps Blocking Next Stage
 
@@ -36,7 +36,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 3 Approval Decision：用户已实现 `decide_approval` 并完成 review；`cargo test` 通过 11 个测试，覆盖 approval scope、forbidden、prompt policy、capability mismatch fail closed。
 - [x] Slice 4 SimulatedSandboxRunner：用户已实现规则表驱动 runner，Agent 补充 read success、command failed、sandbox denied、no-sandbox retry success、unknown command failed 五个测试；`cargo test` 通过 16 个测试。
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，Agent 补充 command failed、already retried、never/on-request、network prompt/allow/deny、non-network sandbox denied 等 8 个测试；`cargo test` 通过 24 个测试。
-- [ ] Slice 6 Agent Orchestrator：真实 LLM ReAct 主链路已 live test 跑通；ReAct hardening 已补齐 `max_turns`、`ToolCallFinished`、fake LLM tests 和 parser fixture tests；仍需串起 approval、runner、retry 和 event stream。
+- [ ] Slice 6 Agent Orchestrator：真实 LLM ReAct 主链路已 live test 跑通；ReAct hardening 已补齐 `max_turns`、`ToolCallFinished`、fake LLM tests 和 parser fixture tests；用户已重构为 `tool/function.rs`、`tool/runtime.rs`、`tool/shell.rs`，仍需把 `ToolRuntime` 接入 `react.rs`，再串起 approval、runner、retry 和 event stream。
 - [ ] Slice 7 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
 
 ## 06 Code Reader Gaps
@@ -74,7 +74,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] 用户完成 `08-demo-coder` Slice 3：实现 `decide_approval`，明确 `DefaultDecision`、`ApprovalPolicy`、request context 的综合优先级；将 capability mismatch 设计为安全边界上的 `Forbidden` fail closed；`cargo test` 通过。
 - [x] 用户完成 `08-demo-coder` Slice 4：实现 `SimulatedSandboxRunner`，用 `command_prefix + simulated_attempt + simulated_result` 表达模拟执行规则；区分 `CommandFailed` 与 `SandboxDenied`，并支持 no-sandbox retry success；`cargo test` 通过。
 - [x] 用户完成 `08-demo-coder` Slice 5：实现 `Retry Gate`，将 sandbox denied 后的策略收敛为 `DoNotRetry`、`RetryWithoutApproval`、`RetryWithApproval`；`cargo test` 通过。
-- [x] 用户推进 `08-demo-coder` Slice 6：实现 `OpenAiCompatibleLlm` 多 tool call 聚合、`tool.rs` 示例工具、`react.rs` channel-based ReAct loop；live LLM 手动测试跑通多轮 tool call 和 observation 回灌，相关实现问题已沉淀到 `notes/08-demo-coder/react-loop-implementation-issues.md`。
+- [x] 用户推进 `08-demo-coder` Slice 6：实现 `OpenAiCompatibleLlm` 多 tool call 聚合、`tool/function.rs` 示例工具、`react.rs` channel-based ReAct loop；live LLM 手动测试跑通多轮 tool call 和 observation 回灌，相关实现问题已沉淀到 `notes/08-demo-coder/react-loop-implementation-issues.md`。
 - [x] 完成 Slice 6 ReAct hardening：`max_turns` 超限返回错误、`ToolCallFinished` 对外透出、`FakeLlm` test double 下沉到 `agent::llm::fake`、fake LLM tests 覆盖 ReAct 关键路径、OpenAI-compatible parser fixture tests 覆盖 SSE 与 tool call 聚合边界。
 
 ## Canceled

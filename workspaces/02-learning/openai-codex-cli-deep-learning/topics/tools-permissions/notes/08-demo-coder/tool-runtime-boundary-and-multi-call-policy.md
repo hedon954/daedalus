@@ -6,7 +6,7 @@
 
 - Stage: `08-demo-coder`
 - Slice: Slice 6 Agent Orchestrator
-- Artifact advanced: `demo/src/agent/react.rs`、后续 `demo/src/agent/tool_runtime.rs`、`demo/README.md`
+- Artifact advanced: `demo/src/agent/react.rs`、`demo/src/tool/function.rs`、`demo/src/tool/runtime.rs`、`demo/src/tool/shell.rs`、`demo/README.md`
 - Current gap: ReAct loop 已经能执行 tool call，但还没有恢复 Codex 的权限 / 沙箱 / retry 不变量。
 
 ## Problem
@@ -15,7 +15,7 @@
 
 ```text
 ToolCallFinished
-  -> run_tool(name, arguments)
+  -> tool::function::run_tool(name, arguments)
   -> ToolRunFinished / ToolRunFailed
   -> role=tool observation
 ```
@@ -172,18 +172,19 @@ for tool_call in sorted_tool_calls:
 下一步实现目标可以收敛为：
 
 ```text
-react.rs
+agent/react.rs
   -> ToolRuntime::run(call)
 
-ToolRuntime::run(call)
+tool/runtime.rs
   -> pure tool path
   -> command tool path
 
 pure tool path
   -> approval pass
-  -> run add/sub
+  -> tool/function.rs run add/sub
 
 command tool path
+  -> tool/shell.rs parse argv/cwd
   -> CommandRequest
   -> decide_approval
   -> SimulatedSandboxRunner

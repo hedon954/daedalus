@@ -190,6 +190,8 @@ ToolRunFinished / ToolRunFailed
 
 `react.rs` 当前已经对外 emit `ToolRunStarted`、`ToolRunFinished`、`ToolRunFailed`。但 code review 发现 `ToolCallFinished` 被内部消费后没有继续 emit，后续应补上。
 
+当前已补齐：`ToolCallFinished` 已对外透出。后续重构重点不再是事件缺失，而是把 tool execution 从直接调用 `tool::function::run_tool` 改为经过 `tool::runtime::ToolRuntime`。
+
 ## 7. OpenAI-compatible message 回灌顺序
 
 ### User problem
@@ -275,12 +277,32 @@ model output stability
 
 ## 9. 当前 code review 发现的待补点
 
-### Must fix before Slice 6 done
+### 已补齐的 hardening
 
 - `max_turns`：防止模型不断 tool call 导致无限循环。
 - `ToolCallFinished` emit：不要只内部消费模型决策事件。
 - live LLM test 默认 ignore。
 - fake LLM deterministic tests。
+
+### 当前结构变化
+
+tool module 已从 `agent/tool.rs` 拆到顶层 `tool/`：
+
+```text
+demo/src/tool/mod.rs
+demo/src/tool/function.rs
+demo/src/tool/runtime.rs
+demo/src/tool/shell.rs
+```
+
+当前 `react.rs` 仍调用 `tool::function::run_tool`。下一步应该改为：
+
+```text
+react.rs
+  -> ToolRuntime::run(call)
+  -> ToolRuntimeResult
+  -> StreamEvent + role=tool observation
+```
 
 ### Should improve soon
 
