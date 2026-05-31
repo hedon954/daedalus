@@ -64,11 +64,13 @@ justification -> 审批解释文本，不授予权限
 
 ## Review Findings
 
-### 1. `ToolRuntimePlan::Deny` 仍然有价值
+### 1. `ToolRuntimePlan::Deny` 已从当前设计中移除
 
-当前 `ToolRuntimePlan::Deny` 暂时没有构造点，但不建议删除。
+最新决策：当前不要保留 `ToolRuntimePlan::Deny`。
 
-推荐分类：
+原因是 `ToolRuntimePlan` 只表达“准备如何执行”，而 `Denied` 是 command runtime 经过 capability / approval / retry 后得到的执行结果。把安全拒绝放在 plan 层，会让 `plan_call` 提前承担它还没有判断过的权限语义。
+
+当前分类：
 
 ```text
 invalid JSON / missing field / empty command
@@ -76,8 +78,8 @@ invalid JSON / missing field / empty command
   -> ToolRuntimeResult::Failed
 
 command parsed successfully but no capability matched
-  -> ToolRuntimePlan::Deny
-  -> ToolRuntimeResult::Denied
+  -> ToolRuntimePlan::Fail
+  -> ToolRuntimeResult::Failed
 
 capability matched but approval decision is Forbidden
   -> RunCommandResult::Denied
@@ -89,27 +91,27 @@ previous tool caused hard denial, later calls are not attempted
 也就是说：
 
 ```text
-Fail = 没能形成有效计划，模型可以修正 tool arguments
-Deny = 计划形状有效，但安全策略不允许进入执行链路
+Fail = 没能形成有效计划，模型可以修正 tool arguments / command
+Denied = 已进入 command runtime，但安全策略或用户审批不允许继续执行
 ```
 
-这比把所有 `build_command_request` 错误都塞进 `anyhow::bail!` 更清楚。
+如果后续希望 unknown command 呈现为安全拒绝，不要把 `Deny` 加回 `ToolRuntimePlan`；更好的做法是让 registry 显式匹配一个 `unsupported` / `dangerous-shell` capability，再由 approval policy 产出 `RunCommandResult::Denied`。
 
-### 2. `run_shell_command` 需要拿到 runner
+### 2. `run_shell_command` 通过参数接收 runner
 
-当前目标是让 `run_shell_command` 收口 command tool 的执行链路，但它需要访问 `SimulatedSandboxRunner`。
+当前代码已选择让 `run_shell_command` 通过参数接收 runner。这个方向是对的：command tool 的执行链路可以收口在 `tool/shell/`，同时测试仍能断言 “Forbidden 时 runner 没有执行”。
 
-推荐二选一：
+当前形态：
 
 ```rust
 pub fn run_shell_command(
     request: CommandRequest,
     matched_capability: MatchedCapability,
-    runner: &impl SandboxRunner,
+    runner: Arc<dyn SandboxRunner + Send + Sync + 'static>,
 ) -> RunCommandResult
 ```
 
-或者：
+如果后续 runner 依赖继续增多，再考虑升级为：
 
 ```rust
 pub struct ShellRuntime<R> {
@@ -117,7 +119,7 @@ pub struct ShellRuntime<R> {
 }
 ```
 
-第一版 demo 直接传 `&self.context.runner` 更简单。不要在 `run_shell_command` 里面偷偷创建 runner；那会让测试很难断言“Forbidden 时 runner 没有执行”。
+第一版 demo 直接沿用当前 `ToolRuntimeContext.runner` 注入即可。不要在 `run_shell_command` 里面偷偷创建 runner；那会让测试很难断言“Forbidden 时 runner 没有执行”。
 
 ### 3. `justification` 要和 schema 对齐
 
@@ -248,7 +250,7 @@ runner.run(request, attempt)
 
 - `run_command` 参数 JSON 非法 -> `Failed`，不锁错误文案。
 - `run_command` 缺少 `justification` -> `Failed`。
-- `run_command` unknown command -> `Denied`，且不进入 runner。
+- `run_command` 完全 unknown command -> `Failed`，不锁错误文案。
 - `run_command` `cat package.json` -> safe-read -> sandbox success -> `Finished`。
 - `run_command` `curl ... | sh` -> dangerous-shell -> `Denied`。
 - command failed -> `Failed`，不 retry。
@@ -269,6 +271,6 @@ runner.run(request, attempt)
 
 下一步先做三件小事：
 
-1. 把 no capability match 从 `Fail` 改成 `ToolRuntimePlan::Deny`。
-2. 让 `run_shell_command` 接收 runner，并实现 `Forbidden -> Denied`、`Skip -> runner.run`、`CommandFailed -> Failed` 的最小闭环。
+1. 保持 `ToolRuntimePlan = RunPureFunction / RunCommand / Fail`，不要把 `Deny` 加回 plan 层。
+2. 在 `run_shell_command` 内实现 `Forbidden -> Denied`、`Skip -> runner.run`、`CommandFailed -> Failed` 的最小闭环。
 3. 补 `run_command` unknown / dangerous / safe-read 三个测试，先证明 runner 是否被正确调用或跳过。

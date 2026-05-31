@@ -256,18 +256,31 @@ enum ToolRuntimePlan {
     Fail {
         error: String,
     },
-    Deny {
-        reason: String,
-    },
 }
 ```
 
-这样 `run` 不会变成一整坨状态机。`Fail` 和 `Deny` 的区别是：
+这样 `run` 不会变成一整坨状态机。当前设计里 `ToolRuntimePlan` 只表达“准备如何执行”，不表达安全拒绝结果：
 
 ```text
-Fail = tool arguments 不合法，没能形成有效计划
-Deny = command 已解析，但安全策略不允许进入执行链路
+RunPureFunction = 已识别为 pure function tool
+RunCommand      = 已识别为 command tool，并已构造 CommandRequest
+Fail            = tool arguments / command request 不合法，没能形成有效计划
 ```
+
+`Denied` 应该出现在执行结果层，而不是 plan 层：
+
+```text
+capability matched but approval decision is Forbidden
+  -> RunCommandResult::Denied
+
+user rejects approval / retry approval
+  -> RunCommandResult::Denied
+
+previous tool caused hard denial, later calls are not attempted
+  -> ToolRuntimeResult::Skipped
+```
+
+如果以后希望 unknown command 展示成 denied，不要重新加 `ToolRuntimePlan::Deny`；更好的方式是在 registry 层显式匹配到 `unsupported` / `dangerous-shell` capability，再由 approval policy 产出 `Denied`。
 
 ```rust
 impl ToolRuntime {
