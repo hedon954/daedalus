@@ -12,12 +12,17 @@ use crate::agent::{
     stream_event::{EventStream, StreamEvent},
 };
 
+/// 测试用 LLM。
+///
+/// 每次 `stream` 消费一组预设事件，同时记录收到的 messages，
+/// 用来验证 ReAct loop 是否把 tool observation 正确回灌给下一轮模型调用。
 pub(crate) struct FakeLlm {
     turns: Mutex<VecDeque<Vec<StreamEvent>>>,
     requests: Mutex<Vec<Vec<Value>>>,
 }
 
 impl FakeLlm {
+    /// 创建一个按 turn 回放的 fake model。
     pub(crate) fn new(turns: Vec<Vec<StreamEvent>>) -> Arc<Self> {
         Arc::new(Self {
             turns: Mutex::new(VecDeque::from(turns)),
@@ -25,6 +30,7 @@ impl FakeLlm {
         })
     }
 
+    /// 读取每一轮模型调用收到的 messages。
     pub(crate) fn requests(&self) -> Vec<Vec<Value>> {
         self.requests
             .lock()
@@ -35,6 +41,7 @@ impl FakeLlm {
 
 #[async_trait]
 impl Llm for FakeLlm {
+    /// 返回下一轮预设事件流。
     async fn stream(&self, request: LLmRequest) -> anyhow::Result<EventStream> {
         self.requests
             .lock()

@@ -8,7 +8,10 @@ use crate::{
     util::args_has_prefix,
 };
 
-/// 能力注册表
+/// 能力注册表。
+///
+/// 负责把 host 支持的命令前缀映射为 capability。它是 command runtime
+/// 的第一道边界：没有匹配到 capability 的命令不会进入 approval / sandbox。
 pub struct CapabilityRegistry {
     /// 内置能力
     builtin_capabilities: Vec<CapabilityDescriptor>,
@@ -16,7 +19,9 @@ pub struct CapabilityRegistry {
     capabilities: Vec<CapabilityDescriptor>,
 }
 
-/// 匹配到的能力
+/// 匹配到的能力。
+///
+/// `command_prefix` 保留本次命中的具体前缀，用于后续构造 approval scope。
 pub struct MatchedCapability {
     /// 能力描述
     pub capability: CapabilityDescriptor,
@@ -25,6 +30,7 @@ pub struct MatchedCapability {
 }
 
 impl CapabilityRegistry {
+    /// 创建包含内置能力的 registry。
     pub fn new() -> Self {
         Self {
             builtin_capabilities: vec![
@@ -104,7 +110,10 @@ impl CapabilityRegistry {
             .collect()
     }
 
-    /// 匹配能力
+    /// 根据 argv 匹配 capability。
+    ///
+    /// TODO: 当前只处理单个 argv；后续多命令阶段需要对 command segments 分别匹配，
+    /// 再按最严格策略合成总决策。
     pub fn match_capability(&self, argv: &[String]) -> Option<MatchedCapability> {
         self.builtin_capabilities
             .iter()

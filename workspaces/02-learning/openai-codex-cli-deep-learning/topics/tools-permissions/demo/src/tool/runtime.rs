@@ -1,40 +1,58 @@
-use std::{env::current_dir, path::PathBuf};
+use std::{env::current_dir, path::PathBuf, sync::Arc};
 
 use crate::{
     agent::stream_event::ToolCallFinished,
-    model::{
-        approval::{ApprovalPolicy, SandboxProfile},
-        command_request::CommandRequest,
+    model::{approval::ApprovalPolicy, command_request::CommandRequest},
+    sandbox::{SandboxRunner, simulated_sandbox_runner::SimulatedSandboxRunner},
+    tool::{
+        function::run_pure_function,
+        shell::{
+            RunCommandArgs, RunCommandResult,
+            registry::{CapabilityRegistry, MatchedCapability},
+            run_shell_command,
+        },
     },
-    registry::{CapabilityRegistry, MatchedCapability},
-    sandbox::simulated_sandbox_runner::SimulatedSandboxRunner,
-    tool::function::run_pure_function,
 };
 
+/// Tool runtime 是 ReAct loop 和具体工具实现之间的边界。
+///
+/// 它负责把模型产出的 `ToolCallFinished` 转成可执行计划，并把工具执行结果
+/// 映射回 agent 可理解的 observation。权限细节留在 command runtime 内部处理。
 pub struct ToolRuntime {
     context: ToolRuntimeContext,
 }
 
+/// Tool runtime 的宿主上下文。
+///
+/// 这些字段来自 host，而不是模型；模型不能通过 tool arguments 修改 cwd、
+/// approval policy、capability registry 或 runner。
 pub struct ToolRuntimeContext {
     pub cwd: PathBuf,
     pub approval_policy: ApprovalPolicy,
-    pub default_sandbox: SandboxProfile,
     pub registry: CapabilityRegistry,
-    pub runner: SimulatedSandboxRunner,
+    pub runner: Arc<dyn SandboxRunner + Send + Sync + 'static>,
 }
 
+/// 模型可见 tool 的内部分类。
 #[derive(Debug, Clone, Copy)]
 pub enum ToolKind {
     PureFunction,
     Command,
 }
 
+/// 模型可见 tool 的定义。
+///
+/// 当前 demo 直接使用静态表；后续接 MCP 或插件系统时可以把它替换为动态 registry。
 #[derive(Debug, Clone, Copy)]
 pub struct ToolDefinition {
     pub name: &'static str,
     pub kind: ToolKind,
 }
 
+/// 一次 tool call 的执行计划。
+///
+/// `Fail` 表示 tool call 参数或命令形态无法形成有效计划；
+/// 安全拒绝不在这里表达，而是在 command runtime 中返回 `Denied`。
 enum ToolRuntimePlan {
     RunPureFunction {
         name: String,
@@ -44,11 +62,15 @@ enum ToolRuntimePlan {
         request: CommandRequest,
         matched_capability: MatchedCapability,
     },
-    Deny {
-        reason: String,
+    Fail {
+        error: String,
     },
 }
 
+/// tool runtime 对 ReAct loop 暴露的终态。
+///
+/// `Skipped` 是多 tool call 编排层的语义：前一个工具失败或被拒后，
+/// 后续工具可以被标记为跳过。单个 shell 命令自身不返回 `Skipped`。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ToolRuntimeResult {
     Finished { output: String },
@@ -66,6 +88,10 @@ const TOOLS: &[ToolDefinition] = &[
         name: "sub",
         kind: ToolKind::PureFunction,
     },
+    ToolDefinition {
+        name: "run_command",
+        kind: ToolKind::Command,
+    },
 ];
 
 impl ToolRuntime {
@@ -73,6 +99,7 @@ impl ToolRuntime {
         Self { context }
     }
 
+    /// 执行一次模型产出的 tool call。
     pub fn run(&self, call: &ToolCallFinished) -> ToolRuntimeResult {
         let Some(definition) = self.find_tool(&call.name) else {
             return ToolRuntimeResult::Failed {
@@ -83,10 +110,16 @@ impl ToolRuntime {
         self.execute_plan(plan)
     }
 
+    /// 查找模型可见 tool。
+    ///
+    /// TODO: 目前使用静态数组；后续支持 MCP / 配置化工具时应改为 ToolRegistry。
     fn find_tool(&self, name: &str) -> Option<ToolDefinition> {
         TOOLS.iter().find(|t| t.name == name).copied()
     }
 
+    /// 把 tool call 转成执行计划。
+    ///
+    /// 这里只做 JSON / command request 组装，不做审批决策。
     fn plan_call(
         &self,
         tool_definition: ToolDefinition,
@@ -97,10 +130,24 @@ impl ToolRuntime {
                 name: call.name.to_string(),
                 arguments: call.arguments.clone(),
             },
-            ToolKind::Command => unimplemented!(),
+            ToolKind::Command => {
+                let (request, matched_capability) = match self.build_command_request(call) {
+                    Ok(res) => res,
+                    Err(err) => {
+                        return ToolRuntimePlan::Fail {
+                            error: err.to_string(),
+                        };
+                    }
+                };
+                ToolRuntimePlan::RunCommand {
+                    request,
+                    matched_capability,
+                }
+            }
         }
     }
 
+    /// 执行已经形成的计划。
     fn execute_plan(&self, plan: ToolRuntimePlan) -> ToolRuntimeResult {
         match plan {
             ToolRuntimePlan::RunPureFunction { name, arguments } => {
@@ -111,8 +158,56 @@ impl ToolRuntime {
                     },
                 }
             }
-            _ => unimplemented!(),
+            ToolRuntimePlan::RunCommand {
+                request,
+                matched_capability,
+            } => {
+                run_shell_command(&request, matched_capability, self.context.runner.clone()).into()
+            }
+            ToolRuntimePlan::Fail { error } => ToolRuntimeResult::Failed { error },
         }
+    }
+
+    /// 从 `run_command` tool call 构造命令执行上下文。
+    ///
+    /// TODO: 当前 Phase 1 用 `split_whitespace` 处理单命令；多命令阶段需要引入
+    /// command segment parser，并避免把 pipe / heredoc 误判成简单 prefix。
+    fn build_command_request(
+        &self,
+        call: &ToolCallFinished,
+    ) -> anyhow::Result<(CommandRequest, MatchedCapability)> {
+        /*{
+          "command": "npm install vite",
+          "justification": "为了安装用户要求的前端依赖"
+        }*/
+        let run_command_args: RunCommandArgs = serde_json::from_str(&call.arguments)?;
+
+        let argv: Vec<String> = run_command_args
+            .command
+            .split_whitespace()
+            .map(str::to_string)
+            .collect();
+        let Some(matched_capability) = self.context.registry.match_capability(argv.as_slice())
+        else {
+            anyhow::bail!(
+                "cannot match the capability for command: {}",
+                run_command_args.command
+            )
+        };
+
+        Ok((
+            CommandRequest {
+                raw_command: run_command_args.command,
+                argv,
+                cwd: self.context.cwd.clone(),
+                capability: matched_capability.capability.kind,
+                approval_policy: self.context.approval_policy,
+                sandbox_profile: matched_capability.capability.policy.first_attempt_sandbox,
+                network_policy: matched_capability.capability.policy.network_policy,
+                justification: run_command_args.justification,
+            },
+            matched_capability,
+        ))
     }
 }
 
@@ -122,10 +217,19 @@ impl Default for ToolRuntime {
             context: ToolRuntimeContext {
                 cwd: current_dir().unwrap_or(".".into()),
                 approval_policy: ApprovalPolicy::OnFailure,
-                default_sandbox: SandboxProfile::ReadOnly,
                 registry: CapabilityRegistry::new(),
-                runner: SimulatedSandboxRunner::new(),
+                runner: Arc::new(SimulatedSandboxRunner::new()),
             },
+        }
+    }
+}
+
+impl From<RunCommandResult> for ToolRuntimeResult {
+    fn from(value: RunCommandResult) -> Self {
+        match value {
+            RunCommandResult::Finished { output } => ToolRuntimeResult::Finished { output },
+            RunCommandResult::Failed { error } => ToolRuntimeResult::Failed { error },
+            RunCommandResult::Denied { reason } => ToolRuntimeResult::Denied { reason },
         }
     }
 }

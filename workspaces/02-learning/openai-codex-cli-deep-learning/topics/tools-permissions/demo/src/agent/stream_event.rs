@@ -4,6 +4,10 @@ use futures_core::Stream;
 
 pub type EventStream = Pin<Box<dyn Stream<Item = anyhow::Result<StreamEvent>> + Send + 'static>>;
 
+/// Agent 对外暴露的流式事件。
+///
+/// 这些事件服务于 UI / logs / tests：模型输出、tool choice、tool run 和最终完成
+/// 都应该能被外部观察。权限审批事件后续会继续补齐。
 #[derive(Debug)]
 pub enum StreamEvent {
     Started,
@@ -38,6 +42,9 @@ pub enum StreamEvent {
     Error(String),
 }
 
+/// 模型已经完成的一次 tool call。
+///
+/// 它代表“模型选择了哪个工具以及完整 arguments”，不代表工具已经执行。
 #[derive(Debug, Clone)]
 pub struct ToolCallFinished {
     pub index: i64,

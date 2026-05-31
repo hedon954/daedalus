@@ -4,9 +4,13 @@ use crate::{
         capability::DefaultDecision,
         command_request::CommandRequest,
     },
-    registry::MatchedCapability,
+    tool::shell::registry::MatchedCapability,
 };
 
+/// 根据命令上下文和命中的 capability 计算初始审批需求。
+///
+/// 这个函数是 command runtime 的第一道 policy gate。它只回答
+/// “能不能进入执行，以及是否要先审批”，不负责真正运行命令。
 pub fn decide_approval(
     request: &CommandRequest,
     matched_capability: &MatchedCapability,
@@ -41,13 +45,7 @@ pub fn decide_approval(
                         "capability {} requires approval before execution",
                         matched_capability.capability.name
                     ),
-                    approval_scope: ApprovalScope {
-                        command_prefix: matched_capability.command_prefix.clone(),
-                        cwd: request.cwd.clone(),
-                        sandbox_profile: request.sandbox_profile,
-                        network_policy: request.network_policy,
-                        persistence: ApprovalPersistence::Once,
-                    },
+                    approval_scope: build_approval_scope(request, matched_capability),
                 }
             }
         },
@@ -60,15 +58,34 @@ pub fn decide_approval(
     }
 }
 
+/// 构造用户审批的作用域。
+///
+/// 注意 scope 使用 matched prefix，而不是完整 argv；这样可以表达
+/// “本 session 允许 npm install 这一类命令”，同时仍然绑定 cwd / sandbox / network。
+pub fn build_approval_scope(
+    request: &CommandRequest,
+    matched_capability: &MatchedCapability,
+) -> ApprovalScope {
+    ApprovalScope {
+        command_prefix: matched_capability.command_prefix.clone(),
+        cwd: request.cwd.clone(),
+        sandbox_profile: request.sandbox_profile,
+        network_policy: request.network_policy,
+        persistence: ApprovalPersistence::Once,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{
-        approval::{ApprovalPolicy, NetworkPolicy, SandboxProfile},
-        capability::CapabilityKind,
-        command_request::CommandRequest,
+    use crate::{
+        model::{
+            approval::{ApprovalPolicy, NetworkPolicy, SandboxProfile},
+            capability::CapabilityKind,
+            command_request::CommandRequest,
+        },
+        tool::shell::registry::CapabilityRegistry,
     };
-    use crate::registry::CapabilityRegistry;
     use std::path::PathBuf;
 
     fn strings(items: &[&str]) -> Vec<String> {

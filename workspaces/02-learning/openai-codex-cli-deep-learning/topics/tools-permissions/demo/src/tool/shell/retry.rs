@@ -6,6 +6,9 @@ use crate::model::{
 };
 
 /// 判断一次执行失败后是否允许进入 no-sandbox retry。
+///
+/// retry gate 只在 sandbox first 失败后运行。它必须区分命令自身失败和
+/// 沙箱/网络拒绝：前者直接回灌给模型修复，后者才可能进入提权重试。
 pub fn decide_retry(
     request: &CommandRequest,
     failure: &ExecutionFailure,
@@ -52,6 +55,8 @@ fn decide_non_network_sandbox_retry(
     output: &str,
     command_scope: &ApprovalScope,
 ) -> RetryDecision {
+    // TODO: 后续把 capability-level `RetryPolicy` 纳入这里，避免所有 sandbox denied
+    // 都只由全局 `ApprovalPolicy` 决定。
     RetryDecision::RetryWithApproval {
         reason: format!("approval required: {output}"),
         approval_scope: ApprovalScope {

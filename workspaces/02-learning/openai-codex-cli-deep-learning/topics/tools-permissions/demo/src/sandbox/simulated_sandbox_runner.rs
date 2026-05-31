@@ -9,11 +9,17 @@ use crate::{
     util::args_has_prefix,
 };
 
-/// 模拟沙箱运行器
+/// 模拟沙箱运行器。
+///
+/// 它不执行真实命令，只根据 `request.argv + ExecutionAttempt` 查规则表。
+/// 这样 Phase 1 可以先验证 approval / sandbox / retry 状态机，而不被 OS sandbox 细节拖住。
 pub struct SimulatedSandboxRunner {
     rules: Vec<SimulatedRule>,
 }
 
+/// 一条模拟执行规则。
+///
+/// `command_prefix + attempt` 同时命中才会返回指定结果。
 #[derive(Debug, Clone)]
 struct SimulatedRule {
     command_prefix: Vec<String>,
@@ -21,12 +27,17 @@ struct SimulatedRule {
     result: SimulatedResult,
 }
 
+/// 模拟 runner 关心的尝试类型。
+///
+/// `NoSandboxFirst` 和 `NoSandboxRetry` 都折叠成 `NoSandbox`，因为 Phase 1
+/// 只需要验证是否离开 sandbox，不区分具体来源。
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum SimulatedAttempt {
     Sandbox(SandboxProfile),
     NoSandbox,
 }
 
+/// 模拟 runner 可返回的执行结果。
 #[derive(Debug, Clone)]
 enum SimulatedResult {
     Success {
@@ -43,6 +54,10 @@ enum SimulatedResult {
 }
 
 impl SimulatedSandboxRunner {
+    /// 创建内置规则集。
+    ///
+    /// TODO: 后续可以把 rules 暴露为 test builder，让 `run_shell_command`
+    /// 的整合测试更容易构造指定场景。
     pub fn new() -> Self {
         Self {
             rules: vec![
@@ -95,6 +110,7 @@ impl Default for SimulatedSandboxRunner {
 }
 
 impl SandboxRunner for SimulatedSandboxRunner {
+    /// 根据命令前缀和 attempt 查找模拟结果。
     fn run(&self, request: &CommandRequest, attempt: &ExecutionAttempt) -> ExecutionResult {
         let attempt = SimulatedAttempt::from(attempt);
         let rule = self.rules.iter().find(|rule| {
@@ -115,6 +131,7 @@ impl SandboxRunner for SimulatedSandboxRunner {
 }
 
 impl From<&ExecutionAttempt> for SimulatedAttempt {
+    /// 将完整 execution attempt 映射为模拟 runner 的简化维度。
     fn from(attempt: &ExecutionAttempt) -> Self {
         match attempt {
             ExecutionAttempt::SandboxFirst { sandbox_profile } => {
@@ -128,6 +145,7 @@ impl From<&ExecutionAttempt> for SimulatedAttempt {
 }
 
 impl SimulatedAttempt {
+    /// 生成用于错误信息的 attempt 标签。
     fn label(&self) -> String {
         match self {
             SimulatedAttempt::Sandbox(profile) => format!("sandbox:{profile:?}"),
@@ -137,6 +155,7 @@ impl SimulatedAttempt {
 }
 
 impl SimulatedResult {
+    /// 将模拟结果渲染为真实 runtime 使用的 `ExecutionResult`。
     fn render(&self, request: &CommandRequest) -> ExecutionResult {
         match self {
             SimulatedResult::Success { stdout } => ExecutionResult::Success {

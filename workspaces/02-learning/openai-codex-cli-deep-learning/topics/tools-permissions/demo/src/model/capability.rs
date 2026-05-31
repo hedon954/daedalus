@@ -1,6 +1,9 @@
 use crate::model::approval::{NetworkPolicy, SandboxProfile};
 
-/// 命令能力类型
+/// 命令能力类型。
+///
+/// 它不是模型直接提供的字段，而是 host 根据命令 argv 匹配出来的安全分类。
+/// 后续 approval / sandbox / retry 都以这个分类作为策略入口。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CapabilityKind {
     /// 安全读命令，比如 `ls`, `cat package.json`
@@ -13,7 +16,11 @@ pub enum CapabilityKind {
     DangerousShell,
 }
 
-/// 命令能力描述
+/// 命令能力描述。
+///
+/// `CapabilityDescriptor` 是“支持哪些命令”的配置单元：它把一组命令前缀
+/// 绑定到一个能力类型和默认执行策略。模型只能请求 `run_command`，
+/// 不能直接指定 capability。
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CapabilityDescriptor {
     /// 命令能力类型
@@ -22,18 +29,23 @@ pub struct CapabilityDescriptor {
     pub name: String,
     /// 命令描述
     pub description: String,
-    /// 命令前缀
+    /// 可匹配的命令前缀。
+    ///
+    /// 例如 `["npm", "install"]` 能匹配 `npm install vite`。
     pub command_prefixes: Vec<Vec<String>>,
     /// 命令能力策略
     pub policy: CapabilityPolicy,
 }
 
-/// 命令能力策略
+/// 命令能力策略。
+///
+/// 这是 capability 自身的默认策略；运行时仍需要和 `CommandRequest`
+/// 中的全局审批策略、cwd、网络策略等上下文合并判断。
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CapabilityPolicy {
     /// 默认决策
     pub default_decision: DefaultDecision,
-    /// 首次 sandbox
+    /// 首次执行应使用的沙箱 profile。
     pub first_attempt_sandbox: SandboxProfile,
     /// 网络策略
     pub network_policy: NetworkPolicy,
@@ -41,7 +53,7 @@ pub struct CapabilityPolicy {
     pub retry_policy: RetryPolicy,
 }
 
-/// 默认决策
+/// capability 在没有更多上下文时的默认决策。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum DefaultDecision {
     /// 允许
@@ -52,7 +64,10 @@ pub enum DefaultDecision {
     Forbidden,
 }
 
-/// 重试策略
+/// capability 级别的重试策略。
+///
+/// TODO: 当前 `decide_retry` 主要读取 `ApprovalPolicy` 和 `NetworkPolicy`；
+/// 后续把 `RetryPolicy` 纳入 retry gate，让 capability 能表达“即使允许审批也不应重试”。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum RetryPolicy {
     /// 不重试

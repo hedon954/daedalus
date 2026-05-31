@@ -13,6 +13,10 @@ use serde_json::json;
 
 #[derive(Builder)]
 #[builder(default)]
+/// OpenAI-compatible chat completion streaming client。
+///
+/// 当前默认配置指向 DeepSeek compatible API。作为 demo，缺少 API key 时
+/// `Default` 会直接 panic；库化时再替换为 `from_env() -> Result<Self>`。
 pub struct OpenAiCompatibleLlm {
     pub base_url: String,
     pub api_key: String,
@@ -21,6 +25,10 @@ pub struct OpenAiCompatibleLlm {
     pub tools: Vec<serde_json::Value>,
 }
 
+/// 跨 SSE chunk 聚合中的 tool call。
+///
+/// OpenAI-compatible stream 可能把同一个 tool arguments 拆成多个 delta，
+/// 所以必须按 index 累积到 `Completed` 再吐出 `ToolCallFinished`。
 struct ToolCallCache {
     index: i64,
     id: String,
@@ -42,6 +50,7 @@ impl Default for OpenAiCompatibleLlm {
 
 #[async_trait]
 impl Llm for OpenAiCompatibleLlm {
+    /// 发起一次 OpenAI-compatible streaming 请求，并映射为内部 `StreamEvent`。
     async fn stream(&self, req: LLmRequest) -> anyhow::Result<EventStream> {
         let body = json!({
             "model": self.model,
@@ -88,6 +97,8 @@ fn map_chunk(
     first: &mut bool,
     tool_calls: &mut Vec<ToolCallCache>,
 ) -> Vec<StreamEvent> {
+    // TODO: 当前假设 tool call index 连续且 name 首次出现；后续接更多 provider 时
+    // 需要补 provider-specific fixture，避免增量字段缺失导致 tool name 丢失。
     let mut result = vec![];
 
     let events = map_openai_event(value);
@@ -153,11 +164,13 @@ fn take_sse_events(buffer: &mut String) -> Vec<String> {
     events
 }
 
+/// 将一条 SSE data payload 解析为 JSON。
 fn sse_event_to_json(event: &str) -> anyhow::Result<serde_json::Value> {
     let value = serde_json::Value::from_str(event)?;
     Ok(value)
 }
 
+/// 将 OpenAI-compatible chunk 映射为内部事件。
 fn map_openai_event(value: &serde_json::Value) -> Vec<StreamEvent> {
     /*
         - thinking

@@ -14,7 +14,10 @@ pub fn sub(a: i64, b: i64) -> i64 {
     a - b
 }
 
-/// 执行纯编译函数
+/// 执行纯函数工具。
+///
+/// 纯函数工具不经过 shell permission / sandbox 链路，但仍然要验证 arguments。
+/// 错误会作为 tool observation 回灌给模型，让模型有机会自我修复。
 pub fn run_pure_function(name: &str, arguments: &str) -> anyhow::Result<String> {
     let arguments = serde_json::Value::from_str(arguments)?;
     match name {

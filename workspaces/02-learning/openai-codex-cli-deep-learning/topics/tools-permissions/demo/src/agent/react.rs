@@ -14,6 +14,10 @@ use crate::{
 
 type EventSender = mpsc::Sender<anyhow::Result<StreamEvent>>;
 
+/// 最小 ReAct agent。
+///
+/// 它负责把用户 prompt 转成多轮 LLM 调用，并在模型请求工具时调用
+/// `ToolRuntime`，再把 tool observation 回灌给下一轮模型。
 pub struct ReActAgent {
     llm: Arc<dyn Llm + Send + Sync>,
     max_turns: u8,
@@ -23,6 +27,7 @@ pub struct ReActAgent {
 const DEFAULT_MAX_TURNS: u8 = 32;
 
 impl ReActAgent {
+    /// 创建一个 ReAct agent。
     pub fn new(
         llm: Arc<dyn Llm + Send + Sync>,
         max_turns: Option<u8>,
@@ -35,6 +40,9 @@ impl ReActAgent {
         }
     }
 
+    /// 启动一次 agent run，并立即返回事件流。
+    ///
+    /// 实际 agent loop 在后台 task 中运行，通过 channel 逐步吐出事件。
     pub fn run(&self, prompt: String) -> anyhow::Result<EventStream> {
         if prompt.is_empty() {
             anyhow::bail!("prompt should not be empty");
@@ -118,7 +126,7 @@ async fn run_agent_loop(
 
         pending_tool_calls.sort_by_key(|call| call.index);
 
-        // 填充 messages
+        // 将本轮 assistant 文本和 tool calls 放回消息历史，供下一轮模型参考。
         messages.push(json!({
             "role": "assistant",
             "content": ai_content,
@@ -135,10 +143,11 @@ async fn run_agent_loop(
             }).collect::<Vec<_>>()
         }));
 
-        // 逐个工具执行
+        // 当前先按 index 顺序逐个执行工具。这样 observation 顺序稳定，便于测试。
+        // TODO: 后续如果并发执行多个 tool，需要仍按原 index 回灌 messages。
         run_tools(&tx, pending_tool_calls, &mut messages, tool_runtime).await?;
 
-        // TODO: logger
+        // TODO: 加入结构化 logger，记录每轮 LLM start/end、tool choice 和 observation。
     }
 
     emit(&tx, StreamEvent::Completed).await
@@ -162,8 +171,8 @@ async fn run_tools(
         )
         .await?;
 
-        // TODO: 权限检查？
-        // 1 个工具没有权限，是后面的工具都不执行，还是跳过它先执行后面的工具？
+        // TODO: 接入多 tool call 的 hard-deny 策略：
+        // 一个工具被安全拒绝后，后续依赖它的工具应标记为 Skipped，而不是继续盲跑。
 
         match tool_runtime.run(&call) {
             ToolRuntimeResult::Finished { output } => {
