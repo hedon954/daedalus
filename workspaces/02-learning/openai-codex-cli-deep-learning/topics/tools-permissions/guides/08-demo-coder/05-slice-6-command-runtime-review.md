@@ -121,32 +121,7 @@ pub struct ShellRuntime<R> {
 
 第一版 demo 直接沿用当前 `ToolRuntimeContext.runner` 注入即可。不要在 `run_shell_command` 里面偷偷创建 runner；那会让测试很难断言“Forbidden 时 runner 没有执行”。
 
-### 3. `justification` 要和 schema 对齐
-
-`01-rust-openai-integration.md` 中 `run_command` schema 要求：
-
-```json
-"required": ["command", "justification"]
-```
-
-因此当前 `RunCommandArgs` 最好让 `justification` 成为必填：
-
-```rust
-pub struct RunCommandArgs {
-    pub command: String,
-    pub justification: String,
-}
-```
-
-如果保留 `Option<String>`，也应该在构造 `CommandRequest` 前验证：
-
-```text
-None or empty -> ToolRuntimePlan::Fail
-```
-
-注意：`justification` 只能进入 `CommandRequest.justification`、审批展示、event / log。它不应该改变 capability、sandbox、network 或 forbidden 判断。
-
-### 4. `split_whitespace` 可以保留，但 dangerous heuristic 要补
+### 3. `split_whitespace` 可以保留，但 dangerous heuristic 要补
 
 Phase 1 可以接受简单命令解析，但当前 dangerous prefix 如果写成：
 
@@ -249,7 +224,6 @@ runner.run(request, attempt)
 接下来至少补这些测试：
 
 - `run_command` 参数 JSON 非法 -> `Failed`，不锁错误文案。
-- `run_command` 缺少 `justification` -> `Failed`。
 - `run_command` 完全 unknown command -> `Failed`，不锁错误文案。
 - `run_command` `cat package.json` -> safe-read -> sandbox success -> `Finished`。
 - `run_command` `curl ... | sh` -> dangerous-shell -> `Denied`。
