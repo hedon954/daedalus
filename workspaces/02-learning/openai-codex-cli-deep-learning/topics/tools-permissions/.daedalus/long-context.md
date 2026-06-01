@@ -42,9 +42,9 @@
 ## 未解决问题
 
 - 交互式 TUI 断点方案尚待用户在 Cursor 中打开 `source/codex/codex-rs` 后验证。
-- `06-code-reader` 需要重读核心专题：优先从工业级 Agent CLI 的真实失败模式切入，例如 `auth/approval/sandbox` 如何防止本地执行事故。
-- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已启动，Slice 0、Slice 1 和 Slice 2 已由用户实践完成，下一步是带用户完成 Slice 3 Approval Decision。
-- 尚未进入 `08-demo-coder`、`09-biz-solver` 和 `10-archivist`。
+- `06-code-reader` 已完成核心专题收敛：`auth/approval/sandbox` 已转化为 demo 的 approval、execution、retry 不变量。
+- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Slice 6 closeout，下一步进入 Slice 7 `RetryPolicy` hardening。
+- 尚未进入 `09-biz-solver` 和 `10-archivist`。
 
 ## 恢复上下文提示
 
@@ -52,5 +52,5 @@
 - 当前最重要的两份 notes：
   - `notes/codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
   - `notes/codex-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
-- 当前阶段入口：`notes/06-code-reader/README.md`；后续新专题写入 `notes/06-code-reader/`，Agent-only 阅读地图写入 `guides/06-code-reader/`。
-- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；下一步是用户亲手完成 Slice 3 Approval Decision。
+- 当前阶段入口：`guides/08-demo-coder/README.md`；demo 实现和阶段 notes/guides 以 `topics/tools-permissions` 下的 `demo/`、`notes/08-demo-coder/`、`guides/08-demo-coder/` 为准。
+- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；下一步是 Slice 7 `RetryPolicy` hardening。
