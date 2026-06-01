@@ -24,6 +24,8 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Current Cursor
 
+Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
+
 - Code frontier：暂无，尚未进入具体源码或 demo 实现边界。
 - Already wired：暂无。
 - Current open decision：暂无。

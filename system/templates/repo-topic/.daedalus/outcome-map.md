@@ -32,6 +32,8 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 ## Current Position
 
+Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
+
 - 当前阶段：01-goal-aligner
 - 当前目标：澄清 North Star、最终产物和验收标准。
 - 当前障碍：任务目标和最小 demo 尚未由用户确认。

@@ -41,10 +41,12 @@ scope: common
 1. 先读取当前 workspace 的 project `.daedalus/project-map.md`、`.daedalus/topic-board.md` 和 project `.daedalus/state.toml`，确认 active topic。
 2. 再读取 active topic 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
 3. 如果 todo 有 `Current Cursor`，把它当作恢复光标，而不是完成事实；先快速读取对应代码或产物确认它是否仍然成立。
-4. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
-5. 用路径坐标告诉用户：最终产物是什么、当前在哪个阶段、正在补哪个缺口、为什么这个缺口重要、哪些细节本轮停止阅读、完成后解锁什么。
-6. 如果用户只是说“继续学习”，恢复后优先提出下一轮 coaching question；不要直接进入 Agent-led 源码验证。
-7. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
+4. 如果当前阶段涉及实现、测试、运行或 review，必须读取相关源码、测试、最近 diff / TODO，并在可行时运行最小验证；不要只根据 markdown 学习地图判断进度。
+5. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
+6. 用路径坐标告诉用户：最终产物是什么、当前在哪个阶段、正在补哪个缺口、为什么这个缺口重要、哪些细节本轮停止阅读、完成后解锁什么。
+7. 如果发现代码证据和 `.daedalus/todo.md`、`outcome-map.md` 或 guides/notes 不一致，明确标注“学习地图可能过期”，以当前代码/测试证据为准，并把地图同步列为下一步。
+8. 如果用户只是说“继续学习”，恢复后优先提出下一轮 coaching question；不要直接进入 Agent-led 源码验证。
+9. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
 
 ## Output
 
@@ -78,4 +80,5 @@ scope: common
 - 恢复后优先推进一个最小行动。
 - 不要重新展开完整规划，除非上下文已经不可恢复。
 - 明确区分“已验证结论”和“待验证假设”。
+- 文档是导航，不是实现事实源；阶段完成度必须优先由当前代码、测试、运行输出和用户已验证观察支撑。
 - 不要把 topic `todo.md` 中的 next action 当作自动执行许可；先定位 project、active topic、topic stage 和 current gap，再按 coaching gate 问用户。

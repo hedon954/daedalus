@@ -130,6 +130,25 @@ When speaking to the user at the start of a resume, code-reading round, or stage
 
 If a proposed reading or debugging step cannot be mapped to a final artifact, move it to stop rules or defer it. The Agent should say, in effect: we are not "continuing to read source"; we are filling a specific blocked decision in the next artifact.
 
+## Evidence Grounding Gate
+
+Learning maps, guides, notes, and todo files are recovery aids, not the final source of truth for implementation status.
+
+When answering "where are we", "what remains", "is this slice done", "can we enter the next stage", or any question that changes stage/slice status, apply this evidence ladder:
+
+1. Current source code, tests, runtime output, and git diff.
+2. User-verified observations, terminal output, and code they wrote.
+3. Active topic state: `.daedalus/outcome-map.md`, `.daedalus/todo.md`, stage README, notes, and guides.
+4. Chat memory or prior assumptions.
+
+For implementation stages, never infer completion from markdown artifacts alone. First inspect the relevant source files, tests, TODOs, and recent diffs; then compare them with the slice acceptance criteria. If code evidence and learning maps disagree, say the map is stale, trust the current implementation evidence, and update the learning artifacts before moving on.
+
+For "what remains" answers, classify the result into:
+
+- Required before stage/slice exit.
+- Optional hardening inside the current slice.
+- Explicitly deferred non-goals.
+
 ## Coaching Gate
 
 The user learns; the Agent coaches. For architecture analysis, code reading, and demo-invariant extraction, the user must form a hypothesis before the Agent writes conclusions.
@@ -169,6 +188,8 @@ Minimum sync:
 This gate is required after code reviews in `08-demo-coder`. A passing test result alone is not enough; the user must be re-oriented on the learning path.
 
 Review-only is not progress-sync-only. If a review changes completion status, exposes a blocker, alters the next action, or identifies a test gap, update the active topic's learning artifacts even when implementation files should remain untouched.
+
+Before syncing progress in an implementation stage, do a grounding pass over the actual implementation: inspect the touched source files, relevant tests, TODOs, and recent diff, and run the smallest useful validation when feasible. Do not let stale `todo.md`, `outcome-map.md`, or guide wording decide that a slice is complete.
 
 ## Current Cursor Sync Gate
 

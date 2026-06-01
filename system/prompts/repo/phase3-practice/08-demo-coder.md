@@ -68,6 +68,8 @@ Agent 不可以：
 - 避免为了完整性引入额外框架。
 - 保留能帮助学习的命名和模块边界。
 - 实现后立刻运行最小验证。
+- 判断 slice 是否完成、还剩什么或能否进入下一 slice 时，必须先看当前实现：相关源码、测试、最近 diff、TODO 和运行结果。`todo.md`、`outcome-map.md`、guides 和 notes 只能作为导航，不能单独作为完成证据。
+- 如果代码和学习地图不一致，先告诉用户地图已过期，再按代码/测试事实重新分类：退出前必做、当前 slice 可选 hardening、明确后置 non-goal。
 - Rust demo 的 `Cargo.toml` 创建、移动或迁移后，运行 `daedalus ide sync-rust-analyzer`，让 VSCode / rust-analyzer 的 linkedProjects 从 filesystem state 自动刷新。
 - 用户练习优先于 Agent 速度。每个 slice 先给行动卡，等用户实现或明确授权后再改代码。
 - Review 或验证通过后必须同步学习进度：更新 active topic 的 `.daedalus/outcome-map.md` 和 `.daedalus/todo.md`，并告诉用户当前 slice 是否完成、下一步解锁什么。

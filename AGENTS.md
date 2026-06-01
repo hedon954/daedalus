@@ -12,6 +12,7 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 - Prefer filesystem artifacts over hidden chat memory. Long-running learning state must be recoverable from files.
 - Do not turn summaries into chat logs. Preserve goals, decisions, open questions, todo state, and verified conclusions.
 - After a review or validation changes completion status, risks, or the next step, update the relevant learning artifacts before ending the turn, even when source code is otherwise review-only.
+- When judging implementation progress or stage completion, ground the answer in current code, tests, and runtime evidence first; markdown learning maps are navigation aids and may be stale.
 - Emphasize first principles and trade-offs: reality needs X, constraints force Y, the repo chooses Z, and the choice has costs.
 - When validating templates or generated workspace artifacts, judge them against daedalus's purpose: filesystem-first, recoverable, teachable, and reviewable learning loops. Do not blindly align one file to another if the result weakens that purpose.
 
