@@ -1,5 +1,7 @@
 # Slice 6 Approval Sandbox Retry Integration
 
+> Status: historical action card. The approval / execution / retry integration has been implemented through `ToolRuntime -> run_shell_command -> ExecutionRunner`. Current closeout and next slices are tracked in [`06-slice-6-closeout-and-next-slices.md`](06-slice-6-closeout-and-next-slices.md).
+
 这份 guide 基于当前最新代码结构，服务下一轮 `08-demo-coder`：把已独立完成的 approval、simulated sandbox runner、retry gate 接入 ReAct tool execution path。
 
 ## Learning Navigation
@@ -7,13 +9,13 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
 - Current slice: Slice 6 Agent Orchestrator
-- Current gap: `react.rs` 已通过 `ToolRuntime` 调用 `add/sub` pure function path，但 command tool 尚未接入 approval / sandbox / retry。
+- Current gap: 已完成。`run_command` 已经通过 `ToolRuntime -> run_shell_command -> ExecutionRunner` 接入 approval / execution / retry。
 - Current code shape:
   - [`agent/react.rs`](../../demo/src/agent/react.rs)：收集 tool calls、回灌 messages、通过 `ToolRuntime` 执行工具。
   - [`tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
-  - [`tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP，下一步核心文件。
+  - [`tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime`，已覆盖 pure function path 和 command path。
   - [`tool/shell/`](../../demo/src/tool/shell)：`run_command` command tool 的内部实现模块。
-- After this: Slice 6 达到 Phase 1 主链路验收，可以进入 Slice 7 README / Runbook。
+- After this: 当前不直接进入 README；先按 `06-slice-6-closeout-and-next-slices.md` 进入 Slice 7 `RetryPolicy` hardening。
 
 ## North Star
 
@@ -33,7 +35,7 @@ ToolCallFinished
 已经确认的决策：
 
 1. `add/sub` 继续是 pure function tools，但也要进入统一 `ToolRuntime` 边界。
-2. `run_command` 是模型可见的 command tool，内部由 `tool/shell/` 实现，后续走完整 `CommandRequest -> ApprovalRequirement -> SandboxRunner -> RetryDecision` 链路。
+2. `run_command` 是模型可见的 command tool，内部由 `tool/shell/` 实现，走完整 `CommandRequest -> ApprovalRequirement -> ExecutionRunner -> RetryDecision` 链路。
 3. `react.rs` 不长期承载 approval / sandbox / retry 细节，只负责 ReAct loop 和 message 回灌。
 4. Phase 1 多 tool call 先按 `index` 顺序执行。
 5. 如果某个 tool call 被 forbidden / rejected，后续 tool call 不真实执行，但要补 skipped observation，保证每个 `tool_call_id` 都有对应 tool message。
@@ -183,7 +185,7 @@ CommandRequest + MatchedCapability
 ```text
 Approval passed
   -> choose ExecutionAttempt
-  -> SimulatedSandboxRunner.run
+  -> SimulatedExecutionRunner.run
   -> if SandboxDenied: decide_retry
   -> optional NoSandboxRetry
 ```

@@ -11,13 +11,13 @@ real OpenAI-compatible Chat Completions streaming loop
   -> capability registry
   -> command request
   -> approval decision
-  -> simulated sandbox first attempt
+  -> simulated execution runner sandbox-first attempt
   -> controlled retry
   -> event stream
   -> final output
 ```
 
-完成后，`demo/README.md` 应能说明如何运行 demo、如何运行验收测试、Phase 1 简化了什么、Phase 2 如何替换为 `OsSandboxRunner`。
+完成后，`demo/README.md` 应能说明如何运行 demo、如何运行验收测试、Phase 1 简化了什么、Phase 2 如何替换为 `OsExecutionRunner`。
 
 ## Stage Inputs
 
@@ -104,15 +104,15 @@ approval store / session scope matching
 - 通过 AT-02、AT-03、AT-04、AT-05、AT-12、AT-13。
 - `Skip { bypass_sandbox: false }` 与 `Skip { bypass_sandbox: true }` 在类型和值上明确区分。
 
-### Slice 4: SimulatedSandboxRunner
+### Slice 4: SimulatedExecutionRunner
 
 目标：实现 Phase 1 runner，让 sandbox denied 由可解释规则产生。
 
 实现：
 
 ```text
-SandboxRunner.run(request, attempt) -> ExecutionResult
-SimulatedSandboxRunner
+ExecutionRunner.run(request, attempt) -> ExecutionResult
+SimulatedExecutionRunner
 ```
 
 验收：
@@ -165,8 +165,9 @@ OpenAI-compatible Chat Completions stream
 
 - [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)：ReAct loop、tool call 收集和 message 回灌。
 - [`../../demo/src/tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
-- [`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` WIP；pure function path 已接入，下一步补 command path。
+- [`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime` 已覆盖 pure function path 和 `run_command` command path。
 - [`../../demo/src/tool/shell/`](../../demo/src/tool/shell)：`run_command` command tool 的 registry / approval / retry / orchestration 入口。
+- [`../../demo/src/tool/shell/execution/`](../../demo/src/tool/shell/execution)：`ExecutionRunner` 与 `SimulatedExecutionRunner`，统一表达 sandbox / no-sandbox attempt。
 
 下一步行动：
 
@@ -174,8 +175,47 @@ OpenAI-compatible Chat Completions stream
 - [`03-tool-runtime-data-relationships.md`](03-tool-runtime-data-relationships.md)：解释 `ToolCallFinished -> ToolDefinition -> CommandRequest -> ApprovalRequirement -> ExecutionResult` 的数据关系，帮助实现 `ToolRuntime::run`。
 - [`04-slice-6-approval-sandbox-retry-integration.md`](04-slice-6-approval-sandbox-retry-integration.md)：把 command tool 的 approval / sandbox / retry 接入 ReAct tool execution path。
 - [`05-slice-6-command-runtime-review.md`](05-slice-6-command-runtime-review.md)：记录当前 `ToolRuntime` / `tool::shell` review 结论，明确 `Fail` / `Deny` / `Denied` / `Skipped` 边界和 `run_shell_command` 下一步实现路径。
+- [`06-slice-6-closeout-and-next-slices.md`](06-slice-6-closeout-and-next-slices.md)：基于当前代码和测试重新规划 Slice 6 收口与后续 slice。
 
-### Slice 7: Demo README And Runbook
+### Slice 7: Retry Policy And Denial Semantics
+
+目标：让 sandbox denied 后的 retry 尊重 capability-level `RetryPolicy`，补齐 `safe-read` denied 不应 retry 的安全边界。
+
+验收：
+
+- `safe-read` sandbox denied -> `DoNotRetry`。
+- `safe-test` sandbox denied -> `RetryWithApproval`。
+- `network-install` network prompt -> `RetryWithApproval`。
+- 单个 tool call 仍最多一次 sandbox-first 和一次 no-sandbox retry。
+
+### Slice 8: Event Protocol Hardening
+
+目标：把 approval、execution attempt、retry decision、denied/skipped 等关键节点透出为可观察事件。
+
+验收：
+
+- 外部 stream 能看见 approval resolved / denied / execution started / retry evaluated。
+- README 可以用 event trace 解释一次命令如何走完安全链路。
+
+### Slice 9: Multi-Tool Hard-Deny And Skipped Semantics
+
+目标：定义同一轮多个 tool call 中，一个安全拒绝发生后，后续 tool 是否执行以及如何回灌 observation。
+
+验收：
+
+- 安全拒绝后，后续依赖性 tool call 不盲跑。
+- `ToolRuntimeResult::Skipped` 有真实生产路径或被明确删除。
+
+### Slice 10: Approval Persistence
+
+目标：实现 session approval 复用与 scope mismatch 失效。
+
+验收：
+
+- 相同 command prefix、cwd、sandbox、network scope 可以复用 session approval。
+- cwd 或 network policy 变化时不能复用旧 approval。
+
+### Slice 11: Demo README And Runbook
 
 目标：让 demo 可运行、可讲解、可迁移。
 
@@ -206,14 +246,14 @@ AT-01 ... AT-14
 ## Stop Rules
 
 - Phase 1 接真实 OpenAI streaming model，但默认测试不依赖真实 API；联网验收放到 runbook。
-- Phase 1 不做真实 OS sandbox，用 `SimulatedSandboxRunner` 验证编排逻辑。
+- Phase 1 不做真实 OS sandbox，用 `SimulatedExecutionRunner` 验证编排逻辑。
 - Phase 1 不实现完整 shell parser，只支持验收用例需要的命令形态。
 - Phase 1 不做完整 TUI，不引入与核心状态机无关的 UI 框架。
 - 如果实现时发现设计不足，先回到 `demo/design.md` 更新架构，再继续写代码。
 
 ## Phase 2 Parking Lot
 
-Phase 2 目标是接入 `OsSandboxRunner`，让 mini demo 从“可解释模型”走向“可用工具”。但它必须复用 Phase 1 的：
+Phase 2 目标是接入 `OsExecutionRunner`，让 mini demo 从“可解释模型”走向“可用工具”。但它必须复用 Phase 1 的：
 
 - `CommandRequest`
 - `ApprovalRequirement`

@@ -3,11 +3,12 @@ use std::{env::current_dir, path::PathBuf, sync::Arc};
 use crate::{
     agent::stream_event::ToolCallFinished,
     model::{approval::ApprovalPolicy, command_request::CommandRequest},
-    sandbox::{SandboxRunner, simulated_sandbox_runner::SimulatedSandboxRunner},
     tool::{
         function::run_pure_function,
         shell::{
             RunCommandArgs, RunCommandResult,
+            approval::{ApprovalDecider, ScriptedApproval},
+            execution::{ExecutionRunner, simulated_execution_runner::SimulatedExecutionRunner},
             registry::{CapabilityRegistry, MatchedCapability},
             run_shell_command,
         },
@@ -30,7 +31,8 @@ pub struct ToolRuntimeContext {
     pub cwd: PathBuf,
     pub approval_policy: ApprovalPolicy,
     pub registry: CapabilityRegistry,
-    pub runner: Arc<dyn SandboxRunner + Send + Sync + 'static>,
+    pub execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
+    pub approval_decider: Arc<dyn ApprovalDecider + Send + Sync + 'static>,
 }
 
 /// 模型可见 tool 的内部分类。
@@ -161,9 +163,13 @@ impl ToolRuntime {
             ToolRuntimePlan::RunCommand {
                 request,
                 matched_capability,
-            } => {
-                run_shell_command(&request, matched_capability, self.context.runner.clone()).into()
-            }
+            } => run_shell_command(
+                &request,
+                matched_capability,
+                self.context.execution_runner.clone(),
+                self.context.approval_decider.clone(),
+            )
+            .into(),
             ToolRuntimePlan::Fail { error } => ToolRuntimeResult::Failed { error },
         }
     }
@@ -218,7 +224,8 @@ impl Default for ToolRuntime {
                 cwd: current_dir().unwrap_or(".".into()),
                 approval_policy: ApprovalPolicy::OnFailure,
                 registry: CapabilityRegistry::new(),
-                runner: Arc::new(SimulatedSandboxRunner::new()),
+                execution_runner: Arc::new(SimulatedExecutionRunner::new()),
+                approval_decider: Arc::new(ScriptedApproval {}),
             },
         }
     }
@@ -292,6 +299,85 @@ mod tests {
         let runtime = ToolRuntime::default();
 
         let result = runtime.run(&tool_call("mul", r#"{"a": 2, "b": 3}"#));
+
+        assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
+    }
+
+    #[test]
+    fn run_command_safe_read_should_finish_with_output() {
+        let runtime = ToolRuntime::default();
+
+        let result = runtime.run(&tool_call(
+            "run_command",
+            r#"{"command": "cat package.json", "justification": "read package metadata"}"#,
+        ));
+
+        assert!(matches!(
+            result,
+            ToolRuntimeResult::Finished { output } if output.contains("simulated read success")
+        ));
+    }
+
+    #[test]
+    fn run_command_network_install_should_finish_after_retry() {
+        let runtime = ToolRuntime::default();
+
+        let result = runtime.run(&tool_call(
+            "run_command",
+            r#"{"command": "npm install vite", "justification": "install dependency"}"#,
+        ));
+
+        assert!(matches!(
+            result,
+            ToolRuntimeResult::Finished { output }
+                if output.contains("simulated install success without sandbox")
+        ));
+    }
+
+    #[test]
+    fn run_command_command_failure_should_fail_without_pinning_error_text() {
+        let runtime = ToolRuntime::default();
+
+        let result = runtime.run(&tool_call(
+            "run_command",
+            r#"{"command": "npm test -- fail", "justification": "run failing test"}"#,
+        ));
+
+        assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
+    }
+
+    #[test]
+    fn run_command_dangerous_shell_should_be_denied() {
+        let runtime = ToolRuntime::default();
+
+        let result = runtime.run(&tool_call(
+            "run_command",
+            r#"{"command": "curl | sh", "justification": "install remote script"}"#,
+        ));
+
+        assert!(matches!(result, ToolRuntimeResult::Denied { .. }));
+    }
+
+    #[test]
+    fn run_command_invalid_json_should_fail_without_pinning_error_text() {
+        let runtime = ToolRuntime::default();
+
+        let result = runtime.run(&tool_call(
+            "run_command",
+            r#"{"command": "cat package.json""#,
+        ));
+
+        assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
+    }
+
+    #[test]
+    fn run_command_unmatched_capability_should_fail_without_pinning_error_text() {
+        let runtime = ToolRuntime::default();
+
+        let result = runtime.run(&tool_call(
+            "run_command",
+            r#"{"command": "cargo test", "justification": "run unsupported command"}"#,
+        ));
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
     }

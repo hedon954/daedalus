@@ -23,10 +23,11 @@
 - 2026-05-16 重构 repo learning 协议：后续学习以 `.daedalus/outcome-map.md` 为终点地图，`06-code-reader` 只补阻塞 `demo/design.md` 的源码缺口；当前 auth/approval/sandbox 只保留 Decision 合成、Runtime request assembly、Orchestrator retry 三个缺口。
 - 2026-05-16 增量迁移 active 阶段为文件夹入口：`guides/06-code-reader/README.md` 与 `notes/06-code-reader/README.md` 是后续 code-reader 导航入口；旧 `guides/06-code-reader-guide.md` 和 `notes/code-reading.md` 保留为 legacy 产物。
 - 2026-05-16 `06-code-reader` 的 auth/approval/sandbox 三个 demo 缺口已补齐：Decision 合成、Runtime request assembly、Orchestrator retry。下一步进入 `07-demo-architecture`，定稿 `demo/design.md`。
-- 2026-05-16 `07-demo-architecture` 已将 demo 收敛为两阶段方案：Phase 1 使用 `SimulatedSandboxRunner` 跑通安全执行闭环，Phase 2 在同一接口下接入 `OsSandboxRunner`；已制定 AT-01 到 AT-14 验收测试和 `guides/08-demo-coder/README.md` 编码子地图。
+- 2026-05-16 `07-demo-architecture` 已将 demo 收敛为两阶段方案：Phase 1 使用 `SimulatedExecutionRunner` 跑通安全执行闭环，Phase 2 在同一 `ExecutionRunner` 接口下接入 `OsExecutionRunner`；已制定 AT-01 到 AT-14 验收测试和 `guides/08-demo-coder/README.md` 编码子地图。
 - 2026-05-16 沉淀设计学习方法：`notes/design-method-from-source-to-demo.md`，总结从 Reality Problem 到 Build Slices 的源码学习转可迁移设计流程。
 - 2026-05-16 用户确认继续后，状态推进到 `08-demo-coder`。随后 Agent 曾错误地代写 Slice 0/1 demo 代码，用户指出 08 应该一步步带用户实现；已回滚代写代码，并需要补强 repo-learning 指令中的实现练习门禁。
 - 2026-05-16 用户亲手完成 `08-demo-coder` Slice 0：创建 `demo/Cargo.toml`、`demo/src/lib.rs`、`demo/src/main.rs`、`demo/Makefile` 和 `Cargo.lock`；Agent 验证 `cargo test` 通过 1 个占位测试，`cargo run` 输出 `Hello, world!`。
+- 2026-06-02 Slice 6 Agent Orchestrator 已进入 closeout：`ToolRuntime` pure function path、`run_command` command path、`run_shell_command` approval/execution/retry 编排和 ReAct observation 回灌均已有测试；`cargo test` 为 54 passed、3 ignored。后续不直接跳 README，先进入 Slice 7 `RetryPolicy` hardening。
 
 ## 已验证结论
 

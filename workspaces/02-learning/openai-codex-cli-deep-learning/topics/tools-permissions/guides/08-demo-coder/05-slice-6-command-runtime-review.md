@@ -1,5 +1,7 @@
 # Slice 6 Command Runtime Review Guide
 
+> Status: historical review guide. The single-command `run_shell_command` path has been implemented and tested. Use [`06-slice-6-closeout-and-next-slices.md`](06-slice-6-closeout-and-next-slices.md) for current remaining work and later slices.
+
 这份 guide 记录当前 `ToolRuntime` / `tool::shell` 重构后的 review 结论。它不是最终实现说明，而是下一轮继续实现 `run_shell_command` 前的行动地图。
 
 ## Learning Navigation
@@ -7,8 +9,8 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
 - Current slice: Slice 6 Agent Orchestrator
-- Current gap: `ToolRuntime` 已能识别 `run_command` 并构造 `CommandRequest`，但 `run_shell_command` 仍未实现完整 approval / sandbox / retry 链路。
-- After this: 完成 command runtime 后，ReAct loop 才真正恢复 Codex 学习里的权限 / 沙箱 / retry 不变量。
+- Current gap: 已完成。`ToolRuntime` 已能识别 `run_command`、构造 `CommandRequest`，并通过 `run_shell_command` 完成 approval / execution / retry 链路。
+- After this: 进入 Slice 6 closeout，然后从 Slice 7 `RetryPolicy` hardening 继续推进。
 
 ## Current Code Shape
 
@@ -105,9 +107,10 @@ Denied = 已进入 command runtime，但安全策略或用户审批不允许继�
 
 ```rust
 pub fn run_shell_command(
-    request: CommandRequest,
+    request: &CommandRequest,
     matched_capability: MatchedCapability,
-    runner: Arc<dyn SandboxRunner + Send + Sync + 'static>,
+    execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
+    approval_decider: Arc<dyn ApprovalDecider + Send + Sync + 'static>,
 ) -> RunCommandResult
 ```
 

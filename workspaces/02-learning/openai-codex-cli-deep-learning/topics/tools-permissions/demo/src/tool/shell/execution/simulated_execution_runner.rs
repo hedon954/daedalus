@@ -5,15 +5,15 @@ use crate::{
         event::ExecutionAttempt,
         execution::{ExecutionFailure, ExecutionResult, NetworkApprovalContext},
     },
-    sandbox::SandboxRunner,
+    tool::shell::execution::ExecutionRunner,
     util::args_has_prefix,
 };
 
-/// 模拟沙箱运行器。
+/// 模拟运行器。
 ///
 /// 它不执行真实命令，只根据 `request.argv + ExecutionAttempt` 查规则表。
 /// 这样 Phase 1 可以先验证 approval / sandbox / retry 状态机，而不被 OS sandbox 细节拖住。
-pub struct SimulatedSandboxRunner {
+pub struct SimulatedExecutionRunner {
     rules: Vec<SimulatedRule>,
 }
 
@@ -53,7 +53,7 @@ enum SimulatedResult {
     },
 }
 
-impl SimulatedSandboxRunner {
+impl SimulatedExecutionRunner {
     /// 创建内置规则集。
     ///
     /// TODO: 后续可以把 rules 暴露为 test builder，让 `run_shell_command`
@@ -103,13 +103,13 @@ impl SimulatedSandboxRunner {
     }
 }
 
-impl Default for SimulatedSandboxRunner {
+impl Default for SimulatedExecutionRunner {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SandboxRunner for SimulatedSandboxRunner {
+impl ExecutionRunner for SimulatedExecutionRunner {
     /// 根据命令前缀和 attempt 查找模拟结果。
     fn run(&self, request: &CommandRequest, attempt: &ExecutionAttempt) -> ExecutionResult {
         let attempt = SimulatedAttempt::from(attempt);
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn read_command_succeeds_in_read_only_sandbox() {
-        let runner = SimulatedSandboxRunner::new();
+        let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["cat", "package.json"],
             CapabilityKind::SafeRead,
@@ -235,7 +235,7 @@ mod tests {
 
     #[test]
     fn test_command_failure_is_command_failed_not_sandbox_denied() {
-        let runner = SimulatedSandboxRunner::new();
+        let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["npm", "test", "--", "fail"],
             CapabilityKind::SafeTest,
@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn install_command_is_sandbox_denied_in_workspace_write_sandbox() {
-        let runner = SimulatedSandboxRunner::new();
+        let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["npm", "install", "vite"],
             CapabilityKind::NetworkInstall,
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn install_command_succeeds_without_sandbox_on_retry() {
-        let runner = SimulatedSandboxRunner::new();
+        let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["npm", "install", "vite"],
             CapabilityKind::NetworkInstall,
@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     fn unsupported_command_attempt_returns_command_failed() {
-        let runner = SimulatedSandboxRunner::new();
+        let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["cargo", "test"],
             CapabilityKind::SafeTest,

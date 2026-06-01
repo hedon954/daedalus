@@ -191,21 +191,21 @@ decide_approval(
 - `NeedsApproval` 必须携带 `ApprovalScope`，让用户知道批准的是哪条命令前缀、哪个 cwd、哪种沙箱和网络权限，以及是单次还是 session 生效。
 - `Forbidden` 是一等分支，不能退化成“永远问用户一次试试”。
 
-## Sandbox Runner Strategy
+## Execution Runner Strategy
 
-demo 分两阶段实现 sandbox runner，避免第一阶段被 OS 细节拖垮，同时保留走向真实可用 demo 的接口。
+demo 分两阶段实现 execution runner，避免第一阶段被 OS 细节拖垮，同时保留走向真实可用 demo 的接口。`ExecutionRunner` 不是“永远在 sandbox 里跑”的 runner，而是根据 `ExecutionAttempt` 分发 sandbox-first、no-sandbox-first 和 no-sandbox-retry。
 
 ```text
-SandboxRunner
+ExecutionRunner
   - run(request, attempt) -> ExecutionResult
 ```
 
-### Phase 1: SimulatedSandboxRunner
+### Phase 1: SimulatedExecutionRunner
 
 第一阶段使用模拟 sandbox，把完整执行链路跑通。它不做真实 OS 隔离，但必须根据 request 和 capability 生成可解释的 allow / denied 结果。
 
 ```text
-SimulatedSandboxRunner
+SimulatedExecutionRunner
   - 根据 cwd 判断是否在 workspace 内
   - 根据 sandbox_profile 判断读写是否越界
   - 根据 network_policy 判断网络是否允许
@@ -228,12 +228,12 @@ ExecutionResult
 - sandbox denied 后必须经过 retry gate，不能自动裸跑。
 - event stream 能把 allow、prompt、denied、retry、completed 暴露给用户。
 
-### Phase 2: OsSandboxRunner
+### Phase 2: OsExecutionRunner
 
-第二阶段在同一个 `SandboxRunner` 接口下接入真实 OS sandbox，让 demo 从“可解释模型”变成“可用 mini demo”。
+第二阶段在同一个 `ExecutionRunner` 接口下接入真实 OS sandbox，让 demo 从“可解释模型”变成“可用 mini demo”。
 
 ```text
-OsSandboxRunner
+OsExecutionRunner
   - 复用 CommandRequest / ApprovalRequirement / RetryDecision
   - 首轮使用真实 sandbox 执行命令
   - 保留 sandbox denied -> retry gate -> no-sandbox second attempt 的编排逻辑
@@ -473,7 +473,7 @@ ApprovalRequirement
 ApprovalScope
 ApprovalPersistence
 UserApprovalDecision
-SandboxRunner
+ExecutionRunner
 ExecutionAttempt
 ExecutionResult
 ExecutionFailure

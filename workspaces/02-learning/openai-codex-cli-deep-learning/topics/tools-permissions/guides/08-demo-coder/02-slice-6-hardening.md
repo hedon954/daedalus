@@ -1,5 +1,7 @@
 # Slice 6 Hardening Guide
 
+> Status: historical action card. ReAct hardening 已完成；当前 Slice 6 closeout 和后续规划以 [`06-slice-6-closeout-and-next-slices.md`](06-slice-6-closeout-and-next-slices.md) 为准。
+
 这份 guide 服务下一轮 `08-demo-coder`：在 `react.rs` 已经 live 跑通真实 LLM 多轮 tool call 后，把 Agent Orchestrator 收敛成可验收、可复习、可迁移的 Phase 1 主链路。
 
 ## Learning Navigation
@@ -9,7 +11,7 @@
 - Current slice: Slice 6 Agent Orchestrator
 - Current gap: ReAct hardening 已完成；下一步进入 approval / sandbox / retry integration
 - Evidence already available: [`../../notes/08-demo-coder/01-react-loop-implementation-issues.md`](../../notes/08-demo-coder/01-react-loop-implementation-issues.md)
-- After this: 可以把 approval / sandbox / retry 接入 ReAct loop，然后进入 Slice 7 README / Runbook
+- After this: approval / execution / retry 已接入；当前后续以 [`06-slice-6-closeout-and-next-slices.md`](06-slice-6-closeout-and-next-slices.md) 为准。
 
 ## North Star
 

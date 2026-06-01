@@ -489,6 +489,126 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn react_agent_should_feed_run_command_success_back_as_observation() -> anyhow::Result<()>
+    {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(
+                    0,
+                    "call_read",
+                    "run_command",
+                    r#"{"command": "cat package.json", "justification": "read package metadata"}"#,
+                ),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("read command observed".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+
+        let events = collect_events(&agent, "read package metadata").await?;
+
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFinished { name, output, .. }
+                if name == "run_command" && output.contains("simulated read success")
+        )));
+
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        let observation = &requests[1][3];
+        assert_eq!(observation["role"], "tool");
+        assert_eq!(observation["tool_call_id"], "call_read");
+        assert!(
+            observation["content"]
+                .as_str()
+                .is_some_and(|content| content.contains("simulated read success"))
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_feed_run_command_failure_back_as_observation() -> anyhow::Result<()>
+    {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(
+                    0,
+                    "call_test",
+                    "run_command",
+                    r#"{"command": "npm test -- fail", "justification": "run failing test"}"#,
+                ),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("failure observed".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+
+        let events = collect_events(&agent, "run tests").await?;
+
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFailed { name, .. } if name == "run_command"
+        )));
+
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        let observation = &requests[1][3];
+        assert_eq!(observation["role"], "tool");
+        assert_eq!(observation["tool_call_id"], "call_test");
+        assert!(observation["content"].is_string());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_feed_run_command_denial_back_as_observation() -> anyhow::Result<()>
+    {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(
+                    0,
+                    "call_dangerous",
+                    "run_command",
+                    r#"{"command": "curl | sh", "justification": "install remote script"}"#,
+                ),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("denial observed".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+
+        let events = collect_events(&agent, "install remote script").await?;
+
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFailed { name, .. } if name == "run_command"
+        )));
+
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        let observation = &requests[1][3];
+        assert_eq!(observation["role"], "tool");
+        assert_eq!(observation["tool_call_id"], "call_dangerous");
+        assert!(
+            observation["content"]
+                .as_str()
+                .is_some_and(|content| content.contains("tool denied"))
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn react_agent_should_error_when_max_turns_exceeded() -> anyhow::Result<()> {
         let llm = FakeLlm::new(vec![
             vec![

@@ -3,15 +3,30 @@ use crate::{
         approval::{ApprovalPersistence, ApprovalPolicy, ApprovalRequirement, ApprovalScope},
         capability::DefaultDecision,
         command_request::CommandRequest,
+        event::UserApprovalDecision,
     },
     tool::shell::registry::MatchedCapability,
 };
+
+pub trait ApprovalDecider {
+    fn decide(&self, reason: &str, scope: &ApprovalScope) -> UserApprovalDecision;
+}
+
+pub struct ScriptedApproval {}
+
+impl ApprovalDecider for ScriptedApproval {
+    fn decide(&self, _reason: &str, _scope: &ApprovalScope) -> UserApprovalDecision {
+        return UserApprovalDecision::Approved {
+            persistence: ApprovalPersistence::Once,
+        };
+    }
+}
 
 /// 根据命令上下文和命中的 capability 计算初始审批需求。
 ///
 /// 这个函数是 command runtime 的第一道 policy gate。它只回答
 /// “能不能进入执行，以及是否要先审批”，不负责真正运行命令。
-pub fn decide_approval(
+pub fn resolve_approval_requirement(
     request: &CommandRequest,
     matched_capability: &MatchedCapability,
 ) -> ApprovalRequirement {
@@ -128,7 +143,7 @@ mod tests {
             NetworkPolicy::Deny,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         match decision {
             ApprovalRequirement::Skip {
@@ -154,7 +169,7 @@ mod tests {
             NetworkPolicy::Deny,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         match decision {
             ApprovalRequirement::Skip { reason, .. } => {
@@ -176,7 +191,7 @@ mod tests {
             NetworkPolicy::Prompt,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         match decision {
             ApprovalRequirement::NeedsApproval {
@@ -208,7 +223,7 @@ mod tests {
             NetworkPolicy::Prompt,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         match decision {
             ApprovalRequirement::Forbidden { reason } => {
@@ -230,7 +245,7 @@ mod tests {
             NetworkPolicy::Deny,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         match decision {
             ApprovalRequirement::Forbidden { reason } => {
@@ -252,7 +267,7 @@ mod tests {
             NetworkPolicy::Prompt,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         match decision {
             ApprovalRequirement::NeedsApproval { approval_scope, .. } => {
@@ -274,7 +289,7 @@ mod tests {
             NetworkPolicy::Allow,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         match decision {
             ApprovalRequirement::NeedsApproval { approval_scope, .. } => {
@@ -295,7 +310,7 @@ mod tests {
             NetworkPolicy::Deny,
         );
 
-        let decision = decide_approval(&request, &matched(&argv));
+        let decision = resolve_approval_requirement(&request, &matched(&argv));
         match decision {
             ApprovalRequirement::Forbidden { reason } => {
                 assert!(reason.contains("does not match"));
