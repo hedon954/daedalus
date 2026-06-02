@@ -429,7 +429,7 @@ guides/08-demo-coder/README.md
 - `ApprovalPersistence::Once / Session` 还没有真实存储与匹配。
 - 命令解析仍是 `split_whitespace`，不支持 quote、escape、多命令、pipe、heredoc、command substitution。
 - dangerous shell 识别还是非常有限。
-- `RetryPolicy` 已定义但还没纳入 `decide_retry`。
+- `RetryPolicy` 在 Slice 6 时已定义但还没纳入 `decide_retry`；该缺口已在 Slice 7 补齐。
 - `ToolRuntimeResult::Skipped` 有类型但没有真实生产路径。
 - approval / sandbox / retry 的细粒度事件还没有透出到外部 stream。
 - `guides/08-demo-coder/README.md` 中 runner 命名需要同步。

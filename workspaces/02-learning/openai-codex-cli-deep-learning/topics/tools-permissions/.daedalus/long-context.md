@@ -27,7 +27,7 @@
 - 2026-05-16 沉淀设计学习方法：`notes/design-method-from-source-to-demo.md`，总结从 Reality Problem 到 Build Slices 的源码学习转可迁移设计流程。
 - 2026-05-16 用户确认继续后，状态推进到 `08-demo-coder`。随后 Agent 曾错误地代写 Slice 0/1 demo 代码，用户指出 08 应该一步步带用户实现；已回滚代写代码，并需要补强 repo-learning 指令中的实现练习门禁。
 - 2026-05-16 用户亲手完成 `08-demo-coder` Slice 0：创建 `demo/Cargo.toml`、`demo/src/lib.rs`、`demo/src/main.rs`、`demo/Makefile` 和 `Cargo.lock`；Agent 验证 `cargo test` 通过 1 个占位测试，`cargo run` 输出 `Hello, world!`。
-- 2026-06-02 Slice 6 Agent Orchestrator 已进入 closeout：`ToolRuntime` pure function path、`run_command` command path、`run_shell_command` approval/execution/retry 编排和 ReAct observation 回灌均已有测试；`cargo test` 为 54 passed、3 ignored。后续不直接跳 README，先进入 Slice 7 `RetryPolicy` hardening。
+- 2026-06-02 Slice 7 `RetryPolicy` hardening 已完成：`decide_retry` 已消费 capability-level `RetryPolicy`，并和 `ApprovalPolicy` / `NetworkPolicy` 组合判断；`cargo test` 为 61 passed、3 ignored。下一步进入 Slice 8 Event Protocol Hardening。
 
 ## 已验证结论
 
@@ -43,7 +43,7 @@
 
 - 交互式 TUI 断点方案尚待用户在 Cursor 中打开 `source/codex/codex-rs` 后验证。
 - `06-code-reader` 已完成核心专题收敛：`auth/approval/sandbox` 已转化为 demo 的 approval、execution、retry 不变量。
-- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Slice 6 closeout，下一步进入 Slice 7 `RetryPolicy` hardening。
+- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Slice 7 `RetryPolicy` hardening，下一步进入 Slice 8 Event Protocol Hardening。
 - 尚未进入 `09-biz-solver` 和 `10-archivist`。
 
 ## 恢复上下文提示
@@ -53,4 +53,4 @@
   - `notes/codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
   - `notes/codex-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
 - 当前阶段入口：`guides/08-demo-coder/README.md`；demo 实现和阶段 notes/guides 以 `topics/tools-permissions` 下的 `demo/`、`notes/08-demo-coder/`、`guides/08-demo-coder/` 为准。
-- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；下一步是 Slice 7 `RetryPolicy` hardening。
+- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；下一步是 Slice 8 Event Protocol Hardening。

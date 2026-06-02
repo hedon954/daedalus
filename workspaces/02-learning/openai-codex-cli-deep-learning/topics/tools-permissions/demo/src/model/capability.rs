@@ -66,8 +66,8 @@ pub enum DefaultDecision {
 
 /// capability 级别的重试策略。
 ///
-/// TODO: 当前 `decide_retry` 主要读取 `ApprovalPolicy` 和 `NetworkPolicy`；
-/// 后续把 `RetryPolicy` 纳入 retry gate，让 capability 能表达“即使允许审批也不应重试”。
+/// 它只在 sandbox denied 后参与 retry gate：先判断这类 capability 是否有 retry
+/// 资格，再和全局 `ApprovalPolicy`、请求中的 `NetworkPolicy` 合成最终 retry 决策。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum RetryPolicy {
     /// 不重试

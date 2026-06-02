@@ -112,6 +112,7 @@ fn run_sandbox_first_flow(
             request,
             &failure,
             &build_approval_scope(request, &matched_capability),
+            matched_capability.capability.policy.retry_policy,
             false,
         ) {
             // 不重试直接返回失败
@@ -318,6 +319,27 @@ mod tests {
         (decider, trait_object)
     }
 
+    fn assert_finished(result: RunCommandResult, expected_output: &str) {
+        match result {
+            RunCommandResult::Finished { output } => assert_eq!(output, expected_output),
+            other => panic!("expected command to finish, got {}", result_label(&other)),
+        }
+    }
+
+    fn assert_failed(result: RunCommandResult) {
+        match result {
+            RunCommandResult::Failed { .. } => {}
+            other => panic!("expected command failure, got {}", result_label(&other)),
+        }
+    }
+
+    fn assert_denied(result: RunCommandResult) {
+        match result {
+            RunCommandResult::Denied { .. } => {}
+            other => panic!("expected command denial, got {}", result_label(&other)),
+        }
+    }
+
     #[test]
     fn skip_without_bypass_runs_once_in_sandbox() {
         let argv = ["cat", "package.json"];
@@ -335,10 +357,37 @@ mod tests {
 
         let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
 
-        match result {
-            RunCommandResult::Finished { output } => assert_eq!(output, "read ok"),
-            other => panic!("expected command to finish, got {:?}", result_label(&other)),
-        }
+        assert_finished(result, "read ok");
+        assert_eq!(
+            runner.attempts(),
+            vec![ExecutionAttempt::SandboxFirst {
+                sandbox_profile: SandboxProfile::ReadOnly
+            }]
+        );
+        assert!(decider.scopes().is_empty());
+    }
+
+    #[test]
+    fn safe_read_sandbox_denied_does_not_retry_because_capability_retry_policy_is_never() {
+        let argv = ["cat", "/private/file"];
+        let request = request(
+            &argv,
+            CapabilityKind::SafeRead,
+            ApprovalPolicy::OnFailure,
+            SandboxProfile::ReadOnly,
+            NetworkPolicy::Deny,
+        );
+        let (runner, runner_trait) = execution_runner(vec![ExecutionResult::Failure(
+            ExecutionFailure::SandboxDenied {
+                output: "read denied by sandbox".to_string(),
+                network_context: None,
+            },
+        )]);
+        let (decider, decider_trait) = approval_decider(vec![]);
+
+        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+
+        assert_denied(result);
         assert_eq!(
             runner.attempts(),
             vec![ExecutionAttempt::SandboxFirst {
@@ -363,13 +412,7 @@ mod tests {
 
         let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
 
-        match result {
-            RunCommandResult::Denied { .. } => {}
-            other => panic!(
-                "expected command to be denied, got {:?}",
-                result_label(&other)
-            ),
-        }
+        assert_denied(result);
         assert!(runner.attempts().is_empty());
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 1);
@@ -393,10 +436,7 @@ mod tests {
 
         let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
 
-        match result {
-            RunCommandResult::Finished { output } => assert_eq!(output, "install ok in sandbox"),
-            other => panic!("expected command to finish, got {:?}", result_label(&other)),
-        }
+        assert_finished(result, "install ok in sandbox");
         assert_eq!(
             runner.attempts(),
             vec![ExecutionAttempt::SandboxFirst {
@@ -428,10 +468,7 @@ mod tests {
 
         let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
 
-        match result {
-            RunCommandResult::Failed { .. } => {}
-            other => panic!("expected command failure, got {:?}", result_label(&other)),
-        }
+        assert_failed(result);
         assert_eq!(
             runner.attempts(),
             vec![ExecutionAttempt::SandboxFirst {
@@ -466,15 +503,7 @@ mod tests {
 
         let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
 
-        match result {
-            RunCommandResult::Finished { output } => {
-                assert_eq!(output, "install ok without sandbox");
-            }
-            other => panic!(
-                "expected command to finish after retry, got {:?}",
-                result_label(&other)
-            ),
-        }
+        assert_finished(result, "install ok without sandbox");
         let attempts = runner.attempts();
         assert_eq!(attempts.len(), 2);
         assert_eq!(
@@ -516,15 +545,7 @@ mod tests {
 
         let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
 
-        match result {
-            RunCommandResult::Finished { output } => {
-                assert_eq!(output, "install ok after approval")
-            }
-            other => panic!(
-                "expected command to finish after retry, got {:?}",
-                result_label(&other)
-            ),
-        }
+        assert_finished(result, "install ok after approval");
         let attempts = runner.attempts();
         assert_eq!(attempts.len(), 2);
         assert_eq!(
@@ -567,13 +588,7 @@ mod tests {
 
         let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
 
-        match result {
-            RunCommandResult::Denied { .. } => {}
-            other => panic!(
-                "expected retry approval rejection to deny, got {:?}",
-                result_label(&other)
-            ),
-        }
+        assert_denied(result);
         assert_eq!(
             runner.attempts(),
             vec![ExecutionAttempt::SandboxFirst {

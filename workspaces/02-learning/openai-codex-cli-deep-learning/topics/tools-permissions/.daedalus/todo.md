@@ -16,18 +16,18 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 6 ReAct hardening 已完成，用户已把旧 `agent/tool.rs` 重构为顶层 `tool/` module；`ToolRuntime::run(call)` 的 pure function path 和 `run_command` command path 都已接入并补齐单测；`run_command` 已经能从 `ToolRuntimePlan::RunCommand` 委托到 `run_shell_command`；用户已将原顶层 `sandbox` module 收敛为 `tool::shell::execution::ExecutionRunner`，让 `SandboxFirst / NoSandboxFirst / NoSandboxRetry` 都由 execution attempt 表达；`run_shell_command` 编排测试、`ToolRuntime` 直接 command path 测试和 ReAct 层 `run_command` observation 验收都已补齐。当前不直接跳 README，而是先做 Slice 6 closeout，再进入 Slice 7 `RetryPolicy` hardening。
+- 当前问题：Slice 7 `RetryPolicy` hardening 已完成：`decide_retry` 已接收 capability-level `RetryPolicy`，`run_shell_command` 已从 matched capability 传入该策略；测试已覆盖 `safe-read` denied 不 retry、`safe-test` denied 走 approval retry、`network-install` prompt 走 approval retry，以及 `RetryPolicy::WithoutApproval` 不能绕过 `NetworkPolicy::Deny`。
 - 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
-- 完成后解锁：Slice 6 Agent Orchestrator 可以作为已验证主链路关闭；下一步先补 `RetryPolicy` 与 denied semantics，让 Phase 1 最小验收更稳，再写 README / Runbook。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；本轮为 `model/`、`agent/`、`tool/`、`sandbox/` 的关键类型和函数补齐“谁生产 / 谁消费 / 下一步缺口”注释；`sandbox` 已重命名并下沉为 shell 内部 execution runner；`run_shell_command` 新增 7 个编排测试，覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject；ReAct 新增 3 个 `run_command` observation 测试，覆盖 Finished / Failed / Denied 回灌；`cargo test` 通过 54 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：Slice 6 closeout 已完成，本轮已同步 guides / todo / outcome-map / design 中的旧命名和旧规划；下一步进入 Slice 7 `RetryPolicy` hardening。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 完成后解锁：Slice 8 可以开始做 event protocol hardening，把 approval / execution attempt / retry decision / denied 等关键节点从内部测试边界推进到外部可观察事件。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；`run_shell_command` 编排测试覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject，以及 safe-read sandbox denied 不 retry 的 registry 接线；ReAct `run_command` observation 测试覆盖 Finished / Failed / Denied 回灌；`RetryPolicy` 已纳入 retry gate；新增 [`07-slice-7-policy-composition.md`](../guides/08-demo-coder/07-slice-7-policy-composition.md) 用流程图说明 `RetryPolicy / ApprovalPolicy / NetworkPolicy` 的组合顺序；`cargo test` 通过 61 个默认测试，3 个 live LLM 测试保持 ignored。
+- 当前待解决：进入 Slice 8 Event Protocol Hardening。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Slice 6 closeout，当前代码光标从 `run_shell_command` 前移到 `tool/runtime.rs` command path 验收与后续 `RetryPolicy` hardening。
+- Code frontier：Slice 7 已收口，当前代码光标从 `tool/shell/retry.rs` 前移到 agent / shell runtime 的 event protocol。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
-- Current open decision：Slice 6 不继续扩展功能，已完成文档同步和阶段收口；后续 Slice 7 处理 capability-level `RetryPolicy`。
-- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”或“直接写 README”；当前先收口 Slice 6，再补 RetryPolicy / event / approval persistence。
+- Current open decision：Slice 8 要决定哪些 approval / execution / retry 节点需要对外透出，哪些仍留在内部测试边界。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”或“补 RetryPolicy”；当前先做 event protocol hardening，再讨论 approval persistence / README。
 
 ## Gaps Blocking Next Stage
 
@@ -45,10 +45,11 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，Agent 补充 command failed、already retried、never/on-request、network prompt/allow/deny、non-network sandbox denied 等 8 个测试；`cargo test` 通过 24 个测试。
 - [x] Slice 6 Agent Orchestrator：真实 LLM ReAct 主链路已 live test 跑通；ReAct hardening 已补齐 `max_turns`、`ToolCallFinished`、fake LLM tests 和 parser fixture tests；用户已重构为 `tool/function.rs`、`tool/runtime.rs`、`tool/shell/`，`ToolRuntime` pure function path 和 `run_command` command path 均已接入并补齐单测；command path 的 `run_shell_command` 单命令编排已通过测试，ReAct 层 `run_command` Finished / Failed / Denied observation 回灌已通过测试。
 - [x] Slice 6 Closeout：同步旧 guides、todo、outcome-map 和 design，冻结 Slice 6 non-goals。
-- [ ] Slice 7 Retry Policy And Denial Semantics：让 `decide_retry` 尊重 capability-level `RetryPolicy`，补齐 `safe-read` denied 不 retry 等边界。
+- [x] Slice 7 Retry Policy And Denial Semantics：让 `decide_retry` 尊重 capability-level `RetryPolicy`，补齐 `safe-read` denied 不 retry、`safe-test` approval retry、network prompt approval retry、network deny 不被 `WithoutApproval` 绕过等边界。
 - [ ] Slice 8 Event Protocol Hardening：透出 approval / execution attempt / retry / denied / skipped 等关键事件。
 - [ ] Slice 9 Multi-Tool Hard-Deny And Skipped Semantics：决定并实现同轮多工具安全拒绝后的 skipped 行为。
 - [ ] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
+- [ ] ApprovalPolicy OnRequest Semantic Hardening：补充显式 escalation request 建模，区分“初始请求提权可询问”和“sandbox failure 自动提权询问”，避免 `OnRequest` 与 `OnFailure` 语义混淆。
 - [ ] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
 
 ## 06 Code Reader Gaps

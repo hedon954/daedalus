@@ -30,4 +30,4 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - [x] `ToolRuntime` command path 有单测覆盖 safe read 成功、network install retry 成功、command failure、dangerous shell denied、invalid JSON、unmatched capability。
 - [x] demo 关键类型和函数已补齐职责注释与下一步 TODO，恢复上下文时能定位 `run_shell_command` 的剩余断点。
 - [x] Slice 6 closeout 完成：guides / todo / outcome-map / design 与当前代码结构同步。
-- [ ] 后续 Slice 7 开始：`RetryPolicy` 纳入 retry gate。
+- [x] Slice 7 完成：`RetryPolicy` 已纳入 retry gate，并验证 `safe-read` 不 retry、`safe-test` approval retry、network prompt approval retry、network deny 不被 `WithoutApproval` 绕过。

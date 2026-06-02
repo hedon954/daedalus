@@ -25,6 +25,13 @@ cargo test
 54 passed, 3 ignored
 ```
 
+Update after Slice 7:
+
+```text
+cargo test
+61 passed, 3 ignored
+```
+
 New Slice 6 tests added at `tool/runtime.rs`:
 
 - `run_command_safe_read_should_finish_with_output`
@@ -64,7 +71,7 @@ These are useful, but should not block Slice 6 exit:
 
 These should become later slices:
 
-- `RetryPolicy` integration into retry gate.
+- `RetryPolicy` integration into retry gate: completed in Slice 7.
 - `ToolRuntimeResult::Skipped` production path for multi-tool hard-deny behavior.
 - Explicit `ToolRunDenied` / `ToolRunSkipped` stream events.
 - Structured approval, sandbox, retry events.
@@ -79,9 +86,11 @@ The old plan jumped from Slice 6 directly to README. Based on the current implem
 
 Goal: make retry behavior respect capability-level policy, not only global `ApprovalPolicy` and `NetworkPolicy`.
 
-Why now:
+Status: completed.
 
-- `RetryPolicy` exists in the model but is not consumed by `decide_retry`.
+Why it was needed:
+
+- At Slice 6 closeout, `RetryPolicy` existed in the model but was not consumed by `decide_retry`.
 - `safe-read` with sandbox denied should not silently become retry-with-approval if its capability says `RetryPolicy::Never`.
 
 Target tests:

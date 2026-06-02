@@ -181,6 +181,10 @@ OpenAI-compatible Chat Completions stream
 
 目标：让 sandbox denied 后的 retry 尊重 capability-level `RetryPolicy`，补齐 `safe-read` denied 不应 retry 的安全边界。
 
+状态：已完成。
+
+详解：[`07-slice-7-policy-composition.md`](07-slice-7-policy-composition.md) 用流程图说明 `RetryPolicy`、`ApprovalPolicy` 和 `NetworkPolicy` 如何合成 retry decision。
+
 验收：
 
 - `safe-read` sandbox denied -> `DoNotRetry`。

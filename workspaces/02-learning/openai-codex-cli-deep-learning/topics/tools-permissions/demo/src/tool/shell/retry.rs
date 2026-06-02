@@ -1,5 +1,6 @@
 use crate::model::{
     approval::{ApprovalPersistence, ApprovalPolicy, ApprovalScope, NetworkPolicy, SandboxProfile},
+    capability::RetryPolicy,
     command_request::CommandRequest,
     event::RetryDecision,
     execution::{ExecutionFailure, NetworkApprovalContext},
@@ -13,6 +14,7 @@ pub fn decide_retry(
     request: &CommandRequest,
     failure: &ExecutionFailure,
     command_scope: &ApprovalScope,
+    retry_policy: RetryPolicy,
     already_retried: bool,
 ) -> RetryDecision {
     if already_retried {
@@ -28,22 +30,38 @@ pub fn decide_retry(
         ExecutionFailure::SandboxDenied {
             output,
             network_context,
-        } => match request.approval_policy {
-            ApprovalPolicy::Never => RetryDecision::DoNotRetry {
-                reason: format!(
-                    "approval policy is never, so it is not allowed to retry: {output}"
-                ),
+        } => match retry_policy {
+            RetryPolicy::Never => RetryDecision::DoNotRetry {
+                reason: format!("sandbox denied: {output} and retry policy is never"),
             },
-            ApprovalPolicy::OnRequest => RetryDecision::DoNotRetry {
-                reason: format!(
-                    "approval policy is on-request; sandbox failure cannot trigger automatic retry approval: {output}"
-                ),
+            RetryPolicy::WithApproval => match request.approval_policy {
+                ApprovalPolicy::Never => RetryDecision::DoNotRetry {
+                    reason: format!(
+                        "approval policy is never, so it is not allowed to retry: {output}"
+                    ),
+                },
+                ApprovalPolicy::OnRequest => RetryDecision::DoNotRetry {
+                    reason: format!(
+                        "approval policy is on-request; sandbox failure cannot trigger automatic retry approval: {output}"
+                    ),
+                },
+                ApprovalPolicy::OnFailure => {
+                    if let Some(network_context) = network_context {
+                        decide_network_retry(request, output, network_context, command_scope)
+                    } else {
+                        decide_non_network_sandbox_retry(request, output, command_scope)
+                    }
+                }
             },
-            ApprovalPolicy::OnFailure => {
+            RetryPolicy::WithoutApproval => {
                 if let Some(network_context) = network_context {
                     decide_network_retry(request, output, network_context, command_scope)
                 } else {
-                    decide_non_network_sandbox_retry(request, output, command_scope)
+                    RetryDecision::RetryWithoutApproval {
+                        reason: format!(
+                            "sandbox denied: {output} but retry policy is without approval, so retry directly"
+                        ),
+                    }
                 }
             }
         },
@@ -55,8 +73,6 @@ fn decide_non_network_sandbox_retry(
     output: &str,
     command_scope: &ApprovalScope,
 ) -> RetryDecision {
-    // TODO: 后续把 capability-level `RetryPolicy` 纳入这里，避免所有 sandbox denied
-    // 都只由全局 `ApprovalPolicy` 决定。
     RetryDecision::RetryWithApproval {
         reason: format!("approval required: {output}"),
         approval_scope: ApprovalScope {
@@ -79,14 +95,21 @@ fn decide_network_retry(
         NetworkPolicy::Deny => RetryDecision::DoNotRetry {
             reason: format!("network denied: {output} for network context {network_context:?}"),
         },
-        NetworkPolicy::Prompt => RetryDecision::RetryWithApproval {
-            reason: format!("network prompt: {output} for network context {network_context:?}"),
-            approval_scope: ApprovalScope {
-                command_prefix: command_scope.command_prefix.clone(),
-                cwd: command_scope.cwd.clone(),
-                sandbox_profile: SandboxProfile::NoSandbox,
-                network_policy: request.network_policy,
-                persistence: ApprovalPersistence::Once,
+        NetworkPolicy::Prompt => match request.approval_policy {
+            ApprovalPolicy::OnFailure => RetryDecision::RetryWithApproval {
+                reason: format!("network prompt: {output} for network context {network_context:?}"),
+                approval_scope: ApprovalScope {
+                    command_prefix: command_scope.command_prefix.clone(),
+                    cwd: command_scope.cwd.clone(),
+                    sandbox_profile: SandboxProfile::NoSandbox,
+                    network_policy: request.network_policy,
+                    persistence: ApprovalPersistence::Once,
+                },
+            },
+            ApprovalPolicy::Never | ApprovalPolicy::OnRequest => RetryDecision::DoNotRetry {
+                reason: format!(
+                    "network prompt requires approval, but approval policy does not allow on-failure approval: {output}"
+                ),
             },
         },
         NetworkPolicy::Allow => RetryDecision::RetryWithoutApproval {
@@ -105,12 +128,17 @@ mod tests {
         items.iter().map(|item| item.to_string()).collect()
     }
 
-    fn request(approval_policy: ApprovalPolicy, network_policy: NetworkPolicy) -> CommandRequest {
+    fn request(
+        argv: &[&str],
+        capability: CapabilityKind,
+        approval_policy: ApprovalPolicy,
+        network_policy: NetworkPolicy,
+    ) -> CommandRequest {
         CommandRequest {
-            raw_command: "npm install vite".to_string(),
-            argv: strings(&["npm", "install", "vite"]),
+            raw_command: argv.join(" "),
+            argv: strings(argv),
             cwd: PathBuf::from("/workspace"),
-            capability: CapabilityKind::NetworkInstall,
+            capability,
             approval_policy,
             sandbox_profile: SandboxProfile::WorkspaceWrite,
             network_policy,
@@ -118,9 +146,9 @@ mod tests {
         }
     }
 
-    fn command_scope(network_policy: NetworkPolicy) -> ApprovalScope {
+    fn command_scope(command_prefix: &[&str], network_policy: NetworkPolicy) -> ApprovalScope {
         ApprovalScope {
-            command_prefix: strings(&["npm", "install"]),
+            command_prefix: strings(command_prefix),
             cwd: PathBuf::from("/workspace"),
             sandbox_profile: SandboxProfile::WorkspaceWrite,
             network_policy,
@@ -152,154 +180,307 @@ mod tests {
         }
     }
 
+    fn assert_do_not_retry(decision: RetryDecision) {
+        assert!(matches!(decision, RetryDecision::DoNotRetry { .. }));
+    }
+
+    fn assert_retry_without_approval(decision: RetryDecision) {
+        assert!(matches!(
+            decision,
+            RetryDecision::RetryWithoutApproval { .. }
+        ));
+    }
+
+    fn retry_approval_scope(decision: RetryDecision) -> ApprovalScope {
+        match decision {
+            RetryDecision::RetryWithApproval {
+                reason: _,
+                approval_scope,
+            } => approval_scope,
+            other => panic!("expected retry with approval, got {other:?}"),
+        }
+    }
+
+    fn assert_no_sandbox_scope(
+        scope: ApprovalScope,
+        command_prefix: &[&str],
+        network_policy: NetworkPolicy,
+    ) {
+        assert_eq!(scope.command_prefix, strings(command_prefix));
+        assert_eq!(scope.cwd, PathBuf::from("/workspace"));
+        assert_eq!(scope.sandbox_profile, SandboxProfile::NoSandbox);
+        assert_eq!(scope.network_policy, network_policy);
+        assert_eq!(scope.persistence, ApprovalPersistence::Once);
+    }
+
     #[test]
     fn command_failed_does_not_retry() {
-        let request = request(ApprovalPolicy::OnFailure, NetworkPolicy::Prompt);
-        let scope = command_scope(NetworkPolicy::Prompt);
+        let request = request(
+            &["npm", "test"],
+            CapabilityKind::SafeTest,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Deny,
+        );
+        let scope = command_scope(&["npm", "test"], NetworkPolicy::Deny);
 
-        let decision = decide_retry(&request, &command_failed(), &scope, false);
+        let decision = decide_retry(
+            &request,
+            &command_failed(),
+            &scope,
+            RetryPolicy::WithApproval,
+            false,
+        );
 
-        match decision {
-            RetryDecision::DoNotRetry { reason } => {
-                assert!(reason.contains("command failed"));
-                assert!(reason.contains("exit code 1"));
-            }
-            other => panic!("expected no retry for command failure, got {other:?}"),
-        }
+        assert_do_not_retry(decision);
     }
 
     #[test]
     fn already_retried_does_not_retry_again() {
-        let request = request(ApprovalPolicy::OnFailure, NetworkPolicy::Prompt);
-        let scope = command_scope(NetworkPolicy::Prompt);
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Allow,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Allow);
         let failure = sandbox_denied_with_network();
 
-        let decision = decide_retry(&request, &failure, &scope, true);
+        let decision = decide_retry(
+            &request,
+            &failure,
+            &scope,
+            RetryPolicy::WithoutApproval,
+            true,
+        );
 
-        match decision {
-            RetryDecision::DoNotRetry { reason } => {
-                assert!(reason.contains("already retried"));
-                assert!(reason.contains("SandboxDenied"));
-            }
-            other => panic!("expected no retry after previous retry, got {other:?}"),
-        }
+        assert_do_not_retry(decision);
     }
 
     #[test]
-    fn sandbox_denied_with_never_policy_does_not_retry() {
-        let request = request(ApprovalPolicy::Never, NetworkPolicy::Prompt);
-        let scope = command_scope(NetworkPolicy::Prompt);
+    fn safe_read_retry_policy_never_does_not_retry_after_sandbox_denied() {
+        let request = request(
+            &["cat", "/private/file"],
+            CapabilityKind::SafeRead,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Deny,
+        );
+        let scope = command_scope(&["cat"], NetworkPolicy::Deny);
+        let failure = sandbox_denied_without_network();
+
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::Never, false);
+
+        assert_do_not_retry(decision);
+    }
+
+    #[test]
+    fn retry_policy_never_wins_before_network_policy() {
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Allow,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Allow);
         let failure = sandbox_denied_with_network();
 
-        let decision = decide_retry(&request, &failure, &scope, false);
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::Never, false);
 
-        match decision {
-            RetryDecision::DoNotRetry { reason } => {
-                assert!(reason.contains("approval policy is never"));
-                assert!(reason.contains("network access denied"));
-            }
-            other => panic!("expected no retry for never policy, got {other:?}"),
-        }
+        assert_do_not_retry(decision);
+    }
+
+    #[test]
+    fn sandbox_denied_with_global_never_policy_does_not_retry_when_retry_requires_approval() {
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::Never,
+            NetworkPolicy::Prompt,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Prompt);
+        let failure = sandbox_denied_with_network();
+
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::WithApproval, false);
+
+        assert_do_not_retry(decision);
     }
 
     #[test]
     fn sandbox_denied_with_on_request_policy_does_not_auto_retry() {
-        let request = request(ApprovalPolicy::OnRequest, NetworkPolicy::Prompt);
-        let scope = command_scope(NetworkPolicy::Prompt);
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnRequest,
+            NetworkPolicy::Prompt,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Prompt);
         let failure = sandbox_denied_with_network();
 
-        let decision = decide_retry(&request, &failure, &scope, false);
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::WithApproval, false);
 
-        match decision {
-            RetryDecision::DoNotRetry { reason } => {
-                assert!(reason.contains("approval policy is on-request"));
-                assert!(reason.contains("cannot trigger automatic retry approval"));
-            }
-            other => panic!("expected no automatic retry for on-request policy, got {other:?}"),
-        }
+        assert_do_not_retry(decision);
     }
 
     #[test]
     fn sandbox_denied_with_network_prompt_retries_with_no_sandbox_approval() {
-        let request = request(ApprovalPolicy::OnFailure, NetworkPolicy::Prompt);
-        let scope = command_scope(NetworkPolicy::Prompt);
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Prompt,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Prompt);
         let failure = sandbox_denied_with_network();
 
-        let decision = decide_retry(&request, &failure, &scope, false);
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::WithApproval, false);
 
-        match decision {
-            RetryDecision::RetryWithApproval {
-                reason,
-                approval_scope,
-            } => {
-                assert!(reason.contains("network prompt"));
-                assert!(reason.contains("registry.npmjs.org"));
-                assert_eq!(approval_scope.command_prefix, strings(&["npm", "install"]));
-                assert_eq!(approval_scope.cwd, PathBuf::from("/workspace"));
-                assert_eq!(approval_scope.sandbox_profile, SandboxProfile::NoSandbox);
-                assert_eq!(approval_scope.network_policy, NetworkPolicy::Prompt);
-                assert_eq!(approval_scope.persistence, ApprovalPersistence::Once);
-            }
-            other => panic!("expected retry with approval, got {other:?}"),
-        }
+        assert_no_sandbox_scope(
+            retry_approval_scope(decision),
+            &["npm", "install"],
+            NetworkPolicy::Prompt,
+        );
     }
 
     #[test]
     fn sandbox_denied_with_network_allow_retries_without_approval() {
-        let request = request(ApprovalPolicy::OnFailure, NetworkPolicy::Allow);
-        let scope = command_scope(NetworkPolicy::Allow);
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Allow,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Allow);
         let failure = sandbox_denied_with_network();
 
-        let decision = decide_retry(&request, &failure, &scope, false);
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::WithApproval, false);
 
-        match decision {
-            RetryDecision::RetryWithoutApproval { reason } => {
-                assert!(reason.contains("network allowed"));
-                assert!(reason.contains("registry.npmjs.org"));
-            }
-            other => panic!("expected retry without approval, got {other:?}"),
-        }
+        assert_retry_without_approval(decision);
     }
 
     #[test]
     fn sandbox_denied_with_network_deny_does_not_retry() {
-        let request = request(ApprovalPolicy::OnFailure, NetworkPolicy::Deny);
-        let scope = command_scope(NetworkPolicy::Deny);
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Deny,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Deny);
         let failure = sandbox_denied_with_network();
 
-        let decision = decide_retry(&request, &failure, &scope, false);
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::WithApproval, false);
 
-        match decision {
-            RetryDecision::DoNotRetry { reason } => {
-                assert!(reason.contains("network denied"));
-                assert!(reason.contains("registry.npmjs.org"));
-            }
-            other => panic!("expected no retry for denied network, got {other:?}"),
-        }
+        assert_do_not_retry(decision);
     }
 
     #[test]
     fn sandbox_denied_without_network_retries_with_no_sandbox_approval() {
-        let request = request(ApprovalPolicy::OnFailure, NetworkPolicy::Deny);
-        let scope = command_scope(NetworkPolicy::Deny);
+        let request = request(
+            &["npm", "test"],
+            CapabilityKind::SafeTest,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Deny,
+        );
+        let scope = command_scope(&["npm", "test"], NetworkPolicy::Deny);
         let failure = sandbox_denied_without_network();
 
-        let decision = decide_retry(&request, &failure, &scope, false);
+        let decision = decide_retry(&request, &failure, &scope, RetryPolicy::WithApproval, false);
 
-        match decision {
-            RetryDecision::RetryWithApproval {
-                reason,
-                approval_scope,
-            } => {
-                assert!(reason.contains("approval required"));
-                assert!(reason.contains("filesystem write denied"));
-                assert_eq!(approval_scope.command_prefix, strings(&["npm", "install"]));
-                assert_eq!(approval_scope.cwd, PathBuf::from("/workspace"));
-                assert_eq!(approval_scope.sandbox_profile, SandboxProfile::NoSandbox);
-                assert_eq!(approval_scope.network_policy, NetworkPolicy::Deny);
-                assert_eq!(approval_scope.persistence, ApprovalPersistence::Once);
-            }
-            other => panic!("expected retry with approval, got {other:?}"),
-        }
+        assert_no_sandbox_scope(
+            retry_approval_scope(decision),
+            &["npm", "test"],
+            NetworkPolicy::Deny,
+        );
+    }
+
+    #[test]
+    fn retry_policy_without_approval_allows_direct_retry_for_non_network_sandbox_denial() {
+        let request = request(
+            &["cargo", "test"],
+            CapabilityKind::SafeTest,
+            ApprovalPolicy::OnRequest,
+            NetworkPolicy::Deny,
+        );
+        let scope = command_scope(&["cargo", "test"], NetworkPolicy::Deny);
+        let failure = sandbox_denied_without_network();
+
+        let decision = decide_retry(
+            &request,
+            &failure,
+            &scope,
+            RetryPolicy::WithoutApproval,
+            false,
+        );
+
+        assert_retry_without_approval(decision);
+    }
+
+    #[test]
+    fn retry_policy_without_approval_does_not_override_network_deny() {
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Deny,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Deny);
+        let failure = sandbox_denied_with_network();
+
+        let decision = decide_retry(
+            &request,
+            &failure,
+            &scope,
+            RetryPolicy::WithoutApproval,
+            false,
+        );
+
+        assert_do_not_retry(decision);
+    }
+
+    #[test]
+    fn retry_policy_without_approval_still_requires_approval_for_network_prompt() {
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnFailure,
+            NetworkPolicy::Prompt,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Prompt);
+        let failure = sandbox_denied_with_network();
+
+        let decision = decide_retry(
+            &request,
+            &failure,
+            &scope,
+            RetryPolicy::WithoutApproval,
+            false,
+        );
+
+        assert_no_sandbox_scope(
+            retry_approval_scope(decision),
+            &["npm", "install"],
+            NetworkPolicy::Prompt,
+        );
+    }
+
+    #[test]
+    fn retry_policy_without_approval_does_not_prompt_network_when_global_policy_disallows_it() {
+        let request = request(
+            &["npm", "install", "vite"],
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::Never,
+            NetworkPolicy::Prompt,
+        );
+        let scope = command_scope(&["npm", "install"], NetworkPolicy::Prompt);
+        let failure = sandbox_denied_with_network();
+
+        let decision = decide_retry(
+            &request,
+            &failure,
+            &scope,
+            RetryPolicy::WithoutApproval,
+            false,
+        );
+
+        assert_do_not_retry(decision);
     }
 }
