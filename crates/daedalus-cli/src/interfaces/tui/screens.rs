@@ -1,10 +1,11 @@
+use markdown_tui::widget::{MarkdownStyles, MarkdownWidget};
 use ratatui::layout::{Alignment, Constraint, Direction, Layout};
 use ratatui::prelude::{Color, Frame, Line, Modifier, Rect, Span, Style};
 use ratatui::widgets::{
     Block, BorderType, Borders, Gauge, List, ListItem, ListState, Padding, Paragraph, Wrap,
 };
 
-use crate::interfaces::tui::app::{TuiOverview, TuiTaskSummary};
+use crate::interfaces::tui::app::{OverviewFocus, TuiDetail, TuiOverview, TuiTaskSummary};
 
 const BG: Color = Color::Rgb(24, 22, 20);
 const PANEL_BG: Color = Color::Rgb(31, 29, 27);
@@ -66,6 +67,7 @@ pub fn draw_overview(
     frame: &mut Frame<'_>,
     area: Rect,
     overview: &TuiOverview,
+    focus: OverviewFocus,
     can_return_to_selector: bool,
 ) {
     frame.render_widget(Block::default().style(Style::default().bg(BG)), area);
@@ -86,51 +88,44 @@ pub fn draw_overview(
 
     let body = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(root[2]);
     let left = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(52), Constraint::Percentage(48)])
+        .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
         .split(body[0]);
     let right = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage(32),
-            Constraint::Percentage(28),
-            Constraint::Percentage(40),
+            Constraint::Percentage(34),
+            Constraint::Percentage(33),
+            Constraint::Percentage(33),
         ])
         .split(body[1]);
 
-    render_list(
-        frame,
-        left[0],
-        bucket_missing_title(&overview.workspace_bucket),
-        &overview.missing_artifacts,
-        bucket_missing_accent(&overview.workspace_bucket),
-        bucket_missing_empty(&overview.workspace_bucket),
-    );
-    render_next_action(frame, left[1], overview);
-    render_list(
+    render_next_action(frame, left[0], overview, focus == OverviewFocus::NextAction);
+    render_evidence(frame, left[1], overview, focus == OverviewFocus::Evidence);
+
+    render_reading_map(
         frame,
         right[0],
-        " Review Focus ",
-        &overview.review_summary,
-        TERTIARY,
-        "No review plans yet.",
+        overview,
+        focus == OverviewFocus::ReadingMap,
     );
-    let knowledge_values = if overview.knowledge_summary.is_empty() {
-        overview.todo_summary.clone()
-    } else {
-        overview.knowledge_summary.clone()
-    };
     render_list(
         frame,
         right[1],
-        " Knowledge Focus ",
-        &knowledge_values,
-        bucket_todo_accent(&overview.workspace_bucket),
-        bucket_todo_empty(&overview.workspace_bucket),
+        ListPanel {
+            title: " Risks / Missing ",
+            values: &overview.missing_artifacts,
+            accent: bucket_missing_accent(&overview.workspace_bucket),
+            empty_message: bucket_missing_empty(&overview.workspace_bucket),
+            focused: focus == OverviewFocus::MissingArtifacts,
+            max_items: 4,
+        },
     );
+
+    let review_knowledge = review_knowledge_preview(overview);
     let transitions_title = bucket_transition_title(&overview.workspace_bucket);
     let transitions = if overview.closure_summary.is_empty() {
         overview.recent_transitions.clone()
@@ -139,16 +134,91 @@ pub fn draw_overview(
         values.extend(overview.recent_transitions.clone());
         values
     };
+    let bottom = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
+        .split(right[2]);
     render_list(
         frame,
-        right[2],
-        transitions_title,
-        &transitions,
-        TERTIARY,
-        "No transition history yet.",
+        bottom[0],
+        ListPanel {
+            title: " Review / Knowledge ",
+            values: &review_knowledge,
+            accent: bucket_todo_accent(&overview.workspace_bucket),
+            empty_message: "No review or knowledge focus yet.",
+            focused: focus == OverviewFocus::ReviewKnowledge,
+            max_items: 4,
+        },
+    );
+    render_list(
+        frame,
+        bottom[1],
+        ListPanel {
+            title: transitions_title,
+            values: &transitions,
+            accent: TERTIARY,
+            empty_message: "No transition history yet.",
+            focused: focus == OverviewFocus::RecentTransitions,
+            max_items: 4,
+        },
     );
 
     render_footer(frame, root[3], can_return_to_selector);
+}
+
+/// 绘制只读详情页，支持完整内容滚动阅读。
+pub fn draw_detail(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    detail: &TuiDetail,
+    scroll: usize,
+    can_return_to_selector: bool,
+) {
+    frame.render_widget(Block::default().style(Style::default().bg(BG)), area);
+    let markdown = detail.markdown();
+    let scroll = scroll.min(u16::MAX as usize);
+
+    let root = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(10),
+            Constraint::Length(3),
+        ])
+        .margin(1)
+        .split(area);
+
+    let header = Paragraph::new(Line::from(vec![
+        Span::styled(
+            detail.title.as_str(),
+            Style::default()
+                .fg(NEXT_ACCENT)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  ", Style::default().fg(TEXT)),
+        Span::styled(detail.source_label.as_str(), muted()),
+        Span::styled(
+            format!(
+                "  line {}/{}",
+                scroll.saturating_add(1),
+                detail.lines.len().max(1)
+            ),
+            muted(),
+        ),
+    ]))
+    .alignment(Alignment::Center)
+    .block(chrome_block(" Read View ", NEXT_ACCENT));
+    frame.render_widget(header, root[0]);
+
+    let block = chrome_block(" Full Content ", CURRENT_ACCENT);
+    let inner = block.inner(root[1]);
+    frame.render_widget(block, root[1]);
+    let markdown_widget = MarkdownWidget::new(&markdown)
+        .scroll(scroll as u16)
+        .styles(markdown_styles());
+    frame.render_widget(markdown_widget, inner);
+
+    render_detail_footer(frame, root[2], can_return_to_selector);
 }
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
@@ -258,12 +328,39 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
     frame.render_widget(gauge, chunks[1]);
 }
 
-fn render_next_action(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview) {
+fn render_next_action(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview, focused: bool) {
     let paragraph = Paragraph::new(next_action_lines(overview))
         .wrap(Wrap { trim: true })
-        .block(chrome_block(
-            bucket_next_title(&overview.workspace_bucket),
+        .block(chrome_block_focused(
+            " Next Action Card ",
             bucket_next_accent(&overview.workspace_bucket),
+            focused,
+        ));
+    frame.render_widget(paragraph, area);
+}
+
+fn render_evidence(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview, focused: bool) {
+    let evidence = overview.evidence_lines();
+    let lines = preview_values(&evidence, 7, "No evidence available.");
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: true })
+        .block(chrome_block_focused(
+            " Evidence / Drift ",
+            CURRENT_ACCENT,
+            focused,
+        ));
+    frame.render_widget(paragraph, area);
+}
+
+fn render_reading_map(frame: &mut Frame<'_>, area: Rect, overview: &TuiOverview, focused: bool) {
+    let reading_map = overview.reading_map_lines();
+    let lines = preview_values(&reading_map, 6, "No reading entries available.");
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: true })
+        .block(chrome_block_focused(
+            " Reading Entrypoints ",
+            NEXT_ACCENT,
+            focused,
         ));
     frame.render_widget(paragraph, area);
 }
@@ -295,34 +392,76 @@ fn next_action_lines(overview: &TuiOverview) -> Vec<Line<'_>> {
         .collect()
 }
 
-fn render_list(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    title: &str,
-    values: &[String],
+struct ListPanel<'a> {
+    title: &'a str,
+    values: &'a [String],
     accent: Color,
-    empty_message: &str,
-) {
-    let lines: Vec<Line<'_>> = if values.is_empty() {
-        vec![Line::from(Span::styled(
-            empty_message,
-            Style::default().fg(MUTED),
-        ))]
-    } else {
-        values
-            .iter()
-            .map(|value| {
-                Line::from(vec![
-                    Span::styled(">> ", Style::default().fg(accent)),
-                    Span::styled(value.as_str(), Style::default().fg(TEXT)),
-                ])
-            })
-            .collect()
-    };
+    empty_message: &'a str,
+    focused: bool,
+    max_items: usize,
+}
+
+fn render_list(frame: &mut Frame<'_>, area: Rect, panel: ListPanel<'_>) {
+    let lines = preview_values(panel.values, panel.max_items, panel.empty_message);
     let list = Paragraph::new(lines)
         .wrap(Wrap { trim: false })
-        .block(chrome_block(title, accent));
+        .block(chrome_block_focused(
+            panel.title,
+            panel.accent,
+            panel.focused,
+        ));
     frame.render_widget(list, area);
+}
+
+fn preview_values<'a>(
+    values: &'a [String],
+    max_items: usize,
+    empty_message: &'a str,
+) -> Vec<Line<'a>> {
+    if values.is_empty() {
+        return vec![Line::from(Span::styled(
+            empty_message,
+            Style::default().fg(MUTED),
+        ))];
+    }
+
+    let mut lines: Vec<Line<'a>> = values
+        .iter()
+        .take(max_items)
+        .map(|value| {
+            Line::from(vec![
+                Span::styled(">> ", Style::default().fg(NEXT_ACCENT)),
+                Span::styled(value.as_str(), Style::default().fg(TEXT)),
+            ])
+        })
+        .collect();
+    if values.len() > max_items {
+        lines.push(Line::from(Span::styled(
+            format!(
+                "+{} more, press enter for full view",
+                values.len() - max_items
+            ),
+            muted(),
+        )));
+    }
+    lines
+}
+
+fn review_knowledge_preview(overview: &TuiOverview) -> Vec<String> {
+    let mut values = Vec::new();
+    values.extend(
+        overview
+            .review_summary
+            .iter()
+            .map(|value| format!("review: {value}")),
+    );
+    values.extend(
+        overview
+            .knowledge_summary
+            .iter()
+            .map(|value| format!("knowledge: {value}")),
+    );
+    values
 }
 
 fn render_task_list(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary], selected: usize) {
@@ -391,6 +530,14 @@ fn render_selector_footer(frame: &mut Frame<'_>, area: Rect) {
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, can_return_to_selector: bool) {
     let mut spans = vec![
+        Span::styled("j/k", Style::default().fg(PAUSED)),
+        Span::raw(" focus    "),
+        Span::styled("enter", Style::default().fg(LEARNING)),
+        Span::raw(" read    "),
+        Span::styled("g/t/o", Style::default().fg(NEXT_ACCENT)),
+        Span::raw(" guide/todo/outcome    "),
+        Span::styled("r", Style::default().fg(TODO_ACCENT)),
+        Span::raw(" refresh    "),
         Span::styled("q / esc", Style::default().fg(PAUSED)),
         Span::raw(" quit    "),
     ];
@@ -411,7 +558,47 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, can_return_to_selector: bool
     frame.render_widget(footer, area);
 }
 
+fn render_detail_footer(frame: &mut Frame<'_>, area: Rect, can_return_to_selector: bool) {
+    let mut spans = vec![
+        Span::styled("j/k u/d", Style::default().fg(PAUSED)),
+        Span::raw(" scroll    "),
+        Span::styled("pgup/pgdn", Style::default().fg(NEXT_ACCENT)),
+        Span::raw(" page    "),
+        Span::styled("home/end", Style::default().fg(TODO_ACCENT)),
+        Span::raw(" jump    "),
+        Span::styled("b / backspace", Style::default().fg(LEARNING)),
+        Span::raw(" back    "),
+        Span::styled("q / esc", Style::default().fg(PAUSED)),
+        Span::raw(" quit    "),
+    ];
+    if can_return_to_selector {
+        spans.push(Span::styled("selector available", muted()));
+    } else {
+        spans.push(Span::styled("readonly full view", muted()));
+    }
+    let footer = Paragraph::new(Line::from(spans))
+        .alignment(Alignment::Center)
+        .block(chrome_block(" Controls ", CONTROLS_ACCENT));
+    frame.render_widget(footer, area);
+}
+
 fn chrome_block<'a>(title: &'a str, accent: Color) -> Block<'a> {
+    chrome_block_focused(title, accent, false)
+}
+
+fn chrome_block_focused<'a>(title: &'a str, accent: Color, focused: bool) -> Block<'a> {
+    let title = if focused {
+        format!(">>{}", title)
+    } else {
+        title.to_owned()
+    };
+    let border_style = if focused {
+        Style::default()
+            .fg(TEXT_STRONG)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(accent)
+    };
     Block::default()
         .title(Span::styled(
             title,
@@ -419,13 +606,46 @@ fn chrome_block<'a>(title: &'a str, accent: Color) -> Block<'a> {
         ))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(accent))
+        .border_style(border_style)
         .style(Style::default().bg(PANEL_BG))
         .padding(Padding::new(1, 1, 0, 0))
 }
 
 fn muted() -> Style {
     Style::default().fg(MUTED)
+}
+
+fn markdown_styles() -> MarkdownStyles {
+    MarkdownStyles {
+        heading: [
+            Style::default()
+                .fg(NEXT_ACCENT)
+                .add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(CURRENT_ACCENT)
+                .add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(TODO_ACCENT)
+                .add_modifier(Modifier::BOLD),
+            Style::default().fg(TERTIARY).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(PROGRESS_ACCENT)
+                .add_modifier(Modifier::BOLD),
+            Style::default().fg(SECONDARY).add_modifier(Modifier::BOLD),
+        ],
+        bold: Style::default()
+            .fg(TEXT_STRONG)
+            .add_modifier(Modifier::BOLD),
+        italic: Style::default().fg(TEXT).add_modifier(Modifier::ITALIC),
+        bold_italic: Style::default()
+            .fg(TEXT_STRONG)
+            .add_modifier(Modifier::BOLD | Modifier::ITALIC),
+        inline_code: Style::default().fg(PROGRESS_ACCENT),
+        code_block: Style::default().fg(SECONDARY).bg(PANEL_BG_SOFT),
+        block_quote: Style::default().fg(MUTED).add_modifier(Modifier::ITALIC),
+        rule: Style::default().fg(MUTED),
+        text: Style::default().fg(TEXT),
+    }
 }
 
 fn status_color(status: &str) -> Color {
@@ -489,39 +709,12 @@ fn bucket_progress_title(bucket: &str) -> &'static str {
     }
 }
 
-fn bucket_missing_title(bucket: &str) -> &'static str {
-    match bucket {
-        "02-learning" => " Missing Artifacts ",
-        "03-completed" => " Archive Audit ",
-        "04-abandoned" => " Recovery Gaps ",
-        _ => " Missing Artifacts ",
-    }
-}
-
 fn bucket_missing_empty(bucket: &str) -> &'static str {
     match bucket {
         "02-learning" => "All required artifacts are present.",
         "03-completed" => "Archive is structurally complete.",
         "04-abandoned" => "No obvious recovery gaps.",
         _ => "All required artifacts are present.",
-    }
-}
-
-fn bucket_next_title(bucket: &str) -> &'static str {
-    match bucket {
-        "02-learning" => " Next Action ",
-        "03-completed" => " Reuse / Knowledge Export ",
-        "04-abandoned" => " Revival Decision ",
-        _ => " Next Action ",
-    }
-}
-
-fn bucket_todo_empty(bucket: &str) -> &'static str {
-    match bucket {
-        "02-learning" => "No open todo items.",
-        "03-completed" => "No follow-up ideas.",
-        "04-abandoned" => "No reactivation todos.",
-        _ => "No open todo items.",
     }
 }
 

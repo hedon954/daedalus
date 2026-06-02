@@ -10,8 +10,8 @@ use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 
 use crate::domain::{DaedalusError, Result};
-use crate::interfaces::tui::app::{TuiApp, TuiOverview, TuiView};
-use crate::interfaces::tui::screens::{draw_overview, draw_selector};
+use crate::interfaces::tui::app::{DetailSource, OverviewFocus, TuiApp, TuiOverview, TuiView};
+use crate::interfaces::tui::screens::{draw_detail, draw_overview, draw_selector};
 
 /// 启动只读 TUI 总览。
 ///
@@ -21,8 +21,12 @@ pub fn run_readonly_overview(overview: TuiOverview) -> Result<()> {
         view: TuiView::TaskOverview,
         tasks: Vec::new(),
         selected_task: 0,
+        overview_focus: OverviewFocus::NextAction,
         overview: Some(overview),
+        detail: None,
+        detail_scroll: 0,
         can_return_to_selector: false,
+        repo_root: None,
     })
 }
 
@@ -54,7 +58,24 @@ pub fn run_tui(mut app: TuiApp) -> Result<()> {
                 }
                 TuiView::TaskOverview => {
                     if let Some(overview) = &app.overview {
-                        draw_overview(frame, frame.area(), overview, app.can_return_to_selector);
+                        draw_overview(
+                            frame,
+                            frame.area(),
+                            overview,
+                            app.overview_focus,
+                            app.can_return_to_selector,
+                        );
+                    }
+                }
+                TuiView::Detail => {
+                    if let Some(detail) = &app.detail {
+                        draw_detail(
+                            frame,
+                            frame.area(),
+                            detail,
+                            app.detail_scroll,
+                            app.can_return_to_selector,
+                        );
                     }
                 }
             })
@@ -70,8 +91,23 @@ pub fn run_tui(mut app: TuiApp) -> Result<()> {
             path: "terminal".into(),
             source,
         })? {
+            let detail_viewport = terminal
+                .size()
+                .map(|area| {
+                    (
+                        area.height.saturating_sub(8) as usize,
+                        area.width.saturating_sub(6) as usize,
+                    )
+                })
+                .map_err(|source| DaedalusError::Io {
+                    path: "terminal".into(),
+                    source,
+                })?;
             match (app.view, key.code) {
                 (_, KeyCode::Char('q') | KeyCode::Esc) => break Ok(()),
+                (_, KeyCode::Char('r')) => {
+                    app.refresh()?;
+                }
                 (TuiView::TaskSelector, KeyCode::Up | KeyCode::Char('k')) => {
                     app.select_previous();
                 }
@@ -81,8 +117,47 @@ pub fn run_tui(mut app: TuiApp) -> Result<()> {
                 (TuiView::TaskSelector, KeyCode::Enter) => {
                     app.open_selected_task()?;
                 }
+                (TuiView::TaskOverview, KeyCode::Up | KeyCode::Char('k')) => {
+                    app.focus_previous();
+                }
+                (TuiView::TaskOverview, KeyCode::Down | KeyCode::Char('j')) => {
+                    app.focus_next();
+                }
+                (TuiView::TaskOverview, KeyCode::Enter) => {
+                    app.open_focused_detail()?;
+                }
+                (TuiView::TaskOverview, KeyCode::Char('g')) => {
+                    app.open_detail(DetailSource::Guide)?;
+                }
+                (TuiView::TaskOverview, KeyCode::Char('t')) => {
+                    app.open_detail(DetailSource::Todo)?;
+                }
+                (TuiView::TaskOverview, KeyCode::Char('o')) => {
+                    app.open_detail(DetailSource::OutcomeMap)?;
+                }
                 (TuiView::TaskOverview, KeyCode::Backspace | KeyCode::Char('b')) => {
                     app.return_to_selector();
+                }
+                (TuiView::Detail, KeyCode::Backspace | KeyCode::Char('b')) => {
+                    app.close_detail();
+                }
+                (TuiView::Detail, KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('u')) => {
+                    app.scroll_detail_up(1);
+                }
+                (TuiView::Detail, KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('d')) => {
+                    app.scroll_detail_down(1, detail_viewport.0, detail_viewport.1);
+                }
+                (TuiView::Detail, KeyCode::PageUp) => {
+                    app.scroll_detail_up(detail_viewport.0);
+                }
+                (TuiView::Detail, KeyCode::PageDown) => {
+                    app.scroll_detail_down(detail_viewport.0, detail_viewport.0, detail_viewport.1);
+                }
+                (TuiView::Detail, KeyCode::Home) => {
+                    app.scroll_detail_top();
+                }
+                (TuiView::Detail, KeyCode::End) => {
+                    app.scroll_detail_bottom(detail_viewport.0, detail_viewport.1);
                 }
                 _ => {}
             }
