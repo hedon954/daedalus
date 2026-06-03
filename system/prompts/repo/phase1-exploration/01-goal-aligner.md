@@ -7,6 +7,7 @@ phase: repo.phase1-exploration
 @system/prompts/common/clarify-goal.md
 @system/prompts/common/gatekeeper.md
 @system/prompts/common/coach-questioning.md
+@system/prompts/common/critical-lens.md
 
 # Align Repo Learning Goal
 
@@ -34,8 +35,9 @@ phase: repo.phase1-exploration
 3. 继承 `Clarify Learning Goal` 生成通用学习任务卡。
 4. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
 5. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
-6. 如果目标无法导向 repo 选择或 mini demo，先要求用户收窄。
-7. 生成给用户的目标澄清指南时，写入 active topic 的 `guides/01-goal-aligner/README.md`；用户确认后的专题目标和验收标准写入 active topic 的 `.daedalus/task-card.md`。
+6. 用 critical lens 检查：用户是为了获得可迁移能力而学习，还是只是因为素材流行、权威或被推荐。
+7. 如果目标无法导向 repo 选择、mini demo 或业务迁移，先要求用户收窄。
+8. 生成给用户的目标澄清指南时，写入 active topic 的 `guides/01-goal-aligner/README.md`；用户确认后的专题目标和验收标准写入 active topic 的 `.daedalus/task-card.md`。
 
 ## Output Delta
 
@@ -46,6 +48,8 @@ phase: repo.phase1-exploration
 - Repo 选择约束：
 - 运行/调试要求：
 - Mini demo 方向：
+- 为什么这个素材值得学：
+- 可能不适合照搬的边界：
 - 暂不学习：
 - 用户确认：
 ```
@@ -68,6 +72,7 @@ phase: repo.phase1-exploration
 - 只在必要时提问，每次最多 3 个问题。
 - 不要在目标未明确时推荐 repo。
 - 学习目标必须能导向 mini demo 或业务方案。
+- 不要把“某个 repo 很优秀”当成学习理由；必须说明它服务哪个现实目标、它的约束和用户目标是否相近。
 - 不要替用户直接决定学习目标；如果只能靠 Agent 猜测，应保持 `01-goal-aligner` active。
 - 新任务初始化必须 CLI-first；不要为了省事手写模板结构。
 - 完成阶段前，在 active topic 的 `.daedalus/validation-log.md` 记录本阶段 daedalus 的引导效果和缺口。

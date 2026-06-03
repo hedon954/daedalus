@@ -196,6 +196,8 @@ OpenAI-compatible Chat Completions stream
 
 目标：把 approval、execution attempt、retry decision、denied/skipped 等关键节点透出为可观察事件。
 
+行动指南：[`08-slice-8-event-protocol-hardening.md`](08-slice-8-event-protocol-hardening.md)。
+
 验收：
 
 - 外部 stream 能看见 approval resolved / denied / execution started / retry evaluated。

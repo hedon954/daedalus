@@ -8,6 +8,7 @@ phase: repo.phase1-exploration
 @system/prompts/common/first-principles.md
 @system/prompts/common/coach-questioning.md
 @system/prompts/common/diagram-guidelines.md
+@system/prompts/common/critical-lens.md
 
 # Ask Repo Socratic Questions
 
@@ -33,7 +34,8 @@ phase: repo.phase1-exploration
 - 源码应对：你预期 repo 会用什么抽象、状态机、日志、队列、锁、协议或边界来兜底？
 - 不变量：最小 demo 必须保留哪些不能破坏的因果链、状态一致性、权限边界或恢复能力？
 - 架构权衡：它为什么把模块边界切在这里？
-- demo 映射：哪些设计值得迁移，哪些是产品演进造成的复杂度，不应照抄？
+- demo 映射：哪些设计需要先忠实模仿以获得实现手感，哪些是产品演进造成的复杂度，不应照抄？
+- 批判视角：这个 repo 的方案在哪些约束下成立，换到用户目标后可能失效在哪里？
 
 ## Repo-Specific Workflow
 
@@ -68,6 +70,9 @@ phase: repo.phase1-exploration
 - 生产约束：
 - 源码应对假设：
 - 保护的不变量：
+- 方案成立的前提：
+- 可能局限 / failure mode：
+- demo 中应忠实模仿的部分：
 - 后续验证路径：
 - 验证状态：
 ```
@@ -94,4 +99,5 @@ phase: repo.phase1-exploration
 - 问题路线图不是百科清单；必须从生产失败模式逐层推进到源码入口、设计不变量和 demo 不变量。
 - 不要用 Agent 自己的总结覆盖用户原始回答；学习笔记要能区分“用户当前理解”和“Agent 校准后的判断”。
 - 不要接受只问“代码怎么跑”的问题；必须追问“如果没有这段设计，生产环境会怎样失败”。
+- 不要只问“repo 怎么做”；还要问“repo 为什么可能不是当前业务的最佳方案，以及 demo 为什么仍需要先模仿它的核心机制”。
 - 完成阶段前，在 active topic 的 `.daedalus/validation-log.md` 记录 daedalus 是否真的提高了用户的问题质量。

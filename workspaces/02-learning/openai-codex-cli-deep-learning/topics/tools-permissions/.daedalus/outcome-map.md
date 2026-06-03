@@ -60,6 +60,17 @@ question-roadmap
 - [x] Slice 6 Agent Orchestrator：已新增 `agent::llm`、`OpenAiCompatibleLlm`、`agent::react` 和顶层 `tool` module；当前 `tool/function.rs` 承载 `add/sub` pure tools，`tool/runtime.rs` 已承接 `ToolRuntime::run(call)` 的 pure function path 和 `run_command` command path，并补齐 add/sub/invalid args/unknown tool、run_command safe-read/network-install/command-failed/denied/invalid-json/unmatched-capability 单测。真实 LLM ReAct 主链路和 ReAct hardening 已完成，关键类型/函数注释和 TODO 已补齐，`ExecutionRunner` 边界已取代顶层 sandbox module；`run_shell_command` 单命令编排测试已补齐，ToolRuntime / ReAct 层 command path observation 已覆盖 Finished / Failed / Denied。
 - [x] Slice 7 Retry Policy And Denial Semantics：`decide_retry` 已接收并尊重 `RetryPolicy`；`RetryPolicy::Never` 优先阻止 retry，`RetryPolicy::WithApproval` 仍受 `ApprovalPolicy` 和 `NetworkPolicy` 约束，`RetryPolicy::WithoutApproval` 只免除非网络 sandbox denied 的 retry approval，不能绕过 network deny / network prompt。
 
+## Critical Lens
+
+Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠实模仿 Codex 的核心安全链路，感受它为什么把 approval / sandbox / retry / event 拆成多个层次；然后再判断哪些复杂度来自 Codex 的生产约束，哪些不适合业务迁移时照搬。
+
+- 当前素材中可能被过度神化的设计：Codex 的权限 / 沙箱 / retry 组合是成熟 CLI Agent 的生产级折中，不是所有 Agent demo 或业务系统都必须照搬的完整复杂度。
+- 当前 demo 需要忠实模仿的核心机制：tool call 不能直接执行；必须经过 capability match、approval requirement、sandbox-first execution、controlled retry 和 observation/event 回流。
+- 当前 demo 不应无意识照抄的设计：跨平台 sandbox 细节、完整 TUI/MCP elicitation、Codex 所有 approval policy 组合和长期 session policy 存储。
+- 当前还没有验证的素材假设：Codex 的内部 event/observation 暴露是否足以作为我们 demo 的外部事件协议参考，需要 Slice 8 对照当前 demo 代码和 Codex 设计重新判断。
+- 当前可以尝试简化、改进或丢弃的部分：Phase 1 先用清晰的 event protocol 表达安全链路，不急着复刻 Codex 的全部 UI/streaming 事件细节。
+- 当前迁移到业务场景前必须重新验证的约束：业务是否真的需要 no-sandbox retry、session approval 复用、网络 host 级审批和多工具 hard-deny 语义。
+
 ### Slice 6 当前待解决问题
 
 - [x] `react.rs` 已补 `max_turns`，超限时返回错误而不是伪装成 `Completed`。

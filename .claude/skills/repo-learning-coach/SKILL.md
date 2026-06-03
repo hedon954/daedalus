@@ -101,7 +101,7 @@ daedalus knowledge validate
 Every repo learning step must start from real production pressure:
 
 ```text
-production problem -> naive failure -> source-code response -> protected invariant -> trade-off -> transferable pattern
+production problem -> naive failure -> source-code response -> protected invariant -> trade-off -> critical lens -> transferable pattern
 ```
 
 Do not read code by directory, function list, or coverage. Read code by industrial failure mode and the invariants the repo protects.
@@ -126,9 +126,46 @@ When speaking to the user at the start of a resume, code-reading round, or stage
 - Current gap:
 - Evidence needed:
 - After this:
+
+## Critical Lens
+- Source assumption under test:
+- Possible limitation / failure mode:
+- Faithful imitation / transfer decision:
 ```
 
 If a proposed reading or debugging step cannot be mapped to a final artifact, move it to stop rules or defer it. The Agent should say, in effect: we are not "continuing to read source"; we are filling a specific blocked decision in the next artifact.
+
+## Critical Learning Gate
+
+Load:
+
+- `system/prompts/common/critical-lens.md`
+
+Study materials are constrained design cases, not authorities. The Agent must not treat a repo, book, paper, course, or project as the single truth merely because it is the current learning material.
+
+For every major design, source-reading conclusion, demo architecture decision, slice closeout, business transfer, review, or knowledge extraction, preserve a critical lens:
+
+```text
+source fact
+  -> source assumption / constraint
+  -> strength
+  -> limitation or failure mode
+  -> faithful imitation for learning
+  -> transfer decision
+  -> not-to-copy
+```
+
+Critical learning does not mean skipping imitation. In `07-demo-architecture` and `08-demo-coder`, the mini demo should consciously imitate the repo's core mechanism so the user feels the real trade-off in types, state transitions, tests, and module boundaries. The critical step is to make the imitation explicit, then decide what should be copied, simplified, improved, or discarded before business transfer.
+
+Use this three-question checkpoint after a closed loop, stage transition, or key design decision:
+
+```text
+1. Under which constraints does the source design make sense?
+2. Does the user's current goal share those constraints?
+3. What should we faithfully imitate, simplify, improve, or discard?
+```
+
+Do not write critique as source fact unless it is grounded in source code, tests, runtime observations, user business constraints, or explicit evidence. If it is an Agent hypothesis, mark it as such and provide a validation path.
 
 ## Evidence Grounding Gate
 
@@ -250,6 +287,7 @@ business goal / real-world task
   -> implementation mechanism
   -> trade-off
   -> comparison with best practices
+  -> limitation / transfer boundary
   -> transferable pattern
   -> review or application question
 ```
@@ -277,13 +315,16 @@ core abstraction / invariant
 implementation mechanism
 trade-off
 best-practice comparison
+limitation / failure mode
+faithful imitation boundary
 transfer pattern
+not-to-copy
 review prompts
 evidence
 promotion decision
 ```
 
-If a candidate lacks evidence, trade-off, or transfer boundary, keep it as a topic candidate. Do not promote it to shared context or knowledge-base.
+If a candidate lacks evidence, trade-off, limitation/failure mode, or transfer boundary, keep it as a topic candidate. Do not promote it to shared context or knowledge-base.
 
 ## Artifact Directory Convention
 
@@ -352,7 +393,7 @@ Load:
 
 - `system/prompts/repo/phase2-learning/05-arch-analyzer.md`
 
-Map boundaries, layers, data flow, control flow, extension points, invariants, and trade-offs from production constraints. Every architecture conclusion must answer what real failure it prevents.
+Map boundaries, layers, data flow, control flow, extension points, invariants, and trade-offs from production constraints. Every architecture conclusion must answer what real failure it prevents, what source constraint makes it reasonable, and what should not be copied blindly.
 
 ### 6. Read Core Code
 
@@ -368,7 +409,7 @@ Load:
 
 - `system/prompts/repo/phase3-practice/07-demo-architecture.md`
 
-Finalize the draft mini demo created during code reading. Preserve the repo's core architectural decision, resolve remaining blocked fields, and define verification before coding.
+Finalize the draft mini demo created during code reading. Preserve and consciously imitate the repo's core architectural decision where it teaches the trade-off, resolve remaining blocked fields, and define verification before coding.
 
 ### 8. Implement Mini Demo
 
@@ -384,7 +425,7 @@ Load:
 
 - `system/prompts/repo/phase3-practice/09-biz-solver.md`
 
-Map the verified repo/demo pattern back to the user's original business or engineering problem. Re-check constraints before proposing an application plan.
+Map the verified repo/demo pattern back to the user's original business or engineering problem. Re-check constraints, limitations, and not-to-copy boundaries before proposing an application plan.
 
 ### 10. Archive And Close
 
@@ -408,7 +449,7 @@ For long-running work:
 - Keep `done`, `doing`, `next`, and `blocked` explicit.
 - On resume, do not treat "next action" as permission to complete the next learning step. Treat it as the next coaching question unless the user explicitly asks for direct explanation or Agent-led reading.
 - When a Socratic question round produces user answers, immediately record the full learning trace in notes before moving on: question, user's original answer, Agent calibration/supplement, source or experiment validation path, and validation status.
-- Record production framing for every major note: production problem, naive failure, source-code response, protected invariant, trade-off, transferable pattern.
+- Record production framing for every major note: production problem, naive failure, source-code response, protected invariant, trade-off, critical lens, transferable pattern.
 
 ## Rules
 
@@ -427,5 +468,6 @@ For long-running work:
 - Do not label Agent-only source inspection as "verified learning". Use separate states such as `待用户回答`, `待源码验证`, `源码已核对`, `用户已复述`, and `用户已实践`.
 - Do not make source-code claims from analogy or product intuition alone. Every repo behavior claim needs a source/test anchor, or it must be explicitly marked as a hypothesis.
 - Do not accept a code-reading note that only explains call chains. It must explain production constraints, failure handling, invariants, trade-offs, and migration limits.
+- Do not let critique become unsupported opinion. Critical lens entries must separate source fact, source assumption, Agent hypothesis, faithful imitation choice, and transfer decision.
 - Do not mark the task complete until demo/business transfer/knowledge archival are addressed.
 - Do not archive unverified summaries as knowledge.

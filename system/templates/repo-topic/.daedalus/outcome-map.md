@@ -64,6 +64,17 @@ demo evidence -> business-application -> knowledge-base entry
 
 当前步骤决定后续应该读哪些源码、停止哪些源码、最终 demo 如何验收。
 
+## Critical Lens
+
+Critical Lens 用来防止把学习素材当成权威。它不是反对模仿，而是让 demo 的模仿变成有意识、有证据、有边界的学习动作。
+
+- 当前素材中可能被过度神化的设计：
+- 当前 demo 需要忠实模仿的核心机制：
+- 当前 demo 不应无意识照抄的设计：
+- 当前还没有验证的素材假设：
+- 当前可以尝试简化、改进或丢弃的部分：
+- 当前迁移到业务场景前必须重新验证的约束：
+
 ## Stop Rules
 
 - 不读与 North Star、demo、业务迁移或知识归档无关的源码细节。

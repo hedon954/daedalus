@@ -7,6 +7,7 @@ phase: repo.phase3-practice
 @system/prompts/common/first-principles.md
 @system/prompts/common/question-roadmap.md
 @system/prompts/common/summarize.md
+@system/prompts/common/critical-lens.md
 
 # Transfer Repo Learning To Business
 
@@ -26,9 +27,10 @@ phase: repo.phase3-practice
 
 1. 重述用户最初的问题和约束。
 2. 提取 repo/demo 中真正可迁移的模式。
-3. 判断哪些模式可以直接用，哪些需要改造，哪些不能用。
-4. 给出一个最小业务方案：架构、接口、数据流、风险和验证方式，并写入 active topic 的 `notes/09-biz-solver/README.md` 或同目录专题文件。
-5. 标注还需要补学或实验的内容。
+3. 重新检查 repo 方案成立的约束是否存在于用户业务中。
+4. 判断哪些模式可以直接用，哪些需要改造，哪些不能用，哪些只是 demo 为了学习而忠实模仿。
+5. 给出一个最小业务方案：架构、接口、数据流、风险和验证方式，并写入 active topic 的 `notes/09-biz-solver/README.md` 或同目录专题文件。
+6. 标注还需要补学或实验的内容。
 
 ## Output Delta
 
@@ -36,6 +38,8 @@ phase: repo.phase3-practice
 ## Business Application
 - 原始问题：
 - 可迁移模式：
+- repo/demo 中不应照搬的部分：
+- 迁移前必须重新验证的约束：
 - 目标方案：
 - 关键 trade-off：
 - 最小验证：
@@ -47,4 +51,5 @@ phase: repo.phase3-practice
 
 - 不要把 repo 的方案机械搬运到业务里。
 - 必须重新检查用户场景的现实约束。
+- 必须区分“demo 为了学习而忠实模仿的机制”和“业务场景真的应该采用的机制”。
 - 如果缺少业务上下文，先列出最小需要确认的信息。

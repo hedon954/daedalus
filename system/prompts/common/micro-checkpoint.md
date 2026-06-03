@@ -30,6 +30,7 @@ scope: common
 - `learning progress checkpoint`：阶段、slice、gap、验收状态发生变化。
 - `knowledge checkpoint`：用户理解、Agent 校准、源码证据或可迁移模式需要进入 notes。
 - `next-plan checkpoint`：产生新的 guide、行动卡、下一步地图或 stop rules。
+- `critical lens checkpoint`：本轮形成了对素材约束、局限、忠实模仿边界或迁移取舍的新判断。
 
 不同类型可以在同一轮产生，但提交边界要清楚。
 
@@ -53,6 +54,7 @@ Review-only 不等于 learning-state-only。只要 review 或验证改变了完�
    - Agent-only 的下一步地图、行动卡、预读路径写入 `guides/`。
    - 新增 `guides/` / `notes/` 专题文件默认使用 `01-`、`02-`、`03-` 这类顺序前缀；`README.md`、assets、generated diagrams 和稳定索引文件除外。
    - 不要把下一步计划伪装成已经完成的学习证据。
+   - 如果本轮完成源码专题、demo slice、关键设计或迁移判断，记录 critical lens：source constraint、faithful imitation、simplified/improved/discarded、transfer risk。
 
 4. 运行最小验证：
    - 代码变更运行最小相关测试和格式检查。
@@ -106,6 +108,12 @@ docs(learning): 规划下一轮行动地图
 - Validation:
 - Commit:
 - Next:
+
+## Critical Checkpoint
+- Source constraint:
+- Faithful imitation:
+- Simplified / improved / discarded:
+- Transfer risk:
 ```
 
 保持简洁。不要把总结写成聊天记录；只保留能驱动下一步行动和长期恢复的信息。

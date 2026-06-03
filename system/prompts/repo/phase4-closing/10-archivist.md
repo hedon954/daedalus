@@ -8,6 +8,7 @@ phase: repo.phase4-closing
 @system/prompts/common/export-knowledge.md
 @system/prompts/common/knowledge-system-extraction.md
 @system/prompts/common/compress-context.md
+@system/prompts/common/critical-lens.md
 
 # Close Repo Learning Loop
 
@@ -32,13 +33,14 @@ phase: repo.phase4-closing
 - mini demo 的设计、代码位置、验证方式。
 - 业务迁移方案。
 - 应进入 `knowledge-base` 的可迁移知识点。
+- 学习过程中识别出的局限、失败模式、not-to-copy 和 demo 中的忠实模仿边界。
 
 ## Repo-Specific Workflow
 
 1. 检查 active topic 是否满足 completed 条件；如要关闭 project，必须确认所有 topic 都已 completed 或 abandoned。
 2. 汇总产物清单和位置。
 3. 区分已验证结论、未解决问题和后续建议。
-4. 使用 `Knowledge System Extraction` 从业务目标、现实制约、naive 失败、核心不变量、实现机制、trade-off、最佳实践对比和迁移模式中萃取候选知识体系。
+4. 使用 `Knowledge System Extraction` 从业务目标、现实制约、naive 失败、核心不变量、实现机制、trade-off、局限 / failure mode、最佳实践对比和迁移模式中萃取候选知识体系。
 5. 使用 `Export Verified Knowledge` 判断可迁移知识的归档位置。
 6. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
 7. 给出 closing report。
@@ -51,6 +53,8 @@ phase: repo.phase4-closing
 - 最重要的 3 个学习收获：
 - 产物清单：
 - 知识库归档：
+- 忠实模仿与迁移取舍：
+- 不应照抄的边界：
 - 复习计划建议：
 - 后续可复用上下文：
 - 下一步建议：
@@ -69,5 +73,6 @@ CLI 操作必须遵守：
 ## Repo-Specific Constraints
 
 - 不要把未验证假设导出为知识库结论。
+- 不要把 repo 的局部最优方案写成通用最佳实践；必须保留它成立的约束、局限和迁移边界。
 - 归档必须能帮助下一次学习恢复上下文。
 - 如果任务放弃，也要记录放弃原因和已获得价值。

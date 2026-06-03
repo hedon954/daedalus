@@ -8,7 +8,8 @@
 
 - 只从 verified evidence 萃取。
 - 未验证假设留在 topic notes，不晋升。
-- 每条知识必须写出现实制约、trade-off 和迁移边界。
+- 每条知识必须写出现实制约、trade-off、局限 / failure mode 和迁移边界。
+- 区分 demo 为学习而忠实模仿的部分，和业务场景真正应该迁移的部分。
 
 ## Candidate Knowledge Items
 
@@ -28,7 +29,13 @@
 
 ### 对比最佳实践
 
+### 局限 / Failure Mode
+
+### 忠实模仿边界
+
 ### 可迁移模式
+
+### 不应照抄的部分
 
 ### 适用边界
 

@@ -29,6 +29,13 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - Current open decision：Slice 8 要决定哪些 approval / execution / retry 节点需要对外透出，哪些仍留在内部测试边界。
 - Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”或“补 RetryPolicy”；当前先做 event protocol hardening，再讨论 approval persistence / README。
 
+## Critical Checkpoint
+
+- Source constraint：Codex 需要服务真实 CLI Agent 的安全、本地命令执行、跨平台 sandbox、用户审批体验和事件可观察性；它的复杂度来自生产约束，不是单纯类型设计偏好。
+- Faithful imitation：当前 demo 必须先模仿 `tool call -> approval -> sandbox first -> retry decision -> observation/event` 的分层安全链路，不能把工具调用简化成直接执行函数。
+- Simplified / improved / discarded：Phase 1 只做清晰可测的事件协议，不复刻完整 TUI/MCP elicitation、跨平台 OS sandbox 和所有 Codex 内部事件细节。
+- Transfer risk：业务迁移前要重新验证是否真的需要 no-sandbox retry、session approval、network host 级审批、多工具 hard-deny 语义，不能因为 Codex 有这些复杂度就默认采用。
+
 ## Gaps Blocking Next Stage
 
 - [x] 定稿 demo scope：明确 Phase 1 使用 `SimulatedExecutionRunner`，Phase 2 再接 `OsExecutionRunner`。

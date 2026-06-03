@@ -1,6 +1,6 @@
 # Shared Knowledge System
 
-这里保存跨 topic 可复用的知识体系。只有已验证、边界清楚、能解释现实制约和 trade-off 的结论才能进入 shared。
+这里保存跨 topic 可复用的知识体系。只有已验证、边界清楚、能解释现实制约、trade-off、局限和迁移边界的结论才能进入 shared。
 
 ## Promotion Path
 
@@ -23,6 +23,9 @@ topic notes / review sessions
 - 实现机制
 - trade-off
 - 对比最佳实践
+- 局限 / failure mode
+- 忠实模仿边界
 - 可迁移模式
+- 不应照抄的部分
 - evidence
 - review prompts

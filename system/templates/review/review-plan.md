@@ -23,11 +23,21 @@
   -> 实现机制
   -> trade-off
   -> 对比最佳实践
+  -> 局限 / failure mode
+  -> 忠实模仿与不应照抄边界
   -> 可迁移模式
   -> 复习题 / 应用题
 ```
 
 ## What To Rebuild Without Notes
+
+## Critical Lens To Rebuild
+
+- Source constraints:
+- Faithful imitation:
+- Limitations / failure modes:
+- Not-to-copy:
+- Transfer risks:
 
 ## Weakness Hypotheses
 

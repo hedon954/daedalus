@@ -39,11 +39,14 @@ scope: common
   -> 实现机制
   -> trade-off
   -> 对比最佳实践
+  -> 局限 / failure mode
+  -> 忠实模仿边界
   -> 可迁移模式
+  -> 不应照抄的部分
   -> 复习题 / 应用题
 ```
 
-如果一个候选知识点无法说明现实制约、trade-off 或迁移边界，它还不是知识库条目，只能停留在 topic note 或待验证假设。
+如果一个候选知识点无法说明现实制约、trade-off、局限/failure mode 或迁移边界，它还不是知识库条目，只能停留在 topic note 或待验证假设。
 
 ## Knowledge Item Types
 
@@ -53,6 +56,8 @@ scope: common
 - `TradeOff`：方案获得什么、牺牲什么。
 - `Pattern`：可迁移到其他系统的设计模式。
 - `AntiPattern`：看似合理但会破坏不变量的做法。
+- `TransferBoundary`：说明某个设计在哪些约束下成立，迁移前必须重新验证什么。
+- `FaithfulImitation`：说明 demo 为了获得实现手感而有意识模仿的机制。
 - `Relation`：多个知识点之间的依赖、冲突、替代或层级关系。
 - `ReviewPrompt`：未来复习时用于重建该知识点的问题。
 
@@ -82,6 +87,9 @@ topic candidate
    - depends-on
    - protects
    - trades-off-with
+   - limited-by
+   - should-not-copy
+   - faithfully-imitates
    - refines
    - conflicts-with
    - replaces
@@ -115,7 +123,13 @@ topic candidate
 
 ### 对比最佳实践
 
+### 局限 / Failure Mode
+
+### 忠实模仿边界
+
 ### 可迁移模式
+
+### 不应照抄的部分
 
 ### 适用边界
 
@@ -136,4 +150,5 @@ topic candidate
 - 不要只按源码模块分类知识；优先按现实问题、约束和可迁移模式组织。
 - 不要省略 trade-off。没有 trade-off 的知识通常只是定义或 trivia。
 - 不要把最佳实践对比写成权威引用堆砌；必须说明为什么当前 repo 的选择适合它的现实约束。
+- 不要把 repo 的局部最优方案导出成通用最佳实践；必须保留局限、failure mode、not-to-copy 和迁移边界。
 - 不要自动重构 knowledge-base taxonomy；先提出候选和理由。

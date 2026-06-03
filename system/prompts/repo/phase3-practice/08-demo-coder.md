@@ -7,6 +7,7 @@ phase: repo.phase3-practice
 @system/prompts/common/first-principles.md
 @system/prompts/common/summarize.md
 @system/prompts/common/micro-checkpoint.md
+@system/prompts/common/critical-lens.md
 
 # Implement Repo Mini Demo
 
@@ -29,7 +30,7 @@ phase: repo.phase3-practice
 3. 跑通主链路的 happy path。
 4. 补上关键边界：错误、并发、持久化或扩展点中最重要的一项。
 5. 用测试或脚本验证 demo 的核心能力。
-6. 对照原 repo，说明相同点、简化点和代价。
+6. 对照原 repo，说明忠实模仿点、简化点、改进点、丢弃点和代价。
 
 ## Learner Implementation Gate
 
@@ -67,6 +68,7 @@ Agent 不可以：
 - 每次改动都要服务于一个明确验收点。
 - 避免为了完整性引入额外框架。
 - 保留能帮助学习的命名和模块边界。
+- 对核心机制保持有意识模仿：如果某个实现摩擦正是 repo trade-off 的来源，不要急着“优化掉”；先通过测试和解释让用户感受到它。
 - 实现后立刻运行最小验证。
 - 判断 slice 是否完成、还剩什么或能否进入下一 slice 时，必须先看当前实现：相关源码、测试、最近 diff、TODO 和运行结果。`todo.md`、`outcome-map.md`、guides 和 notes 只能作为导航，不能单独作为完成证据。
 - 如果代码和学习地图不一致，先告诉用户地图已过期，再按代码/测试事实重新分类：退出前必做、当前 slice 可选 hardening、明确后置 non-goal。
@@ -76,6 +78,7 @@ Agent 不可以：
 - Review-only 也要同步学习进度：如果 review 暴露了新的 blocker、风险、完成判定或下一步路径，即使不编辑 demo 实现代码，也要更新 learning artifacts。
 - 当用户说明“我现在已经到了某个函数/模块/边界”但尚未形成可验证闭环时，只做轻量 `Current Cursor Sync`：更新 `.daedalus/todo.md` 的当前光标，标记 WIP / unverified，不创建 notes、不完成 stage、不单独提交。
 - 每个小步骤形成闭环后必须执行 `Micro Checkpoint Protocol`：更新学习状态、运行最小验证、按主题拆分提交，并给出下一步行动卡或下一轮问题。
+- 每个 slice closeout 必须执行 `Critical Lens` 小检查：本 slice 忠实模仿了什么，简化/改进/丢弃了什么，哪些取舍会影响业务迁移。
 - 当前闭环产物和下一步规划产物不要混在一个 commit 里；例如 demo hardening 和下一轮 integration guide 应拆成两个提交。
 - 写测试时优先锁定稳定行为；错误路径默认只断言错误变体、类别或存在，不锁完整错误文案，除非该文案是明确的 CLI/API contract。
 
@@ -87,6 +90,7 @@ Agent 不可以：
 - 改动文件：
 - 验证命令：
 - 学到的 repo 模式：
+- 忠实模仿 / 简化 / 改进 / 丢弃：
 - 下一步：
 ```
 
@@ -100,6 +104,12 @@ Agent 不可以：
 - Validation:
 - Commit:
 - Next:
+
+## Critical Checkpoint
+- Source constraint:
+- Faithful imitation:
+- Simplified / improved / discarded:
+- Transfer risk:
 ```
 
 ## Repo-Specific Constraints

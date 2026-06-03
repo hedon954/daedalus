@@ -31,6 +31,15 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 - Current open decision：暂无。
 - Do not suggest：不要跳过 goal alignment 直接进入 repo 阅读。
 
+## Critical Checkpoint
+
+Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊天日志。
+
+- Source constraint：当前素材方案成立的现实约束是什么？
+- Faithful imitation：demo 中哪些机制需要先忠实模仿以获得实现手感？
+- Simplified / improved / discarded：本轮哪些部分应该简化、改进或丢弃？
+- Transfer risk：迁移到业务场景前必须重新验证什么？
+
 ## Gaps Blocking Next Stage
 
 - [ ] 学习目标：阻塞 `.daedalus/task-card.md` 的当前目标和验收标准。

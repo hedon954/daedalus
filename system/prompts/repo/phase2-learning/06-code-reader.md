@@ -8,6 +8,7 @@ phase: repo.phase2-learning
 @system/prompts/common/summarize.md
 @system/prompts/common/coach-questioning.md
 @system/prompts/common/diagram-guidelines.md
+@system/prompts/common/critical-lens.md
 
 # Read Core Repo Code
 
@@ -35,6 +36,11 @@ phase: repo.phase2-learning
 - Current gap:
 - Evidence needed:
 - After this:
+
+## Critical Lens
+- Source assumption under test:
+- Possible limitation / failure mode:
+- Faithful imitation / transfer decision:
 ```
 
 如果无法填写 `Final artifact` 或 `Current gap`，不要继续读源码。先回到 active topic 的 `.daedalus/outcome-map.md` 收窄目标，或把这个源码点加入 stop rules。
@@ -46,7 +52,7 @@ phase: repo.phase2-learning
 3. 核心抽象：接口、trait、class、数据结构保护什么不变量。
 4. 主链路：关键函数如何串起来，状态在哪里变化，失败如何被兜底。
 5. 边界条件：错误处理、并发、取消、重试、缓存、IO、持久化、外部依赖、权限、安全和恢复。
-6. 设计代价：为什么这么切模块，替代方案会有什么代价，哪些部分不值得照抄。
+6. 设计代价：为什么这么切模块，替代方案会有什么代价，哪些部分需要先忠实模仿，哪些部分不值得照抄。
 
 ## Repo-Specific Workflow
 
@@ -54,8 +60,8 @@ phase: repo.phase2-learning
 2. 先让用户说出 naive 实现和可能失败点，再读源码验证 repo 的真实应对。
 3. 用“这段代码防止了什么生产事故”和“这段代码保护了什么不变量”解释关键实现。
 4. 读源码前声明它会改变 active topic 的 `demo/design.md` 的哪个字段，例如 invariant、data structure、state machine 或 acceptance test。
-5. 读完后产出可迁移模式、不应照抄的部分，并更新 demo 不变量清单或草案字段。
-6. 每轮代码阅读都要实时写入 active topic 的 `notes/06-code-reader/README.md` 或同目录专题 notes，记录“生产问题、用户猜测、Agent 校准、源码证据、不变量、代价、验证状态”，避免 Agent 直接替用户完成理解。
+5. 读完后产出可迁移模式、源码方案局限、demo 中需要忠实模仿的部分、不应照抄的部分，并更新 demo 不变量清单或草案字段。
+6. 每轮代码阅读都要实时写入 active topic 的 `notes/06-code-reader/README.md` 或同目录专题 notes，记录“生产问题、用户猜测、Agent 校准、源码证据、不变量、代价、critical lens、验证状态”，避免 Agent 直接替用户完成理解。
 
 ## Demo Impact Gate
 
@@ -173,6 +179,15 @@ Agent 不得在这种状态下：
 - 更新字段：
 - 仍然阻塞：
 - 停止继续阅读：
+
+## Critical Lens
+- Source fact:
+- Source assumption under test:
+- Strength:
+- Limitation / failure mode:
+- Faithful imitation:
+- Transfer decision:
+- Not-to-copy:
 ```
 
 ## Repo-Specific Constraints
@@ -181,6 +196,8 @@ Agent 不得在这种状态下：
 - 只在关键片段逐行阅读。
 - 不要只解释“代码做了什么”；必须解释“为什么生产环境需要它”和“如果没有它会怎样失败”。
 - 每个源码专题都必须落到不变量、失败兜底、设计代价和可迁移模式。
+- 每个源码专题都必须说明 repo 做法的成立前提、局限或迁移边界；如果没有证据，只能写成假设和验证路径。
+- demo 中确实需要模仿的复杂点要明确标注为 `Faithful imitation`，避免之后被误删成“过度复杂”。
 - 用户回答、纠正或验证关键点后，必须先更新 active topic 的 `notes/06-code-reader/README.md` 或同目录专题文件，再继续下一段源码阅读；不能只在聊天中总结。
 - 每个阅读片段都要回到架构问题或 demo 设计。
 - 不要因为源码专题还没穷尽而继续读；只要 demo 或业务产物的当前决策不再阻塞，就停止。
