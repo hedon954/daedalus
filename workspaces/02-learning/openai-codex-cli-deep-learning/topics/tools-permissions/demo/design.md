@@ -292,13 +292,13 @@ AgentEvent
       user_decision: Option<UserApprovalDecision>
     }
 
-  - ToolExecutionStarted {
+  - CommandExecutionStarted {
       tool_call_id,
       request: CommandRequest,
       attempt: ExecutionAttempt
     }
 
-  - ToolExecutionFinished {
+  - CommandExecutionFinished {
       tool_call_id,
       request: CommandRequest,
       attempt: ExecutionAttempt,
@@ -323,13 +323,13 @@ AgentEvent
 
 | 领域模型 | 被哪些 event 复用 |
 | --- | --- |
-| `CommandRequest` | `ToolChosen`、`ToolApprovalStarted`、`ToolExecutionStarted`、`ToolExecutionFinished` |
+| `CommandRequest` | `ToolChosen`、`ToolApprovalStarted`、`CommandExecutionStarted`、`CommandExecutionFinished` |
 | `ApprovalRequirement` | `ToolApprovalResolved` |
 | `ApprovalScope` / `ApprovalPersistence` | `ApprovalRequirement::NeedsApproval`、`UserApprovalDecision::Approved` |
 | `CapabilityKind` | `CommandRequest`、`CapabilityDescriptor` |
 | `SandboxProfile` | `CommandRequest`、`ExecutionAttempt` |
 | `NetworkPolicy` | `CommandRequest`、`ApprovalScope` |
-| `ExecutionResult` / `ExecutionFailure` | `ToolExecutionFinished` |
+| `ExecutionResult` / `ExecutionFailure` | `CommandExecutionFinished` |
 | `RetryDecision` | `RetryEvaluated` |
 
 事件专用薄枚举：
@@ -360,11 +360,11 @@ ModelFinished
 ToolChosen
 ToolApprovalStarted
 ToolApprovalResolved
-ToolExecutionStarted
-ToolExecutionFinished
+CommandExecutionStarted
+CommandExecutionFinished
 RetryEvaluated?
-ToolExecutionStarted?      // no-sandbox retry
-ToolExecutionFinished?     // retry result
+CommandExecutionStarted?      // no-sandbox retry
+CommandExecutionFinished?     // retry result
 ModelStarted
 ModelFinished
 FinalOutputEmitted
@@ -373,7 +373,7 @@ AgentFinished
 
 设计边界：
 
-- 不拆 `ToolDenied`、`ToolNeedsApproval`、`ToolSkip` 三个事件；它们都是 `ToolApprovalResolved.requirement` 的不同值。
+- 不拆 `ToolDenied`、`CommandNeedsApproval`、`ToolSkip` 三个事件；它们都是 `ToolApprovalResolved.requirement` 的不同值。
 - 不把 `success/failed/in_sandbox/is_retried` 做成事件名；它们分别属于 `ExecutionResult` 和 `ExecutionAttempt`。
 - 以后增加新的失败类型时，优先扩展 `ExecutionFailure`，不增加事件名。
 
@@ -403,13 +403,13 @@ ToolApprovalResolved
   -> NeedsApproval + Rejected:
       AgentFinished(Failed)
   -> NeedsApproval + Approved:
-      ToolExecutionStarted(SandboxFirst)
+      CommandExecutionStarted(SandboxFirst)
   -> Skip { bypass_sandbox: false }:
-      ToolExecutionStarted(SandboxFirst)
+      CommandExecutionStarted(SandboxFirst)
   -> Skip { bypass_sandbox: true }:
-      ToolExecutionStarted(NoSandboxFirst)
+      CommandExecutionStarted(NoSandboxFirst)
 
-ToolExecutionFinished(first attempt)
+CommandExecutionFinished(first attempt)
   -> Success:
       append tool result as observation
       next loop: ModelStarted
@@ -424,17 +424,17 @@ RetryEvaluated
       append sandbox denied as observation
       next loop: ModelStarted
   -> RetryWithoutApproval:
-      ToolExecutionStarted(NoSandboxRetry)
+      CommandExecutionStarted(NoSandboxRetry)
   -> RetryWithApproval:
-      ToolRetryApprovalStarted
-      ToolRetryApprovalResolved
+      CommandRetryApprovalStarted
+      CommandRetryApprovalResolved
         -> Rejected:
             append retry rejected as observation
             next loop: ModelStarted
         -> Approved:
-            ToolExecutionStarted(NoSandboxRetry)
+            CommandExecutionStarted(NoSandboxRetry)
 
-ToolExecutionFinished(retry attempt)
+CommandExecutionFinished(retry attempt)
   -> Success:
       append tool result as observation
       next loop: ModelStarted
@@ -492,7 +492,7 @@ AgentStatus
 | --- | --- | --- | --- | --- |
 | AT-01 | 工具能力加载 | 内置四类 capability | agent 启动 | 事件包含 `ToolRegistryLoaded`，列出 `safe-read`、`safe-test`、`network-install`、`dangerous-shell`。 |
 | AT-02 | `safe-read` 默认跳过审批但不跳过 sandbox | `safe-read` 请求，cwd 在 workspace 内，`ReadOnly` sandbox | 执行 `cat package.json` | `ToolApprovalResolved` 为 `Skip { bypass_sandbox: false }`，首次 attempt 是 `SandboxFirst`，执行成功。 |
-| AT-03 | `dangerous-shell` 直接禁止 | `dangerous-shell` 请求，例如 `curl ... \| sh` 或 `rm -rf` | agent 检查权限 | `ApprovalRequirement::Forbidden`，没有 `ToolExecutionStarted`，agent 以 failed 结束。 |
+| AT-03 | `dangerous-shell` 直接禁止 | `dangerous-shell` 请求，例如 `curl ... \| sh` 或 `rm -rf` | agent 检查权限 | `ApprovalRequirement::Forbidden`，没有 `CommandExecutionStarted`，agent 以 failed 结束。 |
 | AT-04 | `network-install` 审批被拒绝时不执行 | `network-install` 请求，用户拒绝 approval | agent 检查权限 | 事件包含 `NeedsApproval` 与 `Rejected`，没有任何执行 attempt。 |
 | AT-05 | approval scope 绑定上下文 | `network-install` 请求，用户批准 session 级授权 | agent 生成 approval | `ApprovalScope` 同时包含 `command_prefix`、`cwd`、`sandbox_profile`、`network_policy`、`persistence`。 |
 | AT-06 | 普通命令失败回灌给模型 | `safe-test` 请求，sandbox runner 返回 `CommandFailed` | agent 执行工具 | 不进入 retry gate；失败作为 observation 回灌，触发下一轮 `ModelStarted`。 |

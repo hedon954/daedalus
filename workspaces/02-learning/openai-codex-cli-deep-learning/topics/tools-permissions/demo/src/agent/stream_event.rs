@@ -2,6 +2,11 @@ use std::pin::Pin;
 
 use futures_core::Stream;
 
+use crate::model::{
+    approval::ApprovalScope,
+    event::{ExecutionAttempt, RetryDecision, UserApprovalDecision},
+};
+
 pub type EventStream = Pin<Box<dyn Stream<Item = anyhow::Result<StreamEvent>> + Send + 'static>>;
 
 /// Agent 对外暴露的流式事件。
@@ -37,6 +42,47 @@ pub enum StreamEvent {
         call_id: String,
         name: String,
         error: String,
+    },
+    CommandNeedsApproval {
+        approval_id: String,
+        index: i64,
+        call_id: String,
+        name: String,
+        reason: String,
+        scope: ApprovalScope,
+    },
+    CommandApprovalResult {
+        approval_id: String,
+        index: i64,
+        call_id: String,
+        name: String,
+        decision: UserApprovalDecision,
+    },
+    CommandExecutionStarted {
+        index: i64,
+        call_id: String,
+        name: String,
+        attempt: ExecutionAttempt,
+    },
+    CommandExecutionFinished {
+        index: i64,
+        call_id: String,
+        name: String,
+        attempt: ExecutionAttempt,
+        output: String,
+    },
+    CommandExecutionFailed {
+        index: i64,
+        call_id: String,
+        name: String,
+        attempt: ExecutionAttempt,
+        error: String,
+    },
+    CommandRetryEvaluated {
+        index: i64,
+        call_id: String,
+        name: String,
+        decision: RetryDecision,
     },
     Completed,
     Error(String),

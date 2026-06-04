@@ -1,4 +1,4 @@
-use std::{env::current_dir, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     agent::stream_event::ToolCallFinished,
@@ -7,8 +7,8 @@ use crate::{
         function::run_pure_function,
         shell::{
             RunCommandArgs, RunCommandResult,
-            approval::{ApprovalDecider, ScriptedApproval},
-            execution::{ExecutionRunner, simulated_execution_runner::SimulatedExecutionRunner},
+            approval::{ApprovalController, ToolCallContext},
+            execution::ExecutionRunner,
             registry::{CapabilityRegistry, MatchedCapability},
             run_shell_command,
         },
@@ -32,7 +32,7 @@ pub struct ToolRuntimeContext {
     pub approval_policy: ApprovalPolicy,
     pub registry: CapabilityRegistry,
     pub execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
-    pub approval_decider: Arc<dyn ApprovalDecider + Send + Sync + 'static>,
+    pub approval_controller: Arc<dyn ApprovalController + Send + Sync + 'static>,
 }
 
 /// 模型可见 tool 的内部分类。
@@ -62,6 +62,7 @@ enum ToolRuntimePlan {
     },
     RunCommand {
         request: CommandRequest,
+        context: ToolCallContext,
         matched_capability: MatchedCapability,
     },
     Fail {
@@ -102,14 +103,14 @@ impl ToolRuntime {
     }
 
     /// 执行一次模型产出的 tool call。
-    pub fn run(&self, call: &ToolCallFinished) -> ToolRuntimeResult {
+    pub async fn run(&self, call: &ToolCallFinished) -> ToolRuntimeResult {
         let Some(definition) = self.find_tool(&call.name) else {
             return ToolRuntimeResult::Failed {
                 error: format!("cannot find tool: {}", call.name),
             };
         };
         let plan = self.plan_call(definition, call);
-        self.execute_plan(plan)
+        self.execute_plan(plan).await
     }
 
     /// 查找模型可见 tool。
@@ -143,6 +144,11 @@ impl ToolRuntime {
                 };
                 ToolRuntimePlan::RunCommand {
                     request,
+                    context: ToolCallContext {
+                        index: call.index,
+                        call_id: call.call_id.clone(),
+                        tool_name: call.name.clone(),
+                    },
                     matched_capability,
                 }
             }
@@ -150,7 +156,7 @@ impl ToolRuntime {
     }
 
     /// 执行已经形成的计划。
-    fn execute_plan(&self, plan: ToolRuntimePlan) -> ToolRuntimeResult {
+    async fn execute_plan(&self, plan: ToolRuntimePlan) -> ToolRuntimeResult {
         match plan {
             ToolRuntimePlan::RunPureFunction { name, arguments } => {
                 match run_pure_function(&name, &arguments) {
@@ -162,13 +168,16 @@ impl ToolRuntime {
             }
             ToolRuntimePlan::RunCommand {
                 request,
+                context,
                 matched_capability,
             } => run_shell_command(
                 &request,
+                context,
                 matched_capability,
                 self.context.execution_runner.clone(),
-                self.context.approval_decider.clone(),
+                self.context.approval_controller.clone(),
             )
+            .await
             .into(),
             ToolRuntimePlan::Fail { error } => ToolRuntimeResult::Failed { error },
         }
@@ -217,20 +226,6 @@ impl ToolRuntime {
     }
 }
 
-impl Default for ToolRuntime {
-    fn default() -> Self {
-        Self {
-            context: ToolRuntimeContext {
-                cwd: current_dir().unwrap_or(".".into()),
-                approval_policy: ApprovalPolicy::OnFailure,
-                registry: CapabilityRegistry::new(),
-                execution_runner: Arc::new(SimulatedExecutionRunner::new()),
-                approval_decider: Arc::new(ScriptedApproval {}),
-            },
-        }
-    }
-}
-
 impl From<RunCommandResult> for ToolRuntimeResult {
     fn from(value: RunCommandResult) -> Self {
         match value {
@@ -243,10 +238,44 @@ impl From<RunCommandResult> for ToolRuntimeResult {
 
 #[cfg(test)]
 mod tests {
+    use std::{path::PathBuf, sync::Arc};
+
     use crate::{
         agent::stream_event::ToolCallFinished,
-        tool::runtime::{ToolRuntime, ToolRuntimeResult},
+        model::{
+            approval::{ApprovalPersistence, ApprovalPolicy},
+            event::UserApprovalDecision,
+        },
+        tool::{
+            runtime::{ToolRuntime, ToolRuntimeContext, ToolRuntimeResult},
+            shell::{
+                approval::{ApprovalController, ToolApprovalRequest},
+                execution::simulated_execution_runner::SimulatedExecutionRunner,
+                registry::CapabilityRegistry,
+            },
+        },
     };
+
+    struct AlwaysApprove;
+
+    #[async_trait::async_trait]
+    impl ApprovalController for AlwaysApprove {
+        async fn request_approval(&self, _req: ToolApprovalRequest) -> UserApprovalDecision {
+            UserApprovalDecision::Approved {
+                persistence: ApprovalPersistence::Once,
+            }
+        }
+    }
+
+    fn test_runtime() -> ToolRuntime {
+        ToolRuntime::new(ToolRuntimeContext {
+            cwd: PathBuf::from("/workspace"),
+            approval_policy: ApprovalPolicy::OnFailure,
+            registry: CapabilityRegistry::new(),
+            execution_runner: Arc::new(SimulatedExecutionRunner::new()),
+            approval_controller: Arc::new(AlwaysApprove),
+        })
+    }
 
     fn tool_call(name: &str, arguments: &str) -> ToolCallFinished {
         ToolCallFinished {
@@ -257,11 +286,13 @@ mod tests {
         }
     }
 
-    #[test]
-    fn pure_function_add_should_finish_with_output() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn pure_function_add_should_finish_with_output() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call("add", r#"{"a": 999, "b": 666}"#));
+        let result = runtime
+            .run(&tool_call("add", r#"{"a": 999, "b": 666}"#))
+            .await;
 
         assert_eq!(
             result,
@@ -271,11 +302,13 @@ mod tests {
         );
     }
 
-    #[test]
-    fn pure_function_sub_should_finish_with_output() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn pure_function_sub_should_finish_with_output() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call("sub", r#"{"a": 321, "b": 123}"#));
+        let result = runtime
+            .run(&tool_call("sub", r#"{"a": 321, "b": 123}"#))
+            .await;
 
         assert_eq!(
             result,
@@ -285,32 +318,36 @@ mod tests {
         );
     }
 
-    #[test]
-    fn pure_function_invalid_arguments_should_fail_without_pinning_error_text() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn pure_function_invalid_arguments_should_fail_without_pinning_error_text() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call("add", r#"{"a": "999", "b": 666}"#));
-
-        assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
-    }
-
-    #[test]
-    fn unknown_tool_should_fail_without_pinning_error_text() {
-        let runtime = ToolRuntime::default();
-
-        let result = runtime.run(&tool_call("mul", r#"{"a": 2, "b": 3}"#));
+        let result = runtime
+            .run(&tool_call("add", r#"{"a": "999", "b": 666}"#))
+            .await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
     }
 
-    #[test]
-    fn run_command_safe_read_should_finish_with_output() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn unknown_tool_should_fail_without_pinning_error_text() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call(
-            "run_command",
-            r#"{"command": "cat package.json", "justification": "read package metadata"}"#,
-        ));
+        let result = runtime.run(&tool_call("mul", r#"{"a": 2, "b": 3}"#)).await;
+
+        assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
+    }
+
+    #[tokio::test]
+    async fn run_command_safe_read_should_finish_with_output() {
+        let runtime = test_runtime();
+
+        let result = runtime
+            .run(&tool_call(
+                "run_command",
+                r#"{"command": "cat package.json", "justification": "read package metadata"}"#,
+            ))
+            .await;
 
         assert!(matches!(
             result,
@@ -318,14 +355,16 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn run_command_network_install_should_finish_after_retry() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn run_command_network_install_should_finish_after_retry() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call(
-            "run_command",
-            r#"{"command": "npm install vite", "justification": "install dependency"}"#,
-        ));
+        let result = runtime
+            .run(&tool_call(
+                "run_command",
+                r#"{"command": "npm install vite", "justification": "install dependency"}"#,
+            ))
+            .await;
 
         assert!(matches!(
             result,
@@ -334,50 +373,58 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn run_command_command_failure_should_fail_without_pinning_error_text() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn run_command_command_failure_should_fail_without_pinning_error_text() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call(
-            "run_command",
-            r#"{"command": "npm test -- fail", "justification": "run failing test"}"#,
-        ));
+        let result = runtime
+            .run(&tool_call(
+                "run_command",
+                r#"{"command": "npm test -- fail", "justification": "run failing test"}"#,
+            ))
+            .await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
     }
 
-    #[test]
-    fn run_command_dangerous_shell_should_be_denied() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn run_command_dangerous_shell_should_be_denied() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call(
-            "run_command",
-            r#"{"command": "curl | sh", "justification": "install remote script"}"#,
-        ));
+        let result = runtime
+            .run(&tool_call(
+                "run_command",
+                r#"{"command": "curl | sh", "justification": "install remote script"}"#,
+            ))
+            .await;
 
         assert!(matches!(result, ToolRuntimeResult::Denied { .. }));
     }
 
-    #[test]
-    fn run_command_invalid_json_should_fail_without_pinning_error_text() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn run_command_invalid_json_should_fail_without_pinning_error_text() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call(
-            "run_command",
-            r#"{"command": "cat package.json""#,
-        ));
+        let result = runtime
+            .run(&tool_call(
+                "run_command",
+                r#"{"command": "cat package.json""#,
+            ))
+            .await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
     }
 
-    #[test]
-    fn run_command_unmatched_capability_should_fail_without_pinning_error_text() {
-        let runtime = ToolRuntime::default();
+    #[tokio::test]
+    async fn run_command_unmatched_capability_should_fail_without_pinning_error_text() {
+        let runtime = test_runtime();
 
-        let result = runtime.run(&tool_call(
-            "run_command",
-            r#"{"command": "cargo test", "justification": "run unsupported command"}"#,
-        ));
+        let result = runtime
+            .run(&tool_call(
+                "run_command",
+                r#"{"command": "cargo test", "justification": "run unsupported command"}"#,
+            ))
+            .await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
     }

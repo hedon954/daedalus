@@ -12,7 +12,8 @@ use crate::{
     tool::runtime::{ToolRuntime, ToolRuntimeResult},
 };
 
-type EventSender = mpsc::Sender<anyhow::Result<StreamEvent>>;
+pub type EventReceiver = mpsc::Receiver<StreamEvent>;
+pub type EventSender = mpsc::Sender<anyhow::Result<StreamEvent>>;
 
 /// 最小 ReAct agent。
 ///
@@ -174,7 +175,7 @@ async fn run_tools(
         // TODO: 接入多 tool call 的 hard-deny 策略：
         // 一个工具被安全拒绝后，后续依赖它的工具应标记为 Skipped，而不是继续盲跑。
 
-        match tool_runtime.run(&call) {
+        match tool_runtime.run(&call).await {
             ToolRuntimeResult::Finished { output } => {
                 emit(
                     tx,
@@ -261,14 +262,51 @@ async fn emit(tx: &EventSender, event: StreamEvent) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::{env::current_dir, sync::Arc};
 
     use crate::{
         agent::llm::{fake::FakeLlm, openai::OpenAiCompatibleLlmBuilder},
-        tool::function::{add_spec, sub_spec},
+        model::{
+            approval::{ApprovalPersistence, ApprovalPolicy},
+            event::UserApprovalDecision,
+        },
+        tool::{
+            function::{add_spec, sub_spec},
+            runtime::{ToolRuntime, ToolRuntimeContext},
+            shell::{
+                approval::{ApprovalBroker, ApprovalController, ToolApprovalRequest},
+                execution::simulated_execution_runner::SimulatedExecutionRunner,
+                registry::CapabilityRegistry,
+            },
+        },
     };
 
     use super::*;
+
+    struct AlwaysApprove;
+
+    #[async_trait::async_trait]
+    impl ApprovalController for AlwaysApprove {
+        async fn request_approval(&self, _req: ToolApprovalRequest) -> UserApprovalDecision {
+            UserApprovalDecision::Approved {
+                persistence: ApprovalPersistence::Once,
+            }
+        }
+    }
+
+    fn test_runtime() -> Arc<ToolRuntime> {
+        Arc::new(ToolRuntime::new(ToolRuntimeContext {
+            cwd: current_dir().unwrap_or_else(|_| ".".into()),
+            approval_policy: ApprovalPolicy::OnFailure,
+            execution_runner: Arc::new(SimulatedExecutionRunner::new()),
+            registry: CapabilityRegistry::new(),
+            approval_controller: Arc::new(AlwaysApprove),
+        }))
+    }
+
+    fn test_agent(llm: Arc<FakeLlm>, max_turns: Option<u8>) -> ReActAgent {
+        ReActAgent::new(llm, max_turns, test_runtime())
+    }
 
     #[tokio::test]
     #[ignore = "requires DEEPSEEK_API_KEY and network"]
@@ -277,7 +315,47 @@ mod tests {
             .tools(vec![add_spec(), sub_spec()])
             .build()?;
 
-        let agent = ReActAgent::new(Arc::new(llm), None, Arc::new(ToolRuntime::default()));
+        let (approval_request_tx, mut approval_request_rx) = mpsc::channel(16);
+        let (approval_result_tx, approval_result_rx) = mpsc::channel(16);
+        let context = ToolRuntimeContext {
+            cwd: current_dir().unwrap(),
+            approval_policy: ApprovalPolicy::OnFailure,
+            execution_runner: Arc::new(SimulatedExecutionRunner::new()),
+            registry: CapabilityRegistry::new(),
+            approval_controller: Arc::new(ApprovalBroker::new(
+                approval_request_tx,
+                approval_result_rx,
+            )),
+        };
+
+        let task = tokio::spawn(async move {
+            while let Some(Ok(event)) = approval_request_rx.recv().await {
+                match event {
+                    StreamEvent::CommandNeedsApproval {
+                        approval_id,
+                        index,
+                        call_id,
+                        name,
+                        reason: _,
+                        scope: _,
+                    } => approval_result_tx
+                        .send(StreamEvent::CommandApprovalResult {
+                            approval_id,
+                            index,
+                            call_id,
+                            name,
+                            decision: UserApprovalDecision::Approved {
+                                persistence: ApprovalPersistence::Once,
+                            },
+                        })
+                        .await
+                        .unwrap(),
+                    _ => continue,
+                }
+            }
+        });
+
+        let agent = ReActAgent::new(Arc::new(llm), None, Arc::new(ToolRuntime::new(context)));
 
         let mut stream = agent.run("计算一下999+666和321-123,将把它们俩的结果相加".to_string())?;
 
@@ -320,6 +398,7 @@ mod tests {
             }
         }
 
+        task.await?;
         Ok(())
     }
 
@@ -367,7 +446,7 @@ mod tests {
             StreamEvent::TextDelta("final answer".to_string()),
             StreamEvent::Completed,
         ]]);
-        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(3));
 
         let events = collect_events(&agent, "hello").await?;
 
@@ -394,7 +473,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(3));
 
         let events = collect_events(&agent, "calculate").await?;
 
@@ -440,7 +519,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(3));
 
         let events = collect_events(&agent, "calculate").await?;
 
@@ -470,7 +549,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(3));
 
         let events = collect_events(&agent, "calculate").await?;
 
@@ -506,7 +585,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(3));
 
         let events = collect_events(&agent, "read package metadata").await?;
 
@@ -548,7 +627,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(3));
 
         let events = collect_events(&agent, "run tests").await?;
 
@@ -585,7 +664,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(3), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(3));
 
         let events = collect_events(&agent, "install remote script").await?;
 
@@ -620,7 +699,7 @@ mod tests {
                 StreamEvent::Completed,
             ],
         ]);
-        let agent = ReActAgent::new(llm.clone(), Some(1), Arc::new(ToolRuntime::default()));
+        let agent = test_agent(llm.clone(), Some(1));
 
         let (events, error) = collect_until_error(&agent, "calculate").await?;
 

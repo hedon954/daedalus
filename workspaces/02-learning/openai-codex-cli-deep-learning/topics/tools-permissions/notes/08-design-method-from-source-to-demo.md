@@ -155,7 +155,7 @@ Event 是某个时间点上的领域状态快照。
 
 ```text
 ToolDenied
-ToolNeedsApproval
+CommandNeedsApproval
 ToolSkip
 ToolRunSuccess
 ToolRunFailed
@@ -165,8 +165,8 @@ ToolRunFailed
 
 ```text
 ToolApprovalResolved { requirement, user_decision }
-ToolExecutionStarted { attempt }
-ToolExecutionFinished { result }
+CommandExecutionStarted { attempt }
+CommandExecutionFinished { result }
 RetryEvaluated { retry_decision }
 ```
 

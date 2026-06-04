@@ -8,7 +8,10 @@ use crate::{
         execution::{ExecutionFailure, ExecutionResult},
     },
     tool::shell::{
-        approval::{ApprovalDecider, build_approval_scope, resolve_approval_requirement},
+        approval::{
+            ApprovalController, ToolApprovalRequest, ToolCallContext, build_approval_scope,
+            resolve_approval_requirement,
+        },
         execution::ExecutionRunner,
         registry::MatchedCapability,
         retry::decide_retry,
@@ -44,11 +47,12 @@ pub enum RunCommandResult {
 ///
 /// 当前目标是先跑通单命令主链路：
 /// approval gate -> sandbox first -> retry gate -> optional no-sandbox retry。
-pub fn run_shell_command(
+pub async fn run_shell_command(
     request: &CommandRequest,
+    context: ToolCallContext,
     matched_capability: MatchedCapability,
     execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
-    approval_decider: Arc<dyn ApprovalDecider + Send + Sync + 'static>,
+    approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
 ) -> RunCommandResult {
     match resolve_approval_requirement(&request, &matched_capability) {
         ApprovalRequirement::Skip {
@@ -59,10 +63,12 @@ pub fn run_shell_command(
             if !bypass_sandbox {
                 return run_sandbox_first_flow(
                     request,
+                    context,
                     matched_capability,
                     execution_runner,
                     approval_decider,
-                );
+                )
+                .await;
             }
 
             // 不需要审批且跳过沙箱，直接在本地运行
@@ -71,14 +77,23 @@ pub fn run_shell_command(
         ApprovalRequirement::NeedsApproval {
             reason,
             approval_scope,
-        } => match approval_decider.decide(&reason, &approval_scope) {
+        } => match approval_decider
+            .request_approval(ToolApprovalRequest {
+                context: context.clone(),
+                reason: reason.clone(),
+                scope: approval_scope,
+            })
+            .await
+        {
             UserApprovalDecision::Approved { persistence: _ } => {
                 return run_sandbox_first_flow(
                     request,
+                    context,
                     matched_capability,
                     execution_runner,
                     approval_decider,
-                );
+                )
+                .await;
             }
             UserApprovalDecision::Rejected => {
                 return RunCommandResult::Denied { reason };
@@ -88,11 +103,12 @@ pub fn run_shell_command(
     }
 }
 
-fn run_sandbox_first_flow(
+async fn run_sandbox_first_flow(
     request: &CommandRequest,
+    context: ToolCallContext,
     matched_capability: MatchedCapability,
     execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
-    approval_decider: Arc<dyn ApprovalDecider + Send + Sync + 'static>,
+    approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
 ) -> RunCommandResult {
     // 先在沙箱尝试执行
     let sandbox_first_execution_result = execution_runner.run(
@@ -127,7 +143,14 @@ fn run_sandbox_first_flow(
             RetryDecision::RetryWithApproval {
                 reason,
                 approval_scope,
-            } => match approval_decider.decide(&reason, &approval_scope) {
+            } => match approval_decider
+                .request_approval(ToolApprovalRequest {
+                    context,
+                    reason: reason.clone(),
+                    scope: approval_scope,
+                })
+                .await
+            {
                 // 审批通过则直接本机运行再次尝试
                 UserApprovalDecision::Approved { persistence: _ } => {
                     return run_no_sandbox_retry(request, execution_runner.as_ref(), reason);
@@ -235,25 +258,40 @@ mod tests {
 
     struct RecordingApprovalDecider {
         decisions: Mutex<VecDeque<UserApprovalDecision>>,
-        scopes: Mutex<Vec<ApprovalScope>>,
+        requests: Mutex<Vec<(ToolCallContext, ApprovalScope)>>,
     }
 
     impl RecordingApprovalDecider {
         fn new(decisions: Vec<UserApprovalDecision>) -> Self {
             Self {
                 decisions: Mutex::new(VecDeque::from(decisions)),
-                scopes: Mutex::new(Vec::new()),
+                requests: Mutex::new(Vec::new()),
             }
         }
 
         fn scopes(&self) -> Vec<ApprovalScope> {
-            self.scopes.lock().unwrap().clone()
+            self.requests
+                .lock()
+                .unwrap()
+                .iter()
+                .map(|(_, scope)| scope.clone())
+                .collect()
+        }
+
+        fn contexts(&self) -> Vec<ToolCallContext> {
+            self.requests
+                .lock()
+                .unwrap()
+                .iter()
+                .map(|(context, _)| context.clone())
+                .collect()
         }
     }
 
-    impl ApprovalDecider for RecordingApprovalDecider {
-        fn decide(&self, _reason: &str, scope: &ApprovalScope) -> UserApprovalDecision {
-            self.scopes.lock().unwrap().push(scope.clone());
+    #[async_trait::async_trait]
+    impl ApprovalController for RecordingApprovalDecider {
+        async fn request_approval(&self, req: ToolApprovalRequest) -> UserApprovalDecision {
+            self.requests.lock().unwrap().push((req.context, req.scope));
             self.decisions
                 .lock()
                 .unwrap()
@@ -291,6 +329,14 @@ mod tests {
             .expect("test command should match a capability")
     }
 
+    fn tool_call_context() -> ToolCallContext {
+        ToolCallContext {
+            index: 7,
+            call_id: "call_shell".to_string(),
+            tool_name: "run_command".to_string(),
+        }
+    }
+
     fn approved() -> UserApprovalDecision {
         UserApprovalDecision::Approved {
             persistence: ApprovalPersistence::Once,
@@ -312,11 +358,27 @@ mod tests {
         decisions: Vec<UserApprovalDecision>,
     ) -> (
         Arc<RecordingApprovalDecider>,
-        Arc<dyn ApprovalDecider + Send + Sync + 'static>,
+        Arc<dyn ApprovalController + Send + Sync + 'static>,
     ) {
         let decider = Arc::new(RecordingApprovalDecider::new(decisions));
-        let trait_object = decider.clone() as Arc<dyn ApprovalDecider + Send + Sync + 'static>;
+        let trait_object = decider.clone() as Arc<dyn ApprovalController + Send + Sync + 'static>;
         (decider, trait_object)
+    }
+
+    async fn run_command_case(
+        request: &CommandRequest,
+        argv: &[&str],
+        execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
+        approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
+    ) -> RunCommandResult {
+        run_shell_command(
+            request,
+            tool_call_context(),
+            matched(argv),
+            execution_runner,
+            approval_decider,
+        )
+        .await
     }
 
     fn assert_finished(result: RunCommandResult, expected_output: &str) {
@@ -340,8 +402,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn skip_without_bypass_runs_once_in_sandbox() {
+    #[tokio::test]
+    async fn skip_without_bypass_runs_once_in_sandbox() {
         let argv = ["cat", "package.json"];
         let request = request(
             &argv,
@@ -355,7 +417,7 @@ mod tests {
         }]);
         let (decider, decider_trait) = approval_decider(vec![]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_finished(result, "read ok");
         assert_eq!(
@@ -367,8 +429,8 @@ mod tests {
         assert!(decider.scopes().is_empty());
     }
 
-    #[test]
-    fn safe_read_sandbox_denied_does_not_retry_because_capability_retry_policy_is_never() {
+    #[tokio::test]
+    async fn safe_read_sandbox_denied_does_not_retry_because_capability_retry_policy_is_never() {
         let argv = ["cat", "/private/file"];
         let request = request(
             &argv,
@@ -385,7 +447,7 @@ mod tests {
         )]);
         let (decider, decider_trait) = approval_decider(vec![]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_denied(result);
         assert_eq!(
@@ -397,8 +459,8 @@ mod tests {
         assert!(decider.scopes().is_empty());
     }
 
-    #[test]
-    fn needs_approval_rejection_denies_without_running_command() {
+    #[tokio::test]
+    async fn needs_approval_rejection_denies_without_running_command() {
         let argv = ["npm", "install", "vite"];
         let request = request(
             &argv,
@@ -410,17 +472,22 @@ mod tests {
         let (runner, runner_trait) = execution_runner(vec![]);
         let (decider, decider_trait) = approval_decider(vec![UserApprovalDecision::Rejected]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_denied(result);
         assert!(runner.attempts().is_empty());
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 1);
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
+        let contexts = decider.contexts();
+        assert_eq!(contexts.len(), 1);
+        assert_eq!(contexts[0].index, 7);
+        assert_eq!(contexts[0].call_id, "call_shell");
+        assert_eq!(contexts[0].tool_name, "run_command");
     }
 
-    #[test]
-    fn needs_approval_approval_still_runs_sandbox_first() {
+    #[tokio::test]
+    async fn needs_approval_approval_still_runs_sandbox_first() {
         let argv = ["npm", "install", "vite"];
         let request = request(
             &argv,
@@ -434,7 +501,7 @@ mod tests {
         }]);
         let (decider, decider_trait) = approval_decider(vec![approved()]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_finished(result, "install ok in sandbox");
         assert_eq!(
@@ -448,8 +515,8 @@ mod tests {
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
     }
 
-    #[test]
-    fn command_failure_in_sandbox_does_not_retry() {
+    #[tokio::test]
+    async fn command_failure_in_sandbox_does_not_retry() {
         let argv = ["npm", "test", "--", "fail"];
         let request = request(
             &argv,
@@ -466,7 +533,7 @@ mod tests {
         )]);
         let (_decider, decider_trait) = approval_decider(vec![]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_failed(result);
         assert_eq!(
@@ -477,8 +544,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn sandbox_denied_with_network_allow_retries_without_second_approval() {
+    #[tokio::test]
+    async fn sandbox_denied_with_network_allow_retries_without_second_approval() {
         let argv = ["npm", "install", "vite"];
         let request = request(
             &argv,
@@ -501,7 +568,7 @@ mod tests {
         ]);
         let (decider, decider_trait) = approval_decider(vec![approved()]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_finished(result, "install ok without sandbox");
         let attempts = runner.attempts();
@@ -519,8 +586,8 @@ mod tests {
         assert_eq!(decider.scopes().len(), 1);
     }
 
-    #[test]
-    fn sandbox_denied_with_network_prompt_requires_retry_approval_with_no_sandbox_scope() {
+    #[tokio::test]
+    async fn sandbox_denied_with_network_prompt_requires_retry_approval_with_no_sandbox_scope() {
         let argv = ["npm", "install", "vite"];
         let request = request(
             &argv,
@@ -543,7 +610,7 @@ mod tests {
         ]);
         let (decider, decider_trait) = approval_decider(vec![approved(), approved()]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_finished(result, "install ok after approval");
         let attempts = runner.attempts();
@@ -562,10 +629,17 @@ mod tests {
         assert_eq!(scopes.len(), 2);
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
         assert_eq!(scopes[1].sandbox_profile, SandboxProfile::NoSandbox);
+        let contexts = decider.contexts();
+        assert_eq!(contexts.len(), 2);
+        assert!(
+            contexts.iter().all(
+                |context| context.call_id == "call_shell" && context.tool_name == "run_command"
+            )
+        );
     }
 
-    #[test]
-    fn sandbox_denied_retry_approval_rejection_denies_without_no_sandbox_retry() {
+    #[tokio::test]
+    async fn sandbox_denied_retry_approval_rejection_denies_without_no_sandbox_retry() {
         let argv = ["npm", "install", "vite"];
         let request = request(
             &argv,
@@ -586,7 +660,7 @@ mod tests {
         let (decider, decider_trait) =
             approval_decider(vec![approved(), UserApprovalDecision::Rejected]);
 
-        let result = run_shell_command(&request, matched(&argv), runner_trait, decider_trait);
+        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_denied(result);
         assert_eq!(

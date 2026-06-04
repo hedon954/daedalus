@@ -5,7 +5,7 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的一次命令安全链路 event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: approval / execution attempt / retry / denied / skipped 等内部安全节点还没有稳定变成外部可观察事件。
+- Current gap: approval 事件命名和 broker 已接入；CommandExecution / CommandRetry 事件仍未从 `run_shell_command` 透出到外部 stream。
 - Evidence needed: [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)、[`../../demo/src/agent/stream_event.rs`](../../demo/src/agent/stream_event.rs)、[`../../demo/src/model/event.rs`](../../demo/src/model/event.rs)、[`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)、[`../../demo/src/tool/shell/mod.rs`](../../demo/src/tool/shell/mod.rs)、[`../../demo/src/tool/shell/retry.rs`](../../demo/src/tool/shell/retry.rs)。
 - After this: Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics，`demo/README.md` 可以解释一次命令为什么被允许、拒绝、sandbox retry 或结束。
 
@@ -23,10 +23,15 @@
 
 - Goal: 让 `run_command` 的关键安全节点进入外部 stream，而不是只存在于内部测试和返回值里。
 - Why: `demo/README.md` 需要展示一条可解释 trace，证明 tool call 经过了 approval、sandbox first、retry 和 observation，而不是直接执行。
+- Current checkpoint:
+  - 已完成：`StreamEvent` 命名已收敛为 `CommandNeedsApproval`、`CommandApprovalResult`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`。
+  - 已完成：`ApprovalBroker` 使用 outbound event + inbound approval result channel + pending oneshot，把审批请求和审批结果配对。
+  - 已验证：`cargo test` 通过 61 个默认测试，3 个 live LLM 测试 ignored。
+  - 未完成：`CommandApprovalResult` 目前主要是 broker 的控制输入；`CommandExecution*` 和 `CommandRetryEvaluated` 也还没有从 shell execution / retry path 发到 ReAct 外部 stream。
 - Steps:
-  1. 先盘点现有 `StreamEvent` / `AgentEvent` / `ToolRuntimeResult` / `RunCommandResult`，确认哪些枚举已经能复用。
-  2. 决定最小事件集合：approval resolved / denied、execution started / finished、retry evaluated、tool observation produced。
-  3. 给 `ToolRuntime` 或 `run_shell_command` 增加事件出口，但避免让 shell 内部 helper 泄漏到 ReAct 层。
+  1. 给 `ToolRuntimeContext` 或 command runtime 增加 outbound event sink，让 shell path 能发送内部 command 事件。
+  2. 在 `run_shell_command` 的三处关键路径发事件：approval result、command attempt started/finished/failed、retry evaluated。
+  3. 补 trace 测试：safe read、network install sandbox denied -> retry、dangerous shell denied；同时确认 ReAct observation 回灌不被破坏。
 - Verify:
   - 单测覆盖 safe command 成功 trace。
   - 单测覆盖 dangerous command denied trace。

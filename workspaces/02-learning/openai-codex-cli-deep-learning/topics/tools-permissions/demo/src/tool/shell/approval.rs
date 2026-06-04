@@ -1,4 +1,14 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
+use dashmap::DashMap;
+use tokio::sync::oneshot;
+
 use crate::{
+    agent::{
+        react::{EventReceiver, EventSender},
+        stream_event::StreamEvent,
+    },
     model::{
         approval::{ApprovalPersistence, ApprovalPolicy, ApprovalRequirement, ApprovalScope},
         capability::DefaultDecision,
@@ -8,17 +18,81 @@ use crate::{
     tool::shell::registry::MatchedCapability,
 };
 
-pub trait ApprovalDecider {
-    fn decide(&self, reason: &str, scope: &ApprovalScope) -> UserApprovalDecision;
+pub struct ToolApprovalRequest {
+    pub context: ToolCallContext,
+    pub reason: String,
+    pub scope: ApprovalScope,
 }
 
-pub struct ScriptedApproval {}
+#[derive(Debug, Clone)]
+pub struct ToolCallContext {
+    pub index: i64,
+    pub call_id: String,
+    pub tool_name: String,
+}
 
-impl ApprovalDecider for ScriptedApproval {
-    fn decide(&self, _reason: &str, _scope: &ApprovalScope) -> UserApprovalDecision {
-        return UserApprovalDecision::Approved {
-            persistence: ApprovalPersistence::Once,
+#[async_trait]
+pub trait ApprovalController {
+    async fn request_approval(&self, req: ToolApprovalRequest) -> UserApprovalDecision;
+}
+
+pub struct ApprovalBroker {
+    events_tx: EventSender,
+    pending: Arc<DashMap<String, oneshot::Sender<UserApprovalDecision>>>,
+}
+
+impl ApprovalBroker {
+    pub fn new(tx: EventSender, mut rx: EventReceiver) -> ApprovalBroker {
+        let pending = Arc::new(DashMap::new());
+
+        let result = Self {
+            events_tx: tx,
+            pending: pending.clone(),
         };
+
+        tokio::spawn(async move {
+            while let Some(event) = rx.recv().await {
+                match event {
+                    StreamEvent::CommandApprovalResult {
+                        approval_id,
+                        index: _,
+                        call_id: _,
+                        name: _,
+                        decision,
+                    } => {
+                        if let Some((_, tx)) = pending.remove(&approval_id) {
+                            _ = tx.send(decision);
+                        }
+                    }
+                    _ => continue,
+                }
+            }
+        });
+
+        result
+    }
+}
+
+#[async_trait]
+impl ApprovalController for ApprovalBroker {
+    async fn request_approval(&self, request: ToolApprovalRequest) -> UserApprovalDecision {
+        let approval_id = uuid::Uuid::new_v4().to_string();
+        let (tx, rx) = oneshot::channel();
+        self.pending.insert(approval_id.clone(), tx);
+
+        self.events_tx
+            .send(Ok(StreamEvent::CommandNeedsApproval {
+                approval_id,
+                index: request.context.index,
+                call_id: request.context.call_id,
+                name: request.context.tool_name,
+                reason: request.reason,
+                scope: request.scope,
+            }))
+            .await
+            .expect("send tool needs approval failed");
+
+        rx.await.unwrap_or(UserApprovalDecision::Rejected)
     }
 }
 

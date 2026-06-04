@@ -7,7 +7,7 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的一次命令安全链路 event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: approval / sandbox-first / retry / denied 等安全节点还没有稳定透出为外部事件。
+- Current gap: approval 事件已通过 broker 形成往返；command attempt / retry decision 还没有稳定透出为外部事件。
 - Evidence path: [`../../demo/src/agent/stream_event.rs`](../../demo/src/agent/stream_event.rs)、[`../../demo/src/model/event.rs`](../../demo/src/model/event.rs)、[`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)、[`../../demo/src/tool/shell/mod.rs`](../../demo/src/tool/shell/mod.rs)、[`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)。
 
 ## User Proposal
@@ -15,8 +15,8 @@
 用户提出需要补充几个事件：
 
 ```text
-ToolNeedsApproval
-ToolApprovalResult
+CommandNeedsApproval
+CommandApprovalResult
 ToolRunStarted / ToolRunFailed / ToolRunFinished 增加 in_sandbox 参数
 ```
 
@@ -24,13 +24,13 @@ ToolRunStarted / ToolRunFailed / ToolRunFinished 增加 in_sandbox 参数
 
 ```text
 传出去：
-  - ToolNeedsApproval
+  - CommandNeedsApproval
   - ToolRunStarted
   - ToolRunFailed
   - ToolRunFinished
 
 接进来：
-  - 接收 ToolApprovalResult
+  - 接收 CommandApprovalResult
   - 根据审批是否通过继续执行
 ```
 
@@ -61,11 +61,11 @@ plan tool call
 
 ```text
 ToolRunStarted(run_command)
-  -> ToolExecutionStarted(SandboxFirst)
-  -> ToolExecutionFailed(SandboxFirst)
-  -> ToolRetryEvaluated(...)
-  -> ToolExecutionStarted(NoSandboxRetry)
-  -> ToolExecutionFinished(NoSandboxRetry)
+  -> CommandExecutionStarted(SandboxFirst)
+  -> CommandExecutionFailed(SandboxFirst)
+  -> CommandRetryEvaluated(...)
+  -> CommandExecutionStarted(NoSandboxRetry)
+  -> CommandExecutionFinished(NoSandboxRetry)
 ToolRunFinished(run_command)
 ```
 
@@ -79,14 +79,14 @@ ToolRunFinished(run_command)
 更好的做法是保留高层 tool run 事件，再新增 execution-attempt 级事件，并复用 [`ExecutionAttempt`](../../demo/src/model/event.rs)：
 
 ```rust
-ToolExecutionStarted {
+CommandExecutionStarted {
     index,
     call_id,
     name,
     attempt: ExecutionAttempt,
 }
 
-ToolExecutionFinished {
+CommandExecutionFinished {
     index,
     call_id,
     name,
@@ -94,7 +94,7 @@ ToolExecutionFinished {
     output,
 }
 
-ToolExecutionFailed {
+CommandExecutionFailed {
     index,
     call_id,
     name,
@@ -115,7 +115,7 @@ NoSandboxRetry
 
 ### 2. 审批结果要区分 control input 和 observable event
 
-`ToolNeedsApproval` 是对外事件：
+`CommandNeedsApproval` 是对外事件：
 
 ```text
 runtime -> UI / test / controller
@@ -127,23 +127,23 @@ runtime -> UI / test / controller
 UI / test / controller -> runtime
 ```
 
-但 runtime 收到审批结果后，还应该再向外发出 `ToolApprovalResult`，让 trace 完整：
+但 runtime 收到审批结果后，还应该再向外发出 `CommandApprovalResult`，让 trace 完整：
 
 ```text
-ToolNeedsApproval
+CommandNeedsApproval
   -> external decision input
-  -> ToolApprovalResult
+  -> CommandApprovalResult
   -> continue / deny
 ```
 
-所以 `ToolApprovalResult` 不能只被理解为“接进来”的值，它也应该是外部可观察事件。
+所以 `CommandApprovalResult` 不能只被理解为“接进来”的值，它也应该是外部可观察事件。
 
 ## Candidate Event Set
 
 最小可行事件集合：
 
 ```rust
-ToolNeedsApproval {
+CommandNeedsApproval {
     approval_id: String,
     index: i64,
     call_id: String,
@@ -152,7 +152,7 @@ ToolNeedsApproval {
     scope: ApprovalScope,
 }
 
-ToolApprovalResult {
+CommandApprovalResult {
     approval_id: String,
     index: i64,
     call_id: String,
@@ -160,14 +160,14 @@ ToolApprovalResult {
     decision: UserApprovalDecision,
 }
 
-ToolExecutionStarted {
+CommandExecutionStarted {
     index: i64,
     call_id: String,
     name: String,
     attempt: ExecutionAttempt,
 }
 
-ToolExecutionFinished {
+CommandExecutionFinished {
     index: i64,
     call_id: String,
     name: String,
@@ -175,7 +175,7 @@ ToolExecutionFinished {
     output: String,
 }
 
-ToolExecutionFailed {
+CommandExecutionFailed {
     index: i64,
     call_id: String,
     name: String,
@@ -183,7 +183,7 @@ ToolExecutionFailed {
     error: String,
 }
 
-ToolRetryEvaluated {
+CommandRetryEvaluated {
     index: i64,
     call_id: String,
     name: String,
@@ -193,19 +193,30 @@ ToolRetryEvaluated {
 
 `approval_id` 很重要。未来如果同一轮有多个 tool call，或者后续允许并发执行，审批结果必须能准确回到对应请求。
 
+## Implementation Checkpoint
+
+当前代码已经完成了 Slice 8 的第一步落地：
+
+- [`stream_event.rs`](../../demo/src/agent/stream_event.rs) 已使用 `CommandNeedsApproval`、`CommandApprovalResult`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`，避免把 command attempt 误说成所有 tool 的 execution。
+- [`approval.rs`](../../demo/src/tool/shell/approval.rs) 已实现 `ApprovalBroker`：发出 `CommandNeedsApproval`，通过 `approval_id` 和 pending oneshot 等待 `CommandApprovalResult`。
+- [`runtime.rs`](../../demo/src/tool/runtime.rs) 已从 `ToolCallFinished` 构造 `ToolCallContext`，并把 `index / call_id / tool_name` 传入 `run_shell_command`。
+- [`shell/mod.rs`](../../demo/src/tool/shell/mod.rs) 已在初始 approval 和 retry approval 两处传递 `ToolApprovalRequest`。
+
+还没有完成的是：`CommandApprovalResult` 目前主要是 broker 的控制输入，尚未作为外部 trace 事件重新广播；`CommandExecution*` 和 `CommandRetryEvaluated` 也只是事件类型，还没有从 `run_shell_command` 的 sandbox-first、no-sandbox retry 和 retry gate 分支真实发出。
+
 ## Minimal Credible Trace
 
 外部观察者不需要看到所有内部 helper，但至少需要看到这条链：
 
 ```text
 ToolCallFinished
-  -> ToolNeedsApproval
-  -> ToolApprovalResult
-  -> ToolExecutionStarted(SandboxFirst)
-  -> ToolExecutionFailed(SandboxFirst)
-  -> ToolRetryEvaluated(RetryWithApproval / RetryWithoutApproval / DoNotRetry)
-  -> ToolExecutionStarted(NoSandboxRetry)
-  -> ToolExecutionFinished(NoSandboxRetry)
+  -> CommandNeedsApproval
+  -> CommandApprovalResult
+  -> CommandExecutionStarted(SandboxFirst)
+  -> CommandExecutionFailed(SandboxFirst)
+  -> CommandRetryEvaluated(RetryWithApproval / RetryWithoutApproval / DoNotRetry)
+  -> CommandExecutionStarted(NoSandboxRetry)
+  -> CommandExecutionFinished(NoSandboxRetry)
   -> ToolRunFinished
 ```
 
@@ -227,13 +238,13 @@ tool call 没有直接裸跑
 1. 先新增事件类型，不急着改 channel。
 2. 让 `ToolRuntime::run` 或后续 `ToolRuntime::run_with_events` 能接收 event sink。
 3. 在 `run_shell_command` 中围绕关键节点 emit：
-   - `ToolNeedsApproval`
-   - `ToolApprovalResult`
-   - `ToolExecutionStarted`
-   - `ToolExecutionFinished`
-   - `ToolExecutionFailed`
-   - `ToolRetryEvaluated`
-4. 最后再把 `ApprovalDecider` 从同步 fake/scripted 升级为 channel-based decider。
+   - `CommandNeedsApproval`
+   - `CommandApprovalResult`
+   - `CommandExecutionStarted`
+   - `CommandExecutionFinished`
+   - `CommandExecutionFailed`
+   - `CommandRetryEvaluated`
+4. 最后再把 event sink 接入 ReAct 外部 stream，并用 trace tests 验证 safe read、sandbox denied retry、dangerous denied。
 
 ## Critical Lens
 
@@ -249,5 +260,5 @@ tool call 没有直接裸跑
 ```text
 不要给高层 ToolRunStarted 只加 in_sandbox bool。
 改为新增 execution-attempt 级事件，并复用 ExecutionAttempt。
-approval channel 可以作为后续实现方向，但先把事件协议和事件出口设计清楚。
+approval channel 已落地为 ApprovalBroker；下一步只补 command attempt / retry 事件出口。
 ```

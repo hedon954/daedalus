@@ -196,11 +196,13 @@ OpenAI-compatible Chat Completions stream
 
 目标：把 approval、execution attempt、retry decision、denied/skipped 等关键节点透出为可观察事件。
 
+状态：进行中。事件命名已从泛化的 `ToolExecution*` 收敛为 command 专属的 `CommandExecution*` / `CommandRetryEvaluated`；`ApprovalBroker` 已能通过 `CommandNeedsApproval` 和 `CommandApprovalResult` 完成审批往返。下一步是把 command attempt / retry 事件从 `run_shell_command` 真实透出到 ReAct 外部 stream。
+
 行动指南：[`08-slice-8-event-protocol-hardening.md`](08-slice-8-event-protocol-hardening.md)。
 
 验收：
 
-- 外部 stream 能看见 approval resolved / denied / execution started / retry evaluated。
+- 外部 stream 能看见 command approval、command attempt started / finished / failed、retry evaluated。
 - README 可以用 event trace 解释一次命令如何走完安全链路。
 
 ### Slice 9: Multi-Tool Hard-Deny And Skipped Semantics
