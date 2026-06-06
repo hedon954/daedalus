@@ -67,6 +67,8 @@ Review-only 不等于 learning-state-only。只要 review 或验证改变了完�
    - 如果为了诊断需要检查文案，优先使用最小稳定关键词，并在测试名里说明这是 contract。
 
 6. 提交 checkpoint，除非用户明确要求不要提交：
+   - 提交前先做 learning-map sync check：代码、测试、review 或验证是否改变了当前光标、完成度、风险、证据或下一步。
+   - 如果改变了，先同步 `.daedalus/todo.md`、`.daedalus/outcome-map.md`、必要的 `.daedalus/long-context.md` 和相关 notes/guides，再 staging。
    - 使用 `type(scope): 中文描述`。
    - 当前闭环产物和下一步规划产物应分开提交。
    - 不要把“已完成实现”和“后续 guide”混在一个 commit 里，除非二者不可分割。

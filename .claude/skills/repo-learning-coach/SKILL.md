@@ -228,6 +228,27 @@ Review-only is not progress-sync-only. If a review changes completion status, ex
 
 Before syncing progress in an implementation stage, do a grounding pass over the actual implementation: inspect the touched source files, relevant tests, TODOs, and recent diff, and run the smallest useful validation when feasible. Do not let stale `todo.md`, `outcome-map.md`, or guide wording decide that a slice is complete.
 
+## Learning Map Commit Gate
+
+Before committing repo-learning implementation, demo, or test changes, the Agent must run a short map-sync check. This gate is intentionally narrow: it exists to keep recovery accurate, not to create paperwork after every edit.
+
+Check whether the code, tests, review findings, or validation changed any of these recovery facts:
+
+1. Current stage, slice, code frontier, or open gap.
+2. Completion status or exit criteria.
+3. Risks, blockers, failed validation, or deferred non-goals.
+4. Verified evidence, test coverage, or runtime observation.
+5. Next action, next guide, or next coaching question.
+
+If any item changed, update the active topic learning artifacts before staging the commit:
+
+- `.daedalus/todo.md` for current cursor, next action, and blockers.
+- `.daedalus/outcome-map.md` for broader position, artifacts, gaps, and stop rules.
+- `.daedalus/long-context.md` only when durable recovery context changed.
+- Relevant `notes/` or `guides/` when a conclusion, decision, or next-step map changed.
+
+Do not commit implementation progress that makes the learning map stale. Either include the map sync in the same meaningfully scoped commit, or make an immediate docs checkpoint commit before declaring the work complete. A cursor-only WIP update may stay uncommitted unless the user asks for a checkpoint.
+
 ## Current Cursor Sync Gate
 
 Use this gate when the user says they have reached a new implementation or reading frontier, but the step is still WIP and not ready to become a checkpoint.

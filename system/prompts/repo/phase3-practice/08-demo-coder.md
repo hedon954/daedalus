@@ -78,6 +78,7 @@ Agent 不可以：
 - Review-only 也要同步学习进度：如果 review 暴露了新的 blocker、风险、完成判定或下一步路径，即使不编辑 demo 实现代码，也要更新 learning artifacts。
 - 当用户说明“我现在已经到了某个函数/模块/边界”但尚未形成可验证闭环时，只做轻量 `Current Cursor Sync`：更新 `.daedalus/todo.md` 的当前光标，标记 WIP / unverified，不创建 notes、不完成 stage、不单独提交。
 - 每个小步骤形成闭环后必须执行 `Micro Checkpoint Protocol`：更新学习状态、运行最小验证、按主题拆分提交，并给出下一步行动卡或下一轮问题。
+- 在提交 demo 实现或测试变更前，必须先做 learning-map sync check：如果代码事实改变了当前 slice、code frontier、验收状态、风险或下一步，先更新 active topic 的 `.daedalus/todo.md`、`.daedalus/outcome-map.md`、必要的 `.daedalus/long-context.md` 和相关 notes/guides。
 - 每个 slice closeout 必须执行 `Critical Lens` 小检查：本 slice 忠实模仿了什么，简化/改进/丢弃了什么，哪些取舍会影响业务迁移。
 - 当前闭环产物和下一步规划产物不要混在一个 commit 里；例如 demo hardening 和下一轮 integration guide 应拆成两个提交。
 - 写测试时优先锁定稳定行为；错误路径默认只断言错误变体、类别或存在，不锁完整错误文案，除非该文案是明确的 CLI/API contract。
