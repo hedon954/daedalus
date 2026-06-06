@@ -5,9 +5,9 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的可解释 command event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: command 事件已经能透出，但事件发送分散，且 approval request sender 不是 run-scoped。
+- Current gap: command 事件已经能透出，approval request 已通过当前 run stream 发送；剩余问题是事件发送分散，`run_shell_command` 里仍有大量手写 `tx.send(...)`。
 - Paired note: [`../../notes/08-demo-coder/06-slice-8-event-outlet-review.md`](../../notes/08-demo-coder/06-slice-8-event-outlet-review.md)
-- After this: Slice 8 可以用稳定 trace tests 收口，再进入 multi-tool hard-deny / skipped semantics。
+- After this: 如果 emitter 抽象收益大于复杂度，Slice 8 可以用集中 trace helper 收口；否则可以记录当前方案已足够，进入 multi-tool hard-deny / skipped semantics。
 
 ## North Star
 
@@ -102,32 +102,31 @@ Started(attempt)
 
 `run_sandbox_first_flow` 之后不再自己散落发送 started / failed / finished。
 
-### 3. Make approval request run-scoped
+### 3. Keep approval request run-scoped
 
-不要让 `ApprovalBroker` 长期持有外部 stream sender。
+当前代码已经不再让 approval gateway 长期持有外部 stream sender。
 
-推荐当前 slice 的最小改法：
+当前形态应保持为：
 
-```rust
-#[async_trait]
-pub trait ApprovalController: Send + Sync {
-    async fn request_approval(
-        &self,
-        req: ToolApprovalRequest,
-        events: &CommandEventEmitter<'_>,
-    ) -> UserApprovalDecision;
-}
+```text
+ApprovalGateway
+  -> create_pending_approval(request)
+  -> wait ToolApprovalResult by approval_id
+
+run_shell_command
+  -> emit CommandNeedsApproval through current run EventSender
+  -> await PendingApproval
 ```
 
-`ApprovalBroker` 仍然可以负责：
+`ApprovalGateway` 负责：
 
 - 生成 `approval_id`
 - 建立 pending oneshot
 - 等待 `ToolApprovalResult`
 
-但 `CommandNeedsApproval` 应通过当前 run 的 `CommandEventEmitter` 发出。这样外部消费者从 `agent.run()` 返回的 stream 里一定能看到审批请求。
+但 `CommandNeedsApproval` 继续由当前 run 发出。这样外部消费者从 `agent.run()` 返回的 stream 里一定能看到审批请求。
 
-如果 `events.needs_approval(...)` 发送失败，当前 demo 建议 fail closed：
+如果发送 `CommandNeedsApproval` 失败，当前 demo 已选择 fail closed：
 
 ```text
 remove pending approval
@@ -165,9 +164,15 @@ network install retry success trace:
   CommandExecutionFinished(NoSandboxRetry)
 ```
 
-### Step 3: Move approval event emission to current run
+### Step 3: Preserve approval event emission in current run
 
-让 `ApprovalBroker` 不再持有 `EventSender`，而是通过 `CommandEventEmitter` 发出 `CommandNeedsApproval`。
+这一步已经完成：`ApprovalGateway` 不持有 `EventSender`，`run_shell_command` 使用当前 run 的 sender 发出 `CommandNeedsApproval`。
+
+如果继续引入 `CommandEventEmitter`，只需要把现有发送逻辑从 `request_approval(...)` 迁移到：
+
+```text
+events.needs_approval(...)
+```
 
 验收场景：
 
@@ -197,7 +202,7 @@ flowchart TD
     A["ReActAgent::run creates current EventSender"] --> B["ToolRuntime::run"]
     B --> C["run_shell_command"]
     C --> D["CommandEventEmitter"]
-    C --> E["ApprovalController / ApprovalBroker"]
+    C --> E["ApprovalGateway / PendingApproval"]
     C --> F["run_execution_attempt"]
     F --> G["ExecutionRunner"]
     D --> H["current EventStream"]
@@ -207,11 +212,12 @@ flowchart TD
 
 ## Tests To Add Or Adjust
 
-- Approval request appears in the same `EventStream` returned by `agent.run()`.
-- Approval event send failure fails closed instead of panicking.
-- Sandbox retry success closes `SandboxFirst` with `CommandExecutionFailed`.
-- Safe read success still emits exactly one `SandboxFirst` started / finished pair.
-- Dangerous shell denied still does not run execution attempts.
+- [x] Approval request appears in the same `EventStream` returned by `agent.run()`.
+- [x] Approval event send failure fails closed instead of panicking.
+- [x] Sandbox retry success closes `SandboxFirst` with `CommandExecutionFailed`.
+- [x] Safe read success still emits exactly one `SandboxFirst` started / finished pair.
+- [x] Dangerous shell denied still does not run execution attempts.
+- [ ] 如果引入 `CommandEventEmitter`，现有 trace tests 仍全部通过。
 
 ## Stop Rules
 

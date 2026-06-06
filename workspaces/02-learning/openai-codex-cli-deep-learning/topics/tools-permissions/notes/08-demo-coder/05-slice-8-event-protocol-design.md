@@ -22,7 +22,7 @@ CommandRetryEvaluated
 ToolRunFinished / ToolRunFailed
 ```
 
-审批结果不是 `StreamEvent`。它是 `ApprovalBroker` 的内部控制消息：
+审批结果不是 `StreamEvent`。它是 `ApprovalGateway` 的内部控制消息：
 
 ```text
 ToolApprovalResult {
@@ -35,8 +35,8 @@ ToolApprovalResult {
 
 ```text
 CommandNeedsApproval: runtime -> 外部观察者 / UI
-ToolApprovalResult: UI / test -> ApprovalBroker
-UserApprovalDecision: ApprovalBroker -> run_shell_command
+ToolApprovalResult: UI / test -> ApprovalGateway
+UserApprovalDecision: ApprovalGateway -> run_shell_command
 ```
 
 这样可以保持两个边界清晰：

@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use dashmap::DashMap;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::{
-    agent::{react::EventSender, stream_event::StreamEvent},
     model::{
         approval::{ApprovalPersistence, ApprovalPolicy, ApprovalRequirement, ApprovalScope},
         capability::DefaultDecision,
@@ -15,6 +13,7 @@ use crate::{
     tool::shell::registry::MatchedCapability,
 };
 
+#[derive(Debug, Clone)]
 pub struct ToolApprovalRequest {
     pub context: ToolCallContext,
     pub reason: String,
@@ -26,7 +25,7 @@ pub struct ToolApprovalResult {
     pub decision: UserApprovalDecision,
 }
 
-pub type ToolApprovalResultRecevier = mpsc::Receiver<ToolApprovalResult>;
+pub type ToolApprovalResultReceiver = mpsc::Receiver<ToolApprovalResult>;
 
 #[derive(Debug, Clone)]
 pub struct ToolCallContext {
@@ -35,22 +34,21 @@ pub struct ToolCallContext {
     pub tool_name: String,
 }
 
-#[async_trait]
-pub trait ApprovalController: Send + Sync {
-    async fn request_approval(&self, req: ToolApprovalRequest) -> UserApprovalDecision;
-}
-
-pub struct ApprovalBroker {
-    events_tx: EventSender,
+pub struct ApprovalGateway {
     pending: Arc<DashMap<String, oneshot::Sender<UserApprovalDecision>>>,
 }
 
-impl ApprovalBroker {
-    pub fn new(tx: EventSender, mut rx: ToolApprovalResultRecevier) -> ApprovalBroker {
+pub struct PendingApproval {
+    pub approval_id: String,
+    pub request: ToolApprovalRequest,
+    decision_rx: oneshot::Receiver<UserApprovalDecision>,
+}
+
+impl ApprovalGateway {
+    pub fn new(mut rx: ToolApprovalResultReceiver) -> ApprovalGateway {
         let pending = Arc::new(DashMap::new());
 
         let result = Self {
-            events_tx: tx,
             pending: pending.clone(),
         };
 
@@ -64,33 +62,29 @@ impl ApprovalBroker {
 
         result
     }
-}
 
-#[async_trait]
-impl ApprovalController for ApprovalBroker {
-    async fn request_approval(&self, request: ToolApprovalRequest) -> UserApprovalDecision {
+    pub fn create_pending_approval(&self, request: ToolApprovalRequest) -> PendingApproval {
         let approval_id = uuid::Uuid::new_v4().to_string();
         let (tx, rx) = oneshot::channel();
         self.pending.insert(approval_id.clone(), tx);
 
-        let decision = match self
-            .events_tx
-            .send(Ok(StreamEvent::CommandNeedsApproval {
-                approval_id: approval_id.clone(),
-                index: request.context.index,
-                call_id: request.context.call_id,
-                name: request.context.tool_name,
-                reason: request.reason,
-                scope: request.scope,
-            }))
-            .await
-        {
-            Ok(_) => rx.await.unwrap_or(UserApprovalDecision::Rejected),
-            Err(_) => UserApprovalDecision::Rejected,
-        };
+        PendingApproval {
+            approval_id,
+            request,
+            decision_rx: rx,
+        }
+    }
 
-        _ = self.pending.remove(&approval_id);
-        decision
+    pub fn cancel(&self, approval_id: &str) {
+        _ = self.pending.remove(approval_id);
+    }
+}
+
+impl PendingApproval {
+    pub async fn wait(self) -> UserApprovalDecision {
+        self.decision_rx
+            .await
+            .unwrap_or(UserApprovalDecision::Rejected)
     }
 }
 
@@ -351,10 +345,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn approval_broker_emits_request_event_and_resolves_matching_internal_result() {
-        let (event_tx, mut event_rx) = mpsc::channel(4);
+    async fn approval_gateway_resolves_matching_internal_result() {
         let (result_tx, result_rx) = mpsc::channel(4);
-        let broker = ApprovalBroker::new(event_tx, result_rx);
+        let gateway = ApprovalGateway::new(result_rx);
         let expected_reason = "network install requires approval";
         let scope = ApprovalScope {
             command_prefix: strings(&["npm", "install"]),
@@ -364,52 +357,34 @@ mod tests {
             persistence: ApprovalPersistence::Once,
         };
 
-        let approval_task = tokio::spawn(async move {
-            broker
-                .request_approval(ToolApprovalRequest {
-                    context: ToolCallContext {
-                        index: 3,
-                        call_id: "call_install".to_string(),
-                        tool_name: "run_command".to_string(),
-                    },
-                    reason: expected_reason.to_string(),
-                    scope: scope.clone(),
-                })
-                .await
+        let pending = gateway.create_pending_approval(ToolApprovalRequest {
+            context: ToolCallContext {
+                index: 3,
+                call_id: "call_install".to_string(),
+                tool_name: "run_command".to_string(),
+            },
+            reason: expected_reason.to_string(),
+            scope,
         });
+        let approval_id = pending.approval_id.clone();
 
-        let event = event_rx
-            .recv()
-            .await
-            .expect("approval broker should emit request event")
-            .expect("approval event should be ok");
-        let approval_id = match event {
-            StreamEvent::CommandNeedsApproval {
-                approval_id,
-                index,
-                call_id,
-                name,
-                reason,
-                scope: emitted_scope,
-            } => {
-                assert_eq!(index, 3);
-                assert_eq!(call_id, "call_install");
-                assert_eq!(name, "run_command");
-                assert_eq!(reason, expected_reason);
-                assert_eq!(
-                    emitted_scope,
-                    ApprovalScope {
-                        command_prefix: strings(&["npm", "install"]),
-                        cwd: PathBuf::from("/workspace"),
-                        sandbox_profile: SandboxProfile::WorkspaceWrite,
-                        network_policy: NetworkPolicy::Prompt,
-                        persistence: ApprovalPersistence::Once,
-                    }
-                );
-                approval_id
-            }
-            other => panic!("expected command approval request, got {other:?}"),
-        };
+        let approval_task = tokio::spawn(async move {
+            assert_eq!(pending.request.context.index, 3);
+            assert_eq!(pending.request.context.call_id, "call_install");
+            assert_eq!(pending.request.context.tool_name, "run_command");
+            assert_eq!(pending.request.reason, expected_reason);
+            assert_eq!(
+                pending.request.scope,
+                ApprovalScope {
+                    command_prefix: strings(&["npm", "install"]),
+                    cwd: PathBuf::from("/workspace"),
+                    sandbox_profile: SandboxProfile::WorkspaceWrite,
+                    network_policy: NetworkPolicy::Prompt,
+                    persistence: ApprovalPersistence::Once,
+                }
+            );
+            pending.wait().await
+        });
 
         result_tx
             .send(ToolApprovalResult {

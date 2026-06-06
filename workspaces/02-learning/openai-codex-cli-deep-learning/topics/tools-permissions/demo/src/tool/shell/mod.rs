@@ -10,7 +10,7 @@ use crate::{
     },
     tool::shell::{
         approval::{
-            ApprovalController, ToolApprovalRequest, ToolCallContext, build_approval_scope,
+            ApprovalGateway, ToolApprovalRequest, ToolCallContext, build_approval_scope,
             resolve_approval_requirement,
         },
         execution::ExecutionRunner,
@@ -53,7 +53,7 @@ pub async fn run_shell_command(
     context: ToolCallContext,
     matched_capability: MatchedCapability,
     execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
-    approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
+    approval_gateway: Arc<ApprovalGateway>,
     tx: &EventSender,
 ) -> RunCommandResult {
     match resolve_approval_requirement(&request, &matched_capability) {
@@ -68,7 +68,7 @@ pub async fn run_shell_command(
                     context,
                     matched_capability,
                     execution_runner,
-                    approval_decider,
+                    approval_gateway,
                     tx,
                 )
                 .await;
@@ -81,13 +81,16 @@ pub async fn run_shell_command(
         ApprovalRequirement::NeedsApproval {
             reason,
             approval_scope,
-        } => match approval_decider
-            .request_approval(ToolApprovalRequest {
+        } => match request_approval(
+            &approval_gateway,
+            ToolApprovalRequest {
                 context: context.clone(),
                 reason: reason.clone(),
                 scope: approval_scope,
-            })
-            .await
+            },
+            tx,
+        )
+        .await
         {
             UserApprovalDecision::Approved { persistence: _ } => {
                 return run_sandbox_first_flow(
@@ -95,7 +98,7 @@ pub async fn run_shell_command(
                     context,
                     matched_capability,
                     execution_runner,
-                    approval_decider,
+                    approval_gateway,
                     tx,
                 )
                 .await;
@@ -108,12 +111,40 @@ pub async fn run_shell_command(
     }
 }
 
+async fn request_approval(
+    approval_gateway: &Arc<ApprovalGateway>,
+    request: ToolApprovalRequest,
+    tx: &EventSender,
+) -> UserApprovalDecision {
+    let pending = approval_gateway.create_pending_approval(request.clone());
+    let approval_id = pending.approval_id.clone();
+
+    let decision = match tx
+        .send(Ok(StreamEvent::CommandNeedsApproval {
+            approval_id: approval_id.clone(),
+            index: request.context.index,
+            call_id: request.context.call_id,
+            name: request.context.tool_name,
+            reason: request.reason,
+            scope: request.scope,
+        }))
+        .await
+    {
+        Ok(_) => pending.wait().await,
+        Err(_) => UserApprovalDecision::Rejected,
+    };
+
+    approval_gateway.cancel(&approval_id);
+
+    decision
+}
+
 async fn run_sandbox_first_flow(
     request: &CommandRequest,
     context: ToolCallContext,
     matched_capability: MatchedCapability,
     execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
-    approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
+    approval_gateway: Arc<ApprovalGateway>,
     tx: &EventSender,
 ) -> RunCommandResult {
     let attempt = ExecutionAttempt::SandboxFirst {
@@ -148,7 +179,7 @@ async fn run_sandbox_first_flow(
 
         // 沙箱失败则判断是否要进行重试
         ExecutionResult::Failure(failure) => {
-            let _ = tx
+            _ = tx
                 .send(Ok(StreamEvent::CommandExecutionFailed {
                     index: context.index,
                     call_id: context.call_id.clone(),
@@ -166,7 +197,7 @@ async fn run_sandbox_first_flow(
                 false,
             );
 
-            let _ = tx
+            _ = tx
                 .send(Ok(StreamEvent::CommandRetryEvaluated {
                     index: context.index,
                     call_id: context.call_id.clone(),
@@ -195,13 +226,16 @@ async fn run_sandbox_first_flow(
                 RetryDecision::RetryWithApproval {
                     reason,
                     approval_scope,
-                } => match approval_decider
-                    .request_approval(ToolApprovalRequest {
+                } => match request_approval(
+                    &approval_gateway,
+                    ToolApprovalRequest {
                         context: context.clone(),
                         reason: reason.clone(),
                         scope: approval_scope,
-                    })
-                    .await
+                    },
+                    tx,
+                )
+                .await
                 {
                     // 审批通过则直接本机运行再次尝试
                     UserApprovalDecision::Approved { persistence: _ } => {
@@ -362,6 +396,7 @@ mod tests {
         capability::CapabilityKind,
         execution::NetworkApprovalContext,
     };
+    use crate::tool::shell::approval::ToolApprovalResult;
     use crate::tool::shell::registry::CapabilityRegistry;
     use std::{
         collections::VecDeque,
@@ -399,17 +434,60 @@ mod tests {
         }
     }
 
-    struct RecordingApprovalDecider {
+    struct RecordingApprovalResponder {
         decisions: Mutex<VecDeque<UserApprovalDecision>>,
         requests: Mutex<Vec<(ToolCallContext, ApprovalScope)>>,
+        result_tx: mpsc::Sender<ToolApprovalResult>,
     }
 
-    impl RecordingApprovalDecider {
-        fn new(decisions: Vec<UserApprovalDecision>) -> Self {
+    impl RecordingApprovalResponder {
+        fn new(
+            decisions: Vec<UserApprovalDecision>,
+            result_tx: mpsc::Sender<ToolApprovalResult>,
+        ) -> Self {
             Self {
                 decisions: Mutex::new(VecDeque::from(decisions)),
                 requests: Mutex::new(Vec::new()),
+                result_tx,
             }
+        }
+
+        async fn handle_event(&self, event: &StreamEvent) {
+            let StreamEvent::CommandNeedsApproval {
+                approval_id,
+                index,
+                call_id,
+                name,
+                scope,
+                ..
+            } = event
+            else {
+                return;
+            };
+
+            self.requests.lock().unwrap().push((
+                ToolCallContext {
+                    index: *index,
+                    call_id: call_id.clone(),
+                    tool_name: name.clone(),
+                },
+                scope.clone(),
+            ));
+
+            let decision = self
+                .decisions
+                .lock()
+                .unwrap()
+                .pop_front()
+                .expect("test approval responder should have enough scripted decisions");
+
+            self.result_tx
+                .send(ToolApprovalResult {
+                    approval_id: approval_id.clone(),
+                    decision,
+                })
+                .await
+                .expect("test should send approval result");
         }
 
         fn scopes(&self) -> Vec<ApprovalScope> {
@@ -428,18 +506,6 @@ mod tests {
                 .iter()
                 .map(|(context, _)| context.clone())
                 .collect()
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl ApprovalController for RecordingApprovalDecider {
-        async fn request_approval(&self, req: ToolApprovalRequest) -> UserApprovalDecision {
-            self.requests.lock().unwrap().push((req.context, req.scope));
-            self.decisions
-                .lock()
-                .unwrap()
-                .pop_front()
-                .expect("test approval decider should have enough scripted decisions")
         }
     }
 
@@ -497,41 +563,55 @@ mod tests {
         (runner, trait_object)
     }
 
-    fn approval_decider(
+    fn approval_gateway(
         decisions: Vec<UserApprovalDecision>,
-    ) -> (
-        Arc<RecordingApprovalDecider>,
-        Arc<dyn ApprovalController + Send + Sync + 'static>,
-    ) {
-        let decider = Arc::new(RecordingApprovalDecider::new(decisions));
-        let trait_object = decider.clone() as Arc<dyn ApprovalController + Send + Sync + 'static>;
-        (decider, trait_object)
+    ) -> (Arc<RecordingApprovalResponder>, Arc<ApprovalGateway>) {
+        let (result_tx, result_rx) = mpsc::channel(16);
+        let responder = Arc::new(RecordingApprovalResponder::new(decisions, result_tx));
+        let gateway = Arc::new(ApprovalGateway::new(result_rx));
+        (responder, gateway)
     }
 
     async fn run_command_case(
         request: &CommandRequest,
         argv: &[&str],
         execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
-        approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
+        approval_responder: Arc<RecordingApprovalResponder>,
+        approval_gateway: Arc<ApprovalGateway>,
     ) -> (RunCommandResult, Vec<StreamEvent>) {
         let (tx, mut rx) = mpsc::channel(16);
-        let result = run_shell_command(
+        let mut run = Box::pin(run_shell_command(
             request,
             tool_call_context(),
             matched(argv),
             execution_runner,
-            approval_decider,
+            approval_gateway,
             &tx,
-        )
-        .await;
-        drop(tx);
-
+        ));
         let mut events = vec![];
-        while let Some(event) = rx.recv().await {
-            events.push(event.expect("command event should be ok"));
+
+        let mut result = None;
+        while result.is_none() {
+            tokio::select! {
+                run_result = &mut run => {
+                    result = Some(run_result);
+                    while let Ok(event) = rx.try_recv() {
+                        let event = event.expect("command event should be ok");
+                        approval_responder.handle_event(&event).await;
+                        events.push(event);
+                    }
+                }
+                event = rx.recv() => {
+                    let event = event
+                        .expect("command should not close event channel before finishing")
+                        .expect("command event should be ok");
+                    approval_responder.handle_event(&event).await;
+                    events.push(event);
+                }
+            }
         }
 
-        (result, events)
+        (result.expect("command should return result"), events)
     }
 
     fn assert_finished(result: RunCommandResult) {
@@ -626,7 +706,10 @@ mod tests {
                 ExecutionAttempt::NoSandboxRetry { .. }
             ] if *actual_profile == sandbox_profile
         ));
-        assert_eq!(failed_attempts(events), vec![sandbox_first(sandbox_profile)]);
+        assert_eq!(
+            failed_attempts(events),
+            vec![sandbox_first(sandbox_profile)]
+        );
         assert!(matches!(
             finished_attempts(events).as_slice(),
             [ExecutionAttempt::NoSandboxRetry { .. }]
@@ -709,6 +792,12 @@ mod tests {
                 call_id,
                 name,
                 ..
+            }
+            | StreamEvent::CommandNeedsApproval {
+                index,
+                call_id,
+                name,
+                ..
             } => {
                 assert_eq!(*index, 7);
                 assert_eq!(call_id, "call_shell");
@@ -731,9 +820,10 @@ mod tests {
         let (runner, runner_trait) = execution_runner(vec![ExecutionResult::Success {
             stdout: "read ok".to_string(),
         }]);
-        let (decider, decider_trait) = approval_decider(vec![]);
+        let (decider, gateway) = approval_gateway(vec![]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
 
         assert_eq!(finished_output(result), "read ok");
         assert_eq!(
@@ -770,9 +860,10 @@ mod tests {
                 network_context: None,
             },
         )]);
-        let (decider, decider_trait) = approval_decider(vec![]);
+        let (decider, gateway) = approval_gateway(vec![]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
 
         assert_denied(result);
         assert_eq!(
@@ -806,13 +897,17 @@ mod tests {
             NetworkPolicy::Prompt,
         );
         let (runner, runner_trait) = execution_runner(vec![]);
-        let (decider, decider_trait) = approval_decider(vec![UserApprovalDecision::Rejected]);
+        let (decider, gateway) = approval_gateway(vec![UserApprovalDecision::Rejected]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
 
         assert_denied(result);
         assert!(runner.attempts().is_empty());
-        assert!(events.is_empty());
+        assert!(matches!(
+            events.as_slice(),
+            [StreamEvent::CommandNeedsApproval { .. }]
+        ));
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 1);
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
@@ -836,9 +931,10 @@ mod tests {
         let (runner, runner_trait) = execution_runner(vec![ExecutionResult::Success {
             stdout: "install ok in sandbox".to_string(),
         }]);
-        let (decider, decider_trait) = approval_decider(vec![approved()]);
+        let (decider, gateway) = approval_gateway(vec![approved()]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
 
         assert_finished(result);
         assert_eq!(
@@ -875,9 +971,10 @@ mod tests {
                 stderr: "test failed".to_string(),
             },
         )]);
-        let (_decider, decider_trait) = approval_decider(vec![]);
+        let (decider, gateway) = approval_gateway(vec![]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider, gateway).await;
 
         assert_failed(result);
         assert_eq!(
@@ -921,9 +1018,10 @@ mod tests {
                 stdout: "install ok without sandbox".to_string(),
             },
         ]);
-        let (decider, decider_trait) = approval_decider(vec![approved()]);
+        let (decider, gateway) = approval_gateway(vec![approved()]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
 
         assert_finished(result);
         let attempts = runner.attempts();
@@ -962,9 +1060,10 @@ mod tests {
                 stdout: "install ok after approval".to_string(),
             },
         ]);
-        let (decider, decider_trait) = approval_decider(vec![approved(), approved()]);
+        let (decider, gateway) = approval_gateway(vec![approved(), approved()]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
 
         assert_finished(result);
         let attempts = runner.attempts();
@@ -1010,10 +1109,10 @@ mod tests {
                 }),
             },
         )]);
-        let (decider, decider_trait) =
-            approval_decider(vec![approved(), UserApprovalDecision::Rejected]);
+        let (decider, gateway) = approval_gateway(vec![approved(), UserApprovalDecision::Rejected]);
 
-        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
 
         assert_denied(result);
         assert_eq!(

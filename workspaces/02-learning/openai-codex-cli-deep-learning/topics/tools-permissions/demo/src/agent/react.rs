@@ -273,9 +273,7 @@ mod tests {
             function::{add_spec, sub_spec},
             runtime::{ToolRuntime, ToolRuntimeContext},
             shell::{
-                approval::{
-                    ApprovalBroker, ApprovalController, ToolApprovalRequest, ToolApprovalResult,
-                },
+                approval::{ApprovalGateway, ToolApprovalResult},
                 execution::simulated_execution_runner::SimulatedExecutionRunner,
                 registry::CapabilityRegistry,
             },
@@ -284,29 +282,30 @@ mod tests {
 
     use super::*;
 
-    struct AlwaysApprove;
-
-    #[async_trait::async_trait]
-    impl ApprovalController for AlwaysApprove {
-        async fn request_approval(&self, _req: ToolApprovalRequest) -> UserApprovalDecision {
-            UserApprovalDecision::Approved {
-                persistence: ApprovalPersistence::Once,
-            }
-        }
+    struct TestAgent {
+        agent: ReActAgent,
+        approval_result_tx: mpsc::Sender<ToolApprovalResult>,
     }
 
-    fn test_runtime() -> Arc<ToolRuntime> {
-        Arc::new(ToolRuntime::new(ToolRuntimeContext {
+    fn test_runtime() -> (Arc<ToolRuntime>, mpsc::Sender<ToolApprovalResult>) {
+        let (approval_result_tx, approval_result_rx) = mpsc::channel(16);
+        let runtime = Arc::new(ToolRuntime::new(ToolRuntimeContext {
             cwd: current_dir().unwrap_or_else(|_| ".".into()),
             approval_policy: ApprovalPolicy::OnFailure,
             execution_runner: Arc::new(SimulatedExecutionRunner::new()),
             registry: CapabilityRegistry::new(),
-            approval_controller: Arc::new(AlwaysApprove),
-        }))
+            approval_gateway: Arc::new(ApprovalGateway::new(approval_result_rx)),
+        }));
+
+        (runtime, approval_result_tx)
     }
 
-    fn test_agent(llm: Arc<FakeLlm>, max_turns: Option<u8>) -> ReActAgent {
-        ReActAgent::new(llm, max_turns, test_runtime())
+    fn test_agent(llm: Arc<FakeLlm>, max_turns: Option<u8>) -> TestAgent {
+        let (runtime, approval_result_tx) = test_runtime();
+        TestAgent {
+            agent: ReActAgent::new(llm, max_turns, runtime),
+            approval_result_tx,
+        }
     }
 
     #[tokio::test]
@@ -316,42 +315,14 @@ mod tests {
             .tools(vec![add_spec(), sub_spec()])
             .build()?;
 
-        let (approval_request_tx, mut approval_request_rx) = mpsc::channel(16);
         let (approval_result_tx, approval_result_rx) = mpsc::channel(16);
         let context = ToolRuntimeContext {
             cwd: current_dir().unwrap(),
             approval_policy: ApprovalPolicy::OnFailure,
             execution_runner: Arc::new(SimulatedExecutionRunner::new()),
             registry: CapabilityRegistry::new(),
-            approval_controller: Arc::new(ApprovalBroker::new(
-                approval_request_tx,
-                approval_result_rx,
-            )),
+            approval_gateway: Arc::new(ApprovalGateway::new(approval_result_rx)),
         };
-
-        let task = tokio::spawn(async move {
-            while let Some(Ok(event)) = approval_request_rx.recv().await {
-                match event {
-                    StreamEvent::CommandNeedsApproval {
-                        approval_id,
-                        index: _,
-                        call_id: _,
-                        name: _,
-                        reason: _,
-                        scope: _,
-                    } => approval_result_tx
-                        .send(ToolApprovalResult {
-                            approval_id,
-                            decision: UserApprovalDecision::Approved {
-                                persistence: ApprovalPersistence::Once,
-                            },
-                        })
-                        .await
-                        .unwrap(),
-                    _ => continue,
-                }
-            }
-        });
 
         let agent = ReActAgent::new(Arc::new(llm), None, Arc::new(ToolRuntime::new(context)));
 
@@ -391,12 +362,21 @@ mod tests {
                 StreamEvent::Error(e) => {
                     println!("stream occurs error: {e}")
                 }
+                StreamEvent::CommandNeedsApproval { approval_id, .. } => {
+                    approval_result_tx
+                        .send(ToolApprovalResult {
+                            approval_id,
+                            decision: UserApprovalDecision::Approved {
+                                persistence: ApprovalPersistence::Once,
+                            },
+                        })
+                        .await?;
+                }
                 StreamEvent::Completed => break,
                 other => println!("{other:?}"),
             }
         }
 
-        task.await?;
         Ok(())
     }
 
@@ -409,27 +389,52 @@ mod tests {
         })
     }
 
-    async fn collect_events(agent: &ReActAgent, prompt: &str) -> anyhow::Result<Vec<StreamEvent>> {
-        let mut stream = agent.run(prompt.to_string())?;
+    async fn collect_events(agent: &TestAgent, prompt: &str) -> anyhow::Result<Vec<StreamEvent>> {
+        let mut stream = agent.agent.run(prompt.to_string())?;
         let mut events = vec![];
 
         while let Some(event) = stream.next().await {
-            events.push(event?);
+            let event = event?;
+            if let StreamEvent::CommandNeedsApproval { approval_id, .. } = &event {
+                agent
+                    .approval_result_tx
+                    .send(ToolApprovalResult {
+                        approval_id: approval_id.clone(),
+                        decision: UserApprovalDecision::Approved {
+                            persistence: ApprovalPersistence::Once,
+                        },
+                    })
+                    .await?;
+            }
+            events.push(event);
         }
 
         Ok(events)
     }
 
     async fn collect_until_error(
-        agent: &ReActAgent,
+        agent: &TestAgent,
         prompt: &str,
     ) -> anyhow::Result<(Vec<StreamEvent>, String)> {
-        let mut stream = agent.run(prompt.to_string())?;
+        let mut stream = agent.agent.run(prompt.to_string())?;
         let mut events = vec![];
 
         while let Some(event) = stream.next().await {
             match event {
-                Ok(event) => events.push(event),
+                Ok(event) => {
+                    if let StreamEvent::CommandNeedsApproval { approval_id, .. } = &event {
+                        agent
+                            .approval_result_tx
+                            .send(ToolApprovalResult {
+                                approval_id: approval_id.clone(),
+                                decision: UserApprovalDecision::Approved {
+                                    persistence: ApprovalPersistence::Once,
+                                },
+                            })
+                            .await?;
+                    }
+                    events.push(event)
+                }
                 Err(err) => return Ok((events, err.to_string())),
             }
         }

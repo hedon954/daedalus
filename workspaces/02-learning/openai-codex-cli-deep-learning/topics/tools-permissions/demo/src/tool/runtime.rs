@@ -7,7 +7,7 @@ use crate::{
         function::run_pure_function,
         shell::{
             RunCommandArgs, RunCommandResult,
-            approval::{ApprovalController, ToolCallContext},
+            approval::{ApprovalGateway, ToolCallContext},
             execution::ExecutionRunner,
             registry::{CapabilityRegistry, MatchedCapability},
             run_shell_command,
@@ -32,7 +32,7 @@ pub struct ToolRuntimeContext {
     pub approval_policy: ApprovalPolicy,
     pub registry: CapabilityRegistry,
     pub execution_runner: Arc<dyn ExecutionRunner + 'static>,
-    pub approval_controller: Arc<dyn ApprovalController + 'static>,
+    pub approval_gateway: Arc<ApprovalGateway>,
 }
 
 /// 模型可见 tool 的内部分类。
@@ -175,7 +175,7 @@ impl ToolRuntime {
                 context,
                 matched_capability,
                 self.context.execution_runner.clone(),
-                self.context.approval_controller.clone(),
+                self.context.approval_gateway.clone(),
                 tx,
             )
             .await
@@ -253,7 +253,7 @@ mod tests {
         tool::{
             runtime::{ToolRuntime, ToolRuntimeContext, ToolRuntimeResult},
             shell::{
-                approval::{ApprovalController, ToolApprovalRequest},
+                approval::{ApprovalGateway, ToolApprovalResult},
                 execution::simulated_execution_runner::SimulatedExecutionRunner,
                 registry::CapabilityRegistry,
             },
@@ -261,25 +261,23 @@ mod tests {
     };
     use tokio::sync::mpsc;
 
-    struct AlwaysApprove;
-
-    #[async_trait::async_trait]
-    impl ApprovalController for AlwaysApprove {
-        async fn request_approval(&self, _req: ToolApprovalRequest) -> UserApprovalDecision {
-            UserApprovalDecision::Approved {
-                persistence: ApprovalPersistence::Once,
-            }
-        }
+    struct RuntimeFixture {
+        runtime: ToolRuntime,
+        approval_result_tx: mpsc::Sender<ToolApprovalResult>,
     }
 
-    fn test_runtime() -> ToolRuntime {
-        ToolRuntime::new(ToolRuntimeContext {
-            cwd: PathBuf::from("/workspace"),
-            approval_policy: ApprovalPolicy::OnFailure,
-            registry: CapabilityRegistry::new(),
-            execution_runner: Arc::new(SimulatedExecutionRunner::new()),
-            approval_controller: Arc::new(AlwaysApprove),
-        })
+    fn test_runtime() -> RuntimeFixture {
+        let (approval_result_tx, approval_result_rx) = mpsc::channel(16);
+        RuntimeFixture {
+            runtime: ToolRuntime::new(ToolRuntimeContext {
+                cwd: PathBuf::from("/workspace"),
+                approval_policy: ApprovalPolicy::OnFailure,
+                registry: CapabilityRegistry::new(),
+                execution_runner: Arc::new(SimulatedExecutionRunner::new()),
+                approval_gateway: Arc::new(ApprovalGateway::new(approval_result_rx)),
+            }),
+            approval_result_tx,
+        }
     }
 
     fn tool_call(name: &str, arguments: &str) -> ToolCallFinished {
@@ -296,19 +294,44 @@ mod tests {
     }
 
     async fn run_tool(
-        runtime: &ToolRuntime,
+        fixture: &RuntimeFixture,
         call: &ToolCallFinished,
     ) -> (ToolRuntimeResult, Vec<StreamEvent>) {
         let (tx, mut rx) = event_channel();
-        let result = runtime.run(call, &tx).await;
-        drop(tx);
-
         let mut events = vec![];
-        while let Some(event) = rx.recv().await {
-            events.push(event.expect("runtime event should be ok"));
+        let mut result = None;
+        let mut run = Box::pin(fixture.runtime.run(call, &tx));
+
+        while result.is_none() {
+            tokio::select! {
+                run_result = &mut run => {
+                    result = Some(run_result);
+                    while let Ok(event) = rx.try_recv() {
+                        events.push(event.expect("runtime event should be ok"));
+                    }
+                }
+                event = rx.recv() => {
+                    let event = event
+                        .expect("runtime should not close event channel before finishing")
+                        .expect("runtime event should be ok");
+                    if let StreamEvent::CommandNeedsApproval { approval_id, .. } = &event {
+                        fixture
+                            .approval_result_tx
+                            .send(ToolApprovalResult {
+                                approval_id: approval_id.clone(),
+                                decision: UserApprovalDecision::Approved {
+                                    persistence: ApprovalPersistence::Once,
+                                },
+                            })
+                            .await
+                            .expect("test should send approval result");
+                    }
+                    events.push(event);
+                }
+            }
         }
 
-        (result, events)
+        (result.expect("runtime should return result"), events)
     }
 
     #[tokio::test]

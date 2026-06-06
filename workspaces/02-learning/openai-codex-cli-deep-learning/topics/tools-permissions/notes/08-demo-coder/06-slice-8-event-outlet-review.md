@@ -5,12 +5,12 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的一次 command 安全执行 trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: command approval / execution / retry 事件已经开始透出，但事件发送散落在业务分支里，出现了 stream 绑定、attempt 闭合和错误处理风险。
+- Current gap: command approval / execution / retry 事件已经开始透出；stream 绑定、attempt 闭合和错误处理风险已修复，剩余问题是事件发送仍散落在业务分支里。
 - Paired guide: [`../../guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md`](../../guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md)
 
 ## Review Findings
 
-本轮 review 的验证结果：
+本轮最新验证结果：
 
 ```text
 cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
@@ -20,7 +20,7 @@ git diff --check
 -> passed
 ```
 
-测试通过说明当前主链路可以跑通，但 review 暴露的是事件协议和代码结构问题，不是单个分支的功能错误。
+测试通过说明当前主链路可以跑通。上一轮 review 暴露的 stream 绑定、send failure 和 attempt trace 问题已经闭合；当前剩余的是代码结构问题，不是功能阻塞。
 
 ## What Is Now True
 
@@ -28,12 +28,13 @@ git diff --check
 
 - `StreamEvent` 包含 `CommandNeedsApproval`、`CommandExecutionStarted`、`CommandExecutionFinished`、`CommandExecutionFailed`、`CommandRetryEvaluated`。
 - `ToolApprovalResult` 已从外部 `StreamEvent` 中移除，作为内部审批回传控制消息。
-- `run_shell_command` 已经能在 command path 中发 command-level event。
+- `ApprovalGateway + PendingApproval` 已取代旧 `ApprovalController / ApprovalBroker` 事件绑定。
+- `run_shell_command` 已经能在 command path 中发 command-level event，并且 `CommandNeedsApproval` 会进入当前 run 的 event stream。
 - `ToolRuntime` 已把 `run_command` 的 command path 接入 ReAct 外部 stream。
 
 这个方向是对的：外部观察者看见安全链路，内部控制消息不污染公共事件协议。
 
-## Problems Found
+## Problems Found And Current Status
 
 ### 1. Approval event sender is not run-scoped
 
@@ -51,11 +52,25 @@ ApprovalBroker captured sender
   -> may be a different stream
 ```
 
-事件属于当前 run，审批等待属于 broker。二者不能由 broker 长期持有同一个外部 stream sender 来绑定。
+状态：已修复。
+
+当前方案：
+
+```text
+ApprovalGateway
+  -> create_pending_approval
+  -> wait ToolApprovalResult by approval_id
+
+run_shell_command
+  -> send CommandNeedsApproval through current run EventSender
+  -> wait PendingApproval
+```
+
+事件属于当前 run，审批等待属于 gateway。二者已经分离。
 
 ### 2. Approval event send failure can panic
 
-`ApprovalBroker::request_approval` 发送 `CommandNeedsApproval` 时使用 `expect(...)`。
+旧实现中 approval request 事件发送失败会 panic 或继续等待一个外界永远看不到的 pending approval。
 
 如果外部 stream receiver 已经 drop，当前行为会 panic，并且 pending approval 已经插入。更合理的行为应该是 fail closed：
 
@@ -67,9 +82,11 @@ cannot publish approval request
 
 安全链路里，事件无法发出不应导致裸跑，也不应该让后台 task 因 panic 丢失上下文。
 
+状态：已修复。当前发送失败会 fail closed，并清理 pending。
+
 ### 3. SandboxFirst attempt is not closed on retry success paths
 
-当前 retry 成功路径可能出现：
+旧 retry 成功路径可能出现：
 
 ```text
 CommandExecutionStarted(SandboxFirst)
@@ -86,9 +103,19 @@ CommandExecutionFailed(SandboxFirst)
 
 如果我们的事件契约是“每一次 execution attempt 都必须有 started 和 terminal event”，那这个 trace 是不闭合的。外部 observer 很难判断第一次 sandbox attempt 到底失败了、被取消了，还是被 retry event 隐式覆盖了。
 
+状态：已修复。shell / ReAct trace tests 已锁定：
+
+```text
+CommandExecutionStarted(SandboxFirst)
+CommandExecutionFailed(SandboxFirst)
+CommandRetryEvaluated(...)
+CommandExecutionStarted(NoSandboxRetry)
+CommandExecutionFinished(NoSandboxRetry)
+```
+
 ### 4. Event emission is a cross-cutting concern but is handwritten everywhere
 
-`run_shell_command` 里面到处手写：
+当前仍然存在。`run_shell_command` 里面到处手写：
 
 ```text
 tx.send(Ok(StreamEvent::CommandExecutionStarted { index, call_id, name, ... }))
@@ -125,7 +152,9 @@ tool call did not run directly
 
 ## Minimal Next Move
 
-下一步不继续到处补 `tx.send`，而是先引入一个小的 `CommandEventEmitter`：
+下一步不继续到处补 `tx.send`。有两个可选方向：
+
+1. 如果当前 demo 继续追求结构清晰，引入一个小的 `CommandEventEmitter`：
 
 ```text
 CommandEventEmitter
@@ -144,3 +173,5 @@ return ExecutionResult
 ```
 
 这样事件闭合由 helper 保证，业务分支只处理 approval / retry decision。
+
+2. 如果当前 Slice 8 已足够服务 demo，可以记录“功能闭环已通过，事件发送集中化作为低优先级重构”，然后进入 Slice 9 multi-tool hard-deny / skipped semantics。

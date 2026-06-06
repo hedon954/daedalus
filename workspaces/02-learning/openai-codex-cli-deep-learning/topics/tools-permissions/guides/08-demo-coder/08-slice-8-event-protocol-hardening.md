@@ -5,9 +5,9 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的一次命令安全链路 event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: approval request、CommandExecution、CommandRetry 事件已开始透出；review 发现事件发送散落、approval request sender 非 run-scoped、retry 成功路径 attempt trace 不闭合。
+- Current gap: approval request、CommandExecution、CommandRetry 事件已开始透出；run-scoped approval request、send failure fail closed、pending cleanup 和 retry 成功路径 attempt trace 已闭合，剩余问题是事件发送散落。
 - Evidence needed: [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)、[`../../demo/src/agent/stream_event.rs`](../../demo/src/agent/stream_event.rs)、[`../../demo/src/model/event.rs`](../../demo/src/model/event.rs)、[`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)、[`../../demo/src/tool/shell/mod.rs`](../../demo/src/tool/shell/mod.rs)、[`../../demo/src/tool/shell/retry.rs`](../../demo/src/tool/shell/retry.rs)。
-- After this: 先按 [`09-slice-8-command-event-emitter-refactor.md`](09-slice-8-command-event-emitter-refactor.md) 收敛事件出口；完成后 Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics。
+- After this: 评估是否按 [`09-slice-8-command-event-emitter-refactor.md`](09-slice-8-command-event-emitter-refactor.md) 收敛事件出口；完成或明确暂缓后，Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics。
 
 ## Critical Lens
 
@@ -25,14 +25,14 @@
 - Why: `demo/README.md` 需要展示一条可解释 trace，证明 tool call 经过了 approval、sandbox first、retry 和 observation，而不是直接执行。
 - Current checkpoint:
   - 已完成：`StreamEvent` 包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`。
-  - 已完成：`ApprovalBroker` 使用 outbound approval request event + internal `ToolApprovalResult` channel + pending oneshot，把审批请求和审批结果配对。
+  - 已完成：`ApprovalGateway + PendingApproval` 使用 internal `ToolApprovalResult` channel + pending oneshot，把审批请求和审批结果配对；`CommandNeedsApproval` 由当前 run 的 `EventSender` 发出。
   - 已验证：`cargo test` 通过 63 个默认测试，3 个 live LLM 测试 ignored。
-  - 待修正：事件已经从 shell execution / retry path 发出，但发送逻辑散落且 trace lifecycle 不完全闭合。
+  - 待修正：事件已经从 shell execution / retry path 发出，但发送逻辑仍散落在业务分支中。
 - Steps:
-  1. 引入 `CommandEventEmitter`，集中填充 `index / call_id / name` 并发送 command-level event。
-  2. 引入 `run_execution_attempt`，统一保证每个 attempt 都有 started 和 terminal event。
-  3. 让 approval request 通过当前 run 的 emitter 发出，不让 `ApprovalBroker` 长期持有外部 stream sender。
-  4. 补 trace 测试：safe read、network install sandbox denied -> retry、dangerous shell denied；同时确认 ReAct observation 回灌不被破坏。
+  1. 决定是否引入 `CommandEventEmitter`，集中填充 `index / call_id / name` 并发送 command-level event。
+  2. 如果继续重构，引入 `run_execution_attempt`，统一保证每个 attempt 都有 started 和 terminal event。
+  3. 保持 approval request 通过当前 run stream 发出，不让 `ApprovalGateway` 长期持有外部 stream sender。
+  4. 保持 trace 测试：safe read、network install sandbox denied -> retry、dangerous shell denied；同时确认 ReAct observation 回灌不被破坏。
 - Verify:
   - 单测覆盖 safe command 成功 trace。
   - 单测覆盖 dangerous command denied trace。
