@@ -27,9 +27,9 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 8 Event Protocol Hardening 进行中；当前事件类型包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed` 和 `CommandRetryEvaluated`，`ApprovalGateway` 通过内部 `ToolApprovalResult` 完成审批回流；run-scoped approval request、send failure fail closed、pending cleanup 和 retry 成功路径 attempt trace 已闭合。剩余障碍是 command event 发送仍散落在业务分支中，后续要决定是否抽出 `CommandEventEmitter` / `run_execution_attempt` 收敛横切事件协议。
+- 当前障碍：Slice 8 Event Protocol Hardening 进行中；当前事件类型包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed` 和 `CommandRetryEvaluated`，`ApprovalGateway` 通过内部 `ToolApprovalResult` 完成审批回流；run-scoped approval request、send failure fail closed、pending cleanup、`CommandEventEmitter` 和 retry 成功路径 attempt trace 已闭合。剩余障碍是 attempt lifecycle 仍靠分支手写 started / terminal event，下一步要引入 `run_execution_attempt` 把生命周期不变量结构化。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
-- 当前光标：Slice 8 event protocol；下一代码光标是按 `guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md` 评估/引入 `CommandEventEmitter` 和 `run_execution_attempt`，把已验证的 approval / execution / retry trace 从分支手写事件推进到集中 emitter。
+- 当前光标：Slice 8 event protocol；下一代码光标是按 `guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md` 实现 `run_execution_attempt`，让每个 `ExecutionAttempt` 的 `Started -> Finished/Failed` 由 helper 保证。
 
 ## Artifact Dependency Graph
 
@@ -67,7 +67,7 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 - 当前素材中可能被过度神化的设计：Codex 的权限 / 沙箱 / retry 组合是成熟 CLI Agent 的生产级折中，不是所有 Agent demo 或业务系统都必须照搬的完整复杂度。
 - 当前 demo 需要忠实模仿的核心机制：tool call 不能直接执行；必须经过 capability match、approval requirement、sandbox-first execution、controlled retry 和 observation/event 回流。
 - 当前 demo 不应无意识照抄的设计：跨平台 sandbox 细节、完整 TUI/MCP elicitation、Codex 所有 approval policy 组合和长期 session policy 存储。
-- 当前还没有验证的素材假设：command-level event 是否值得由一个轻量 `CommandEventEmitter` 集中发出，而不是继续散落在 `run_shell_command` 分支里；当前功能测试已经通过，下一步要权衡抽象收益和 demo 复杂度。
+- 当前还没有验证的素材假设：`run_execution_attempt` 是否能在不增加过多复杂度的前提下，把 attempt lifecycle 不变量从“测试覆盖”推进为“结构保证”。用户已确认这个方向值得做。
 - 当前可以尝试简化、改进或丢弃的部分：Phase 1 先用清晰的 event protocol 表达安全链路，不急着复刻 Codex 的全部 UI/streaming 事件细节。
 - 当前迁移到业务场景前必须重新验证的约束：业务是否真的需要 no-sandbox retry、session approval 复用、网络 host 级审批和多工具 hard-deny 语义。
 
@@ -84,7 +84,7 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 - [x] ReAct 层 `run_command` observation 验收：已确认 shell runtime 的 Finished / Failed / Denied 能正确转为下一轮 LLM 可见的 tool observation。
 - [x] Slice 6 closeout：已同步旧 guides、todo、outcome-map 和 design 中的旧命名和旧规划，冻结 non-goals。
 - [x] Slice 7 closeout：`cargo test` 通过 61 个默认测试，3 个 live LLM 测试 ignored；当前 Slice 8 review 后最新 demo 测试为 63 passed、3 ignored。
-- [ ] Slice 8 event outlet：`ApprovalGateway + PendingApproval` 已取代旧 `ApprovalController / ApprovalBroker` 事件绑定；`CommandNeedsApproval` 已通过当前 run stream 透出，send failure fail closed，pending 会清理，每个 retry 成功路径已验证 `SandboxFirst` failed 后再进入 no-sandbox retry。剩余是决定是否用统一 emitter 降低事件发送散落风险。
+- [ ] Slice 8 event outlet：`ApprovalGateway + PendingApproval` 已取代旧 `ApprovalController / ApprovalBroker` 事件绑定；`CommandNeedsApproval` 已通过当前 run stream 透出，send failure fail closed，pending 会清理；`CommandEventEmitter` 已抽取，集中填充 command event 上下文。剩余是实现 `run_execution_attempt`，让每个 attempt 的 terminal event 不依赖开发者手动记住。
 - `OpenAiCompatibleLlm::default()` 缺少 env 时 panic 作为 demo 约束暂时接受；Phase 2 或库化时再考虑 `from_env()` / `try_from_env()`。
 
 ## Why This Step Matters

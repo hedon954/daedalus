@@ -5,9 +5,9 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的可解释 command event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: command 事件已经能透出，approval request 已通过当前 run stream 发送；剩余问题是事件发送分散，`run_shell_command` 里仍有大量手写 `tx.send(...)`。
+- Current gap: command 事件已经能透出，approval request 已通过当前 run stream 发送，`CommandEventEmitter` 已抽取；剩余问题是 attempt lifecycle 仍由各分支手写，缺少 `run_execution_attempt` 这样的结构性保护。
 - Paired note: [`../../notes/08-demo-coder/06-slice-8-event-outlet-review.md`](../../notes/08-demo-coder/06-slice-8-event-outlet-review.md)
-- After this: 如果 emitter 抽象收益大于复杂度，Slice 8 可以用集中 trace helper 收口；否则可以记录当前方案已足够，进入 multi-tool hard-deny / skipped semantics。
+- After this: 完成 `run_execution_attempt` 后，Slice 8 可以用集中 trace helper 收口，再进入 multi-tool hard-deny / skipped semantics。
 
 ## North Star
 
@@ -26,19 +26,19 @@ run_shell_command
 
 ### 1. Add `CommandEventEmitter`
 
-它应该持有当前 run 的 event sender 和当前 tool call context：
+它已经持有当前 run 的 event sender clone 和当前 tool call context：
 
 ```rust
-pub struct CommandEventEmitter<'a> {
-    tx: &'a EventSender,
+pub struct CommandEventEmitter {
+    tx: EventSender,
     context: ToolCallContext,
 }
 ```
 
-建议先提供这些领域方法：
+当前先提供这些领域方法：
 
 ```rust
-impl CommandEventEmitter<'_> {
+impl CommandEventEmitter {
     async fn needs_approval(
         &self,
         approval_id: String,
@@ -46,21 +46,21 @@ impl CommandEventEmitter<'_> {
         scope: ApprovalScope,
     ) -> anyhow::Result<()>;
 
-    async fn execution_started(&self, attempt: &ExecutionAttempt) -> anyhow::Result<()>;
+    async fn execution_started(&self, attempt: &ExecutionAttempt);
 
     async fn execution_finished(
         &self,
         attempt: &ExecutionAttempt,
         output: String,
-    ) -> anyhow::Result<()>;
+    );
 
     async fn execution_failed(
         &self,
         attempt: &ExecutionAttempt,
         error: String,
-    ) -> anyhow::Result<()>;
+    );
 
-    async fn retry_evaluated(&self, decision: &RetryDecision) -> anyhow::Result<()>;
+    async fn retry_evaluated(&self, decision: RetryDecision);
 }
 ```
 
@@ -75,17 +75,17 @@ async fn run_execution_attempt(
     request: &CommandRequest,
     attempt: ExecutionAttempt,
     runner: &dyn ExecutionRunner,
-    events: &CommandEventEmitter<'_>,
+    events: &CommandEventEmitter,
 ) -> anyhow::Result<ExecutionResult> {
-    events.execution_started(&attempt).await?;
+    events.execution_started(&attempt).await;
     let result = runner.run(request, &attempt);
 
     match &result {
         ExecutionResult::Success { stdout } => {
-            events.execution_finished(&attempt, stdout.clone()).await?;
+            events.execution_finished(&attempt, stdout.clone()).await;
         }
         ExecutionResult::Failure(failure) => {
-            events.execution_failed(&attempt, render_failure(failure)).await?;
+            events.execution_failed(&attempt, render_failure(failure)).await;
         }
     }
 
@@ -139,7 +139,7 @@ return Rejected
 
 ### Step 1: Extract emitter without changing behavior
 
-先只把重复的 event construction 搬进 `CommandEventEmitter`，保持现有测试通过。
+状态：已完成。重复的 event construction 已搬进 `CommandEventEmitter`，现有测试保持通过。
 
 验收：
 
@@ -149,9 +149,9 @@ cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning
 
 ### Step 2: Introduce `run_execution_attempt`
 
-把 `SandboxFirst`、`NoSandboxFirst`、`NoSandboxRetry` 都改成通过同一个 helper 执行。
+状态：下一步。把 `SandboxFirst`、`NoSandboxFirst`、`NoSandboxRetry` 都改成通过同一个 helper 执行。
 
-这一步要改测试期望：retry 成功路径应该包含 `CommandExecutionFailed(SandboxFirst)`。
+这一步不需要改变当前测试期望；现有 retry 成功路径已经要求包含 `CommandExecutionFailed(SandboxFirst)`，重构后必须继续通过。
 
 最重要的新测试：
 

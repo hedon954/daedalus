@@ -5,7 +5,7 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的一次 command 安全执行 trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: command approval / execution / retry 事件已经开始透出；stream 绑定、attempt 闭合和错误处理风险已修复，剩余问题是事件发送仍散落在业务分支里。
+- Current gap: command approval / execution / retry 事件已经开始透出；stream 绑定、错误处理风险和 emitter 上下文散落问题已修复，剩余问题是 attempt lifecycle 仍由各分支手写。
 - Paired guide: [`../../guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md`](../../guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md)
 
 ## Review Findings
@@ -30,6 +30,7 @@ git diff --check
 - `ToolApprovalResult` 已从外部 `StreamEvent` 中移除，作为内部审批回传控制消息。
 - `ApprovalGateway + PendingApproval` 已取代旧 `ApprovalController / ApprovalBroker` 事件绑定。
 - `run_shell_command` 已经能在 command path 中发 command-level event，并且 `CommandNeedsApproval` 会进入当前 run 的 event stream。
+- `CommandEventEmitter` 已抽取，统一填充 command event 的 `index / call_id / name`。
 - `ToolRuntime` 已把 `run_command` 的 command path 接入 ReAct 外部 stream。
 
 这个方向是对的：外部观察者看见安全链路，内部控制消息不污染公共事件协议。
@@ -115,7 +116,9 @@ CommandExecutionFinished(NoSandboxRetry)
 
 ### 4. Event emission is a cross-cutting concern but is handwritten everywhere
 
-当前仍然存在。`run_shell_command` 里面到处手写：
+状态：已部分修复。`CommandEventEmitter` 已经集中 event construction，`run_shell_command` 不再反复填 `index / call_id / name`。
+
+当前仍然存在的是 attempt lifecycle 没有被 helper 结构化保护：业务分支仍要记得在 runner 前发 `execution_started`，并在 runner 后发 `execution_finished` 或 `execution_failed`。
 
 ```text
 tx.send(Ok(StreamEvent::CommandExecutionStarted { index, call_id, name, ... }))
@@ -152,26 +155,16 @@ tool call did not run directly
 
 ## Minimal Next Move
 
-下一步不继续到处补 `tx.send`。有两个可选方向：
+下一步不继续到处补事件发送，也不再讨论是否需要 `CommandEventEmitter`。用户已确认 `run_execution_attempt` 有必要，因为生命周期不变量应该由代码结构保证。
 
-1. 如果当前 demo 继续追求结构清晰，引入一个小的 `CommandEventEmitter`：
-
-```text
-CommandEventEmitter
-  owns current run EventSender
-  owns ToolCallContext
-  emits command-level events
-```
-
-然后用一个 `run_execution_attempt(...)` 包装单次 runner 调用：
+下一步引入：
 
 ```text
-emit execution started
-runner.run(...)
-emit execution finished / failed
-return ExecutionResult
+run_execution_attempt
+  -> emit execution started
+  -> runner.run(...)
+  -> emit execution finished / failed
+  -> return ExecutionResult
 ```
 
 这样事件闭合由 helper 保证，业务分支只处理 approval / retry decision。
-
-2. 如果当前 Slice 8 已足够服务 demo，可以记录“功能闭环已通过，事件发送集中化作为低优先级重构”，然后进入 Slice 9 multi-tool hard-deny / skipped semantics。
