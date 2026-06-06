@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    agent::{react::EventSender, stream_event::StreamEvent},
+    agent::react::EventSender,
     model::{
         approval::ApprovalRequirement,
         command_request::CommandRequest,
@@ -13,6 +13,7 @@ use crate::{
             ApprovalGateway, ToolApprovalRequest, ToolCallContext, build_approval_scope,
             resolve_approval_requirement,
         },
+        event_emitter::CommandEventEmitter,
         execution::ExecutionRunner,
         registry::MatchedCapability,
         retry::decide_retry,
@@ -20,6 +21,7 @@ use crate::{
 };
 
 pub mod approval;
+mod event_emitter;
 pub mod execution;
 pub mod registry;
 mod retry;
@@ -56,6 +58,8 @@ pub async fn run_shell_command(
     approval_gateway: Arc<ApprovalGateway>,
     tx: &EventSender,
 ) -> RunCommandResult {
+    let emitter = CommandEventEmitter::new(tx.clone(), context);
+
     match resolve_approval_requirement(&request, &matched_capability) {
         ApprovalRequirement::Skip {
             bypass_sandbox,
@@ -65,17 +69,16 @@ pub async fn run_shell_command(
             if !bypass_sandbox {
                 return run_sandbox_first_flow(
                     request,
-                    context,
                     matched_capability,
                     execution_runner,
                     approval_gateway,
-                    tx,
+                    &emitter,
                 )
                 .await;
             }
 
             // 不需要审批且跳过沙箱，直接在本地运行
-            return run_no_sandbox_first(request, &context, execution_runner.as_ref(), reason, tx)
+            return run_no_sandbox_first(request, execution_runner.as_ref(), reason, &emitter)
                 .await;
         }
         ApprovalRequirement::NeedsApproval {
@@ -84,22 +87,20 @@ pub async fn run_shell_command(
         } => match request_approval(
             &approval_gateway,
             ToolApprovalRequest {
-                context: context.clone(),
                 reason: reason.clone(),
                 scope: approval_scope,
             },
-            tx,
+            &emitter,
         )
         .await
         {
             UserApprovalDecision::Approved { persistence: _ } => {
                 return run_sandbox_first_flow(
                     request,
-                    context,
                     matched_capability,
                     execution_runner,
                     approval_gateway,
-                    tx,
+                    &emitter,
                 )
                 .await;
             }
@@ -114,20 +115,13 @@ pub async fn run_shell_command(
 async fn request_approval(
     approval_gateway: &Arc<ApprovalGateway>,
     request: ToolApprovalRequest,
-    tx: &EventSender,
+    emitter: &CommandEventEmitter,
 ) -> UserApprovalDecision {
     let pending = approval_gateway.create_pending_approval(request.clone());
     let approval_id = pending.approval_id.clone();
 
-    let decision = match tx
-        .send(Ok(StreamEvent::CommandNeedsApproval {
-            approval_id: approval_id.clone(),
-            index: request.context.index,
-            call_id: request.context.call_id,
-            name: request.context.tool_name,
-            reason: request.reason,
-            scope: request.scope,
-        }))
+    let decision = match emitter
+        .needs_approval(approval_id.clone(), request.reason, request.scope)
         .await
     {
         Ok(_) => pending.wait().await,
@@ -141,52 +135,30 @@ async fn request_approval(
 
 async fn run_sandbox_first_flow(
     request: &CommandRequest,
-    context: ToolCallContext,
     matched_capability: MatchedCapability,
     execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
     approval_gateway: Arc<ApprovalGateway>,
-    tx: &EventSender,
+    emitter: &CommandEventEmitter,
 ) -> RunCommandResult {
     let attempt = ExecutionAttempt::SandboxFirst {
         sandbox_profile: request.sandbox_profile,
     };
 
-    let _ = tx
-        .send(Ok(StreamEvent::CommandExecutionStarted {
-            index: context.index,
-            call_id: context.call_id.clone(),
-            name: context.tool_name.clone(),
-            attempt: attempt.clone(),
-        }))
-        .await;
+    emitter.execution_started(&attempt).await;
 
     // 先在沙箱尝试执行
     let sandbox_first_execution_result = execution_runner.run(&request, &attempt);
     match sandbox_first_execution_result {
         // 沙箱成功直接返回
         ExecutionResult::Success { stdout } => {
-            let _ = tx
-                .send(Ok(StreamEvent::CommandExecutionFinished {
-                    index: context.index,
-                    call_id: context.call_id.clone(),
-                    name: context.tool_name.clone(),
-                    attempt: attempt.clone(),
-                    output: stdout.clone(),
-                }))
-                .await;
+            emitter.execution_finished(&attempt, stdout.clone()).await;
             return RunCommandResult::Finished { output: stdout };
         }
 
         // 沙箱失败则判断是否要进行重试
         ExecutionResult::Failure(failure) => {
-            _ = tx
-                .send(Ok(StreamEvent::CommandExecutionFailed {
-                    index: context.index,
-                    call_id: context.call_id.clone(),
-                    name: context.tool_name.clone(),
-                    attempt: attempt.clone(),
-                    error: format!("failed: {:?}", failure),
-                }))
+            emitter
+                .execution_failed(&attempt, format!("failed: {:?}", failure))
                 .await;
 
             let retry_decision = decide_retry(
@@ -197,14 +169,7 @@ async fn run_sandbox_first_flow(
                 false,
             );
 
-            _ = tx
-                .send(Ok(StreamEvent::CommandRetryEvaluated {
-                    index: context.index,
-                    call_id: context.call_id.clone(),
-                    name: context.tool_name.clone(),
-                    decision: retry_decision.clone(),
-                }))
-                .await;
+            emitter.retry_evaluated(retry_decision.clone()).await;
 
             match retry_decision {
                 // 不重试直接返回失败
@@ -215,10 +180,9 @@ async fn run_sandbox_first_flow(
                 RetryDecision::RetryWithoutApproval { reason } => {
                     return run_no_sandbox_retry(
                         request,
-                        &context,
                         execution_runner.as_ref(),
                         reason,
-                        tx,
+                        emitter,
                     )
                     .await;
                 }
@@ -229,11 +193,10 @@ async fn run_sandbox_first_flow(
                 } => match request_approval(
                     &approval_gateway,
                     ToolApprovalRequest {
-                        context: context.clone(),
                         reason: reason.clone(),
                         scope: approval_scope,
                     },
-                    tx,
+                    emitter,
                 )
                 .await
                 {
@@ -241,10 +204,9 @@ async fn run_sandbox_first_flow(
                     UserApprovalDecision::Approved { persistence: _ } => {
                         return run_no_sandbox_retry(
                             request,
-                            &context,
                             execution_runner.as_ref(),
                             reason,
-                            tx,
+                            emitter,
                         )
                         .await;
                     }
@@ -265,93 +227,62 @@ async fn run_sandbox_first_flow(
 
 async fn run_no_sandbox_first(
     request: &CommandRequest,
-    context: &ToolCallContext,
     execution_runner: &dyn ExecutionRunner,
     reason: String,
-    tx: &EventSender,
+    emitter: &CommandEventEmitter,
 ) -> RunCommandResult {
     let attempt = ExecutionAttempt::NoSandboxFirst { reason };
 
-    let _ = tx
-        .send(Ok(StreamEvent::CommandExecutionStarted {
-            index: context.index,
-            call_id: context.call_id.clone(),
-            name: context.tool_name.clone(),
-            attempt: attempt.clone(),
-        }))
-        .await;
+    emitter.execution_started(&attempt).await;
 
     let result = execution_runner.run(request, &attempt);
-    handle_execution_result(context, attempt, result, tx).await
+    handle_execution_result(attempt, result, emitter).await
 }
 
 async fn run_no_sandbox_retry(
     request: &CommandRequest,
-    context: &ToolCallContext,
     execution_runner: &dyn ExecutionRunner,
     reason: String,
-    tx: &EventSender,
+    emitter: &CommandEventEmitter,
 ) -> RunCommandResult {
     let attempt = ExecutionAttempt::NoSandboxRetry { reason };
 
-    let _ = tx
-        .send(Ok(StreamEvent::CommandExecutionStarted {
-            index: context.index,
-            call_id: context.call_id.clone(),
-            name: context.tool_name.clone(),
-            attempt: attempt.clone(),
-        }))
-        .await;
+    emitter.execution_started(&attempt).await;
 
     let result = execution_runner.run(request, &attempt);
-    handle_execution_result(context, attempt, result, tx).await
+    handle_execution_result(attempt, result, emitter).await
 }
 
 /// 处理 ExecutionResult:
 ///  1. 向外面透露执行事件
 ///  2. 转为 RunCommandResult
 async fn handle_execution_result(
-    context: &ToolCallContext,
     attempt: ExecutionAttempt,
     result: ExecutionResult,
-    tx: &EventSender,
+    emitter: &CommandEventEmitter,
 ) -> RunCommandResult {
     match &result {
         ExecutionResult::Success { stdout } => {
-            let _ = tx
-                .send(Ok(StreamEvent::CommandExecutionFinished {
-                    index: context.index,
-                    call_id: context.call_id.clone(),
-                    name: context.tool_name.clone(),
-                    attempt,
-                    output: stdout.to_string(),
-                }))
-                .await;
+            emitter.execution_finished(&attempt, stdout.clone()).await;
         }
         ExecutionResult::Failure(execution_failure) => match execution_failure {
             ExecutionFailure::CommandFailed { exit_code, stderr } => {
-                let _ = tx
-                    .send(Ok(StreamEvent::CommandExecutionFailed {
-                        index: context.index,
-                        call_id: context.call_id.clone(),
-                        name: context.tool_name.clone(),
-                        attempt: attempt.clone(),
-                        error: format!("exit_code: {exit_code}, stderr: {stderr}"),
-                    }))
+                emitter
+                    .execution_failed(
+                        &attempt,
+                        format!("exit_code: {exit_code}, stderr: {stderr}"),
+                    )
                     .await;
             }
             ExecutionFailure::SandboxDenied {
                 output,
                 network_context,
             } => {
-                let _ = tx
-                    .send(Ok(StreamEvent::CommandExecutionFailed {
-                        index: context.index,
-                        call_id: context.call_id.clone(),
-                        name: context.tool_name.clone(),
-                        attempt: attempt.clone(),
-                        error: format!("denied: {output}, network_context: {:?}", network_context),
-                    }))
+                emitter
+                    .execution_failed(
+                        &attempt,
+                        format!("denied: {output}, network_context: {:?}", network_context),
+                    )
                     .await;
             }
         },

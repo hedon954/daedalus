@@ -15,7 +15,6 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct ToolApprovalRequest {
-    pub context: ToolCallContext,
     pub reason: String,
     pub scope: ApprovalScope,
 }
@@ -358,20 +357,12 @@ mod tests {
         };
 
         let pending = gateway.create_pending_approval(ToolApprovalRequest {
-            context: ToolCallContext {
-                index: 3,
-                call_id: "call_install".to_string(),
-                tool_name: "run_command".to_string(),
-            },
             reason: expected_reason.to_string(),
             scope,
         });
         let approval_id = pending.approval_id.clone();
 
         let approval_task = tokio::spawn(async move {
-            assert_eq!(pending.request.context.index, 3);
-            assert_eq!(pending.request.context.call_id, "call_install");
-            assert_eq!(pending.request.context.tool_name, "run_command");
             assert_eq!(pending.request.reason, expected_reason);
             assert_eq!(
                 pending.request.scope,
