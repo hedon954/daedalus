@@ -28,7 +28,8 @@
 - 2026-05-16 用户确认继续后，状态推进到 `08-demo-coder`。随后 Agent 曾错误地代写 Slice 0/1 demo 代码，用户指出 08 应该一步步带用户实现；已回滚代写代码，并需要补强 repo-learning 指令中的实现练习门禁。
 - 2026-05-16 用户亲手完成 `08-demo-coder` Slice 0：创建 `demo/Cargo.toml`、`demo/src/lib.rs`、`demo/src/main.rs`、`demo/Makefile` 和 `Cargo.lock`；Agent 验证 `cargo test` 通过 1 个占位测试，`cargo run` 输出 `Hello, world!`。
 - 2026-06-02 Slice 7 `RetryPolicy` hardening 已完成：`decide_retry` 已消费 capability-level `RetryPolicy`，并和 `ApprovalPolicy` / `NetworkPolicy` 组合判断；`cargo test` 为 61 passed、3 ignored。下一步进入 Slice 8 Event Protocol Hardening。
-- 2026-06-06 Slice 8 Event Protocol Hardening 已完成：事件类型包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`；已从旧 `ApprovalController / ApprovalBroker` 重构为 `ApprovalGateway + PendingApproval`，由 `run_shell_command` 通过当前 run 的 `EventSender` 发送 `CommandNeedsApproval`，内部 `ToolApprovalResult` 通过 `approval_id + oneshot` 回流；send failure fail closed、pending cleanup、retry 成功路径 attempt trace、`CommandEventEmitter` 和 `run_execution_attempt` 均已闭合，`cargo test` 为 63 passed、3 ignored。下一步进入 Slice 9 multi-tool hard-deny / skipped semantics。
+- 2026-06-06 Slice 8 Event Protocol Hardening 已完成：事件类型包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`；已从旧 `ApprovalController / ApprovalBroker` 重构为 `ApprovalGateway + PendingApproval`，由 `run_shell_command` 通过当前 run 的 `EventSender` 发送 `CommandNeedsApproval`，内部 `ToolApprovalResult` 通过 `approval_id + oneshot` 回流；send failure fail closed、pending cleanup、retry 成功路径 attempt trace、`CommandEventEmitter` 和 `run_execution_attempt` 均已闭合，`cargo test` 为 63 passed、3 ignored。下一步进入 Slice 9 multi-tool independent execution。
+- 2026-06-06 Slice 9 策略已定稿：同批 tool calls 互不影响；能并发就并发执行；每个 call 独立返回 `Finished / Failed / Denied`；不因为某个 call 失败或被拒而取消其他 call；最终按原始 index 稳定回灌 observations。
 
 ## 已验证结论
 
@@ -44,7 +45,7 @@
 
 - 交互式 TUI 断点方案尚待用户在 Cursor 中打开 `source/codex/codex-rs` 后验证。
 - `06-code-reader` 已完成核心专题收敛：`auth/approval/sandbox` 已转化为 demo 的 approval、execution、retry 不变量。
-- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Slice 8 Event Protocol Hardening，下一步进入 Slice 9 multi-tool hard-deny / skipped semantics。
+- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Slice 8 Event Protocol Hardening，下一步实现 Slice 9 multi-tool independent execution。
 - 尚未进入 `09-biz-solver` 和 `10-archivist`。
 
 ## 恢复上下文提示
@@ -54,4 +55,4 @@
   - `notes/codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
   - `notes/codex-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
 - 当前阶段入口：`guides/08-demo-coder/README.md`；demo 实现和阶段 notes/guides 以 `topics/tools-permissions` 下的 `demo/`、`notes/08-demo-coder/`、`guides/08-demo-coder/` 为准。
-- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；下一步围绕 Slice 9 设计并实现 multi-tool hard-deny / skipped semantics。
+- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；下一步围绕 Slice 9 实现 multi-tool independent execution。

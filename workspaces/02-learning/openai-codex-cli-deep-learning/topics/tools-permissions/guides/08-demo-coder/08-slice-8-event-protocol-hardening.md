@@ -7,7 +7,7 @@
 - Current slice: Slice 8 Event Protocol Hardening
 - Current gap: 已完成。approval request、CommandExecution、CommandRetry 事件已透出；run-scoped approval request、send failure fail closed、pending cleanup、`CommandEventEmitter`、retry 成功路径 attempt trace 和 `run_execution_attempt` 已闭合。
 - Evidence needed: [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)、[`../../demo/src/agent/stream_event.rs`](../../demo/src/agent/stream_event.rs)、[`../../demo/src/model/event.rs`](../../demo/src/model/event.rs)、[`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)、[`../../demo/src/tool/shell/mod.rs`](../../demo/src/tool/shell/mod.rs)、[`../../demo/src/tool/shell/retry.rs`](../../demo/src/tool/shell/retry.rs)。
-- After this: Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics。
+- After this: Slice 9 可以基于稳定事件协议实现 multi-tool independent execution。
 
 ## Critical Lens
 
@@ -50,5 +50,5 @@
 
 - 不做完整 UI rendering。
 - 不做 session approval persistence。
-- 不处理 multi-tool hard-deny 的 skipped 传播；这留给 Slice 9。
+- 不处理 multi-tool independent execution；这留给 Slice 9。
 - 不把每个内部函数调用都暴露成 event。

@@ -206,16 +206,22 @@ OpenAI-compatible Chat Completions stream
 - 每个 `CommandExecutionStarted(attempt)` 都有对应的 `CommandExecutionFinished(attempt)` 或 `CommandExecutionFailed(attempt)`。
 - README 可以用 event trace 解释一次命令如何走完安全链路。
 
-### Slice 9: Multi-Tool Hard-Deny And Skipped Semantics
+### Slice 9: Multi-Tool Independent Execution
 
-目标：定义同一轮多个 tool call 中，一个安全拒绝发生后，后续 tool 是否执行、如何对外发事件、以及如何回灌 observation。
+目标：定义并实现同一轮多个 tool call 的独立执行语义：能并发就并发执行，每个 call 独立返回 `Finished / Failed / Denied`，最终按原始 index 稳定回灌 observation。
 
-状态：下一步。
+状态：策略已定，待实现。
+
+行动指南：[`10-slice-9-multi-tool-independent-execution.md`](10-slice-9-multi-tool-independent-execution.md)。
+
+技术补充：[`11-tokio-runtime-scheduling.md`](11-tokio-runtime-scheduling.md) 解释 Slice 9 需要的 Tokio runtime、`Future::poll`、`Waker`、调度、等待和取消语义。
 
 验收：
 
-- 安全拒绝后，后续依赖性 tool call 不盲跑。
-- `ToolRuntimeResult::Skipped` 有真实生产路径或被明确删除。
+- 同批 tool calls 中一个失败或被拒，不影响其他 call 执行。
+- 每个 `tool_call_id` 都有 observation。
+- observations 按原始 index 写回。
+- `ToolRuntimeResult::Skipped` 不再作为 batch-level hard-deny 的主路径；实现后应删除或标注为非主路径。
 
 ### Slice 10: Approval Persistence
 

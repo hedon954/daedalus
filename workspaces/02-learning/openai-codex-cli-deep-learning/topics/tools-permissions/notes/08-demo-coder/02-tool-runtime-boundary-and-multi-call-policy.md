@@ -136,36 +136,33 @@ LLM stream
 
 权限、沙箱、retry 的细节应放到 `ToolRuntime` 或等价 helper。这样 demo 会更接近 Codex 的分层：agent loop 负责 turn orchestration，tool runtime 负责 tool execution policy。
 
-### Decision 4: Phase 1 多 tool call 先保持顺序执行
+### Decision 4: 多 tool call 采用能力约束下的并发执行
 
-虽然 Codex 支持根据工具声明并行执行，但 Phase 1 demo 的目标不是并发调度，而是把安全链路跑通。为了确定性和可测试性，Phase 1 先按 `index` 顺序执行 tool calls。
+本节已被 Slice 9 的最新决策更新：Phase 1 不再把多 tool call 固定为顺序执行。当前目标是让同批 tool calls 在工具能力允许时并发执行，但最终写回 `messages` 时仍按原始 `index` 排序，保证 transcript 稳定。
 
-并发执行可以作为后续增强，但前提是工具声明自己是否支持并行，并且 mutating / shell-like 工具有明确串行化策略。
+这比纯顺序执行更贴近模型一次返回多个 tool calls 的语义：这些 call 的参数已经全部确定，默认应该作为独立 observation 收集。真正需要串行化的是 mutating / shell-like tool 的副作用边界，而不是 batch 本身。
 
-### Decision 5: 被拒后停止真实执行后续工具，但补齐 skipped observation
+### Decision 5: 单个 tool 失败或被拒不传播为 batch-level skip
 
-OpenAI-compatible Chat Completions 中，如果 assistant message 包含多个 `tool_calls`，下一轮通常需要为这些 `tool_call_id` 都提供 tool message。否则上一轮 assistant 的 tool call 和下一轮 tool output 容易不匹配。
+本节也已被 Slice 9 的最新决策更新：不采用“一个安全拒绝后，后续 tool call 全部 skipped”的策略。
 
-因此 Phase 1 推荐策略是：
+当前策略是：
 
 ```text
-for tool_call in sorted_tool_calls:
-  if previous call caused hard denial:
-    append skipped observation for this tool_call_id
-    continue
-
-  result = ToolRuntime.run(tool_call)
-
-  if result is forbidden / approval rejected:
-    append denial observation for current tool_call_id
-    mark subsequent calls as skipped
+same-batch tool_calls
+  -> run independently, preferably concurrently when supported
+  -> each call returns Finished / Failed / Denied
+  -> collect all results
+  -> append observations by original index
+  -> next LLM turn repairs with complete evidence
 ```
 
 也就是说：
 
-- 安全上：拒绝后不继续真实执行后续工具。
-- 协议上：仍然为后续 tool call 补充 `role=tool` message。
-- 学习上：模型下一轮可以看到“为什么没执行”，并重新规划。
+- 单个 `Denied` 只说明当前 call 被拒，不自动取消后续 call。
+- 单个 `Failed` 只说明当前 call 执行失败，不自动取消后续 call。
+- 协议上：每个 `tool_call_id` 仍然必须有自己的 `role=tool` observation。
+- 学习上：模型下一轮一次性看到完整成功/失败/拒绝证据，减少多轮串行纠错。
 
 ## Resulting Target Shape
 
@@ -198,20 +195,18 @@ command tool path
 - shell dangerous command forbidden，runner 不执行。
 - sandbox denied + retry approved -> no-sandbox success。
 - command failed -> no retry。
-- 多 tool call 中一个被拒后，后续 call 不真实执行，但有 skipped observation。
+- 多 tool call 中一个失败或被拒，不影响其他 call 执行；最终 observations 按原始 index 写回。
 
 ## Open Question
 
-Phase 1 是否需要把 `ToolRunSkipped` 做成显式 `StreamEvent`？
+Phase 1 是否还需要 `ToolRuntimeResult::Skipped`？
 
-最小路径可以先复用 `ToolRunFailed`，但从可观察性看，`Skipped` 与 `Failed` 不是同一个事实：
+在当前 independent observation policy 下，`Skipped` 不再是 multi-tool hard-deny 的主路径。它只有在未来出现明确“调度器主动不运行某个 call，但仍要回灌 observation”的场景时才有价值。
 
 ```text
-Failed
-  -> 工具尝试执行了，但失败
-
 Skipped
-  -> runtime 因安全策略没有执行
+  -> 调度器明确选择不运行某个 call
+  -> 但这个选择不是由同批其他 call 的失败自动传播而来
 ```
 
-如果事件模型已有足够空间，建议补一个 `ToolRunSkipped`，否则至少在 `ToolRunFailed.error` 里明确 `skipped because previous tool was denied`。
+如果 Slice 9 实现后仍找不到真实生产路径，可以删除 `ToolRuntimeResult::Skipped`，减少状态枚举噪声。

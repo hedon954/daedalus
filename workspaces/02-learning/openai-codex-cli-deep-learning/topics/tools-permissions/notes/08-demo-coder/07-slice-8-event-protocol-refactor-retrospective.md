@@ -6,7 +6,7 @@
 - Current stage: `08-demo-coder`
 - Covered slice: Slice 8 Event Protocol Hardening。
 - Source files: [`../../demo/src/agent/stream_event.rs`](../../demo/src/agent/stream_event.rs)、[`../../demo/src/tool/shell/approval.rs`](../../demo/src/tool/shell/approval.rs)、[`../../demo/src/tool/shell/event_emitter.rs`](../../demo/src/tool/shell/event_emitter.rs)、[`../../demo/src/tool/shell/mod.rs`](../../demo/src/tool/shell/mod.rs)。
-- Result: Slice 8 已收口；下一步进入 Slice 9 multi-tool hard-deny / skipped semantics。
+- Result: Slice 8 已收口；下一步进入 Slice 9 multi-tool independent execution。
 
 ## Why This Refactor Existed
 
@@ -247,7 +247,7 @@ sequenceDiagram
 
    它是内部控制消息，不是外部观察事实。
 
-4. 没有在 Slice 8 解决 multi-tool hard-deny / skipped。
+4. 没有在 Slice 8 解决 multi-tool independent execution。
 
    Slice 8 的目标是单个 command tool 的安全 trace 闭合；同轮多工具策略留给 Slice 9。
 

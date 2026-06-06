@@ -16,25 +16,25 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 8 Event Protocol Hardening 已完成：`ApprovalBroker/ApprovalController` 已重构为 `ApprovalGateway + PendingApproval`，approval request 由当前 `run_shell_command` 的 `EventSender` 发到当前 run stream，send failure 会 fail closed 并清理 pending；`CommandEventEmitter` 已抽取，command event 的 `index / call_id / name` 已集中填充；`run_execution_attempt` 已集中保护 `Started(attempt) -> Finished/Failed(attempt)` 生命周期；retry success trace tests 已显式锁定 `SandboxFirst -> Failed -> RetryEvaluated -> NoSandboxRetry` 顺序。
+- 当前问题：Slice 9 策略已定稿：同一轮多个 tool calls 互不影响；能并发就并发执行；每个 call 独立返回 `Finished / Failed / Denied`；不因为某个 call 失败或被拒而取消其他 call；最终按原始 index 稳定回灌 observations。
 - 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
-- 完成后解锁：进入 Slice 9，定义同一轮多个 tool call 中 hard-deny 后的 skipped / observation 语义；同时 `demo/README.md` 已经可以展示完整 command trace，证明 `run_command` 经过 approval、sandbox first、retry gate、no-sandbox retry 或 denied，而不是直接裸跑。
+- 完成后解锁：实现 Slice 9 后，ReAct loop 能一次性给 agent 回传完整多工具 observation，后续可以进入 Slice 10 approval persistence，或先写 `demo/README.md` 展示 command trace 与 multi-tool trace。
 - 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；`run_shell_command` 编排测试覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject，以及 safe-read sandbox denied 不 retry 的 registry 接线；ReAct `run_command` observation 测试覆盖 Finished / Failed / Denied 回灌；`RetryPolicy` 已纳入 retry gate；Slice 8 已补 `ToolCallContext`、`ApprovalGateway`、`PendingApproval`、内部 `ToolApprovalResult` 回流、`CommandEventEmitter`、`run_execution_attempt`、command 专属 event 命名和 command execution / retry 事件透出；`SandboxFirst` failure event 已在 retry decision 前发出并被 shell / ReAct trace tests 锁定；`cargo test` 通过 63 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：进入 Slice 9 Multi-Tool Hard-Deny And Skipped Semantics，决定同一轮多个 tool call 中一个安全拒绝发生后，后续 tool call 是否执行、如何发 `Skipped` / observation、以及 `ToolRuntimeResult::Skipped` 是否保留。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前待解决：实现 Slice 9 Multi-Tool Independent Execution：改造 `agent/react.rs` 的同批 tool call 调度，支持并发执行、收集独立结果、按 index 写回 observation；同时决定 `ToolRuntimeResult::Skipped` 是否删除或保留为非主路径。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Slice 8 已完成，当前代码光标转向 Slice 9 的 ReAct multi-tool hard-deny / skipped semantics；需要从 `agent/react.rs` 的多 tool call 调度和 `ToolRuntimeResult::Skipped` 是否保留开始。
+- Code frontier：Slice 8 已完成，当前代码光标转向 Slice 9 的 ReAct multi-tool independent execution；需要从 `agent/react.rs` 的多 tool call 调度和 `ToolRuntimeResult::Skipped` 是否保留开始。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
-- Current open decision：同一轮多个 tool call 中，一个安全拒绝发生后，后续 tool call 应该继续执行、跳过、还是根据依赖关系决定；如果跳过，外部 stream 和 LLM observation 应该如何表达。
-- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”或“实现 run_execution_attempt”；当前进入 multi-tool hard-deny / skipped semantics。
+- Current decision：同一轮多个 tool call 互不影响；失败或拒绝只属于当前 call，不传播成 batch-level skip；最终 observations 按 index 写回。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”或“hard-deny 后跳过后续工具”；当前进入 multi-tool independent execution。
 
 ## Critical Checkpoint
 
 - Source constraint：Codex 需要服务真实 CLI Agent 的安全、本地命令执行、跨平台 sandbox、用户审批体验和事件可观察性；它的复杂度来自生产约束，不是单纯类型设计偏好。
 - Faithful imitation：当前 demo 必须先模仿 `tool call -> approval -> sandbox first -> retry decision -> observation/event` 的分层安全链路，不能把工具调用简化成直接执行函数。
 - Simplified / improved / discarded：Phase 1 只做清晰可测的事件协议，不复刻完整 TUI/MCP elicitation、跨平台 OS sandbox 和所有 Codex 内部事件细节。
-- Transfer risk：业务迁移前要重新验证是否真的需要 no-sandbox retry、session approval、network host 级审批、多工具 hard-deny 语义，不能因为 Codex 有这些复杂度就默认采用。
+- Transfer risk：业务迁移前要重新验证是否真的需要 no-sandbox retry、session approval、network host 级审批、多工具独立执行策略，不能因为 Codex 有这些复杂度就默认采用。
 
 ## Gaps Blocking Next Stage
 
@@ -54,7 +54,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 6 Closeout：同步旧 guides、todo、outcome-map 和 design，冻结 Slice 6 non-goals。
 - [x] Slice 7 Retry Policy And Denial Semantics：让 `decide_retry` 尊重 capability-level `RetryPolicy`，补齐 `safe-read` denied 不 retry、`safe-test` approval retry、network prompt approval retry、network deny 不被 `WithoutApproval` 绕过等边界。
 - [x] Slice 8 Event Protocol Hardening：`ApprovalGateway + PendingApproval`、run-scoped `CommandNeedsApproval`、`CommandEventEmitter`、command attempt / retry event、trace tests 和 `run_execution_attempt` 已完成；command attempt lifecycle 已由 helper 结构性保证。
-- [ ] Slice 9 Multi-Tool Hard-Deny And Skipped Semantics：决定并实现同轮多工具安全拒绝后的 skipped 行为。
+- [ ] Slice 9 Multi-Tool Independent Execution：实现同轮多工具互不影响、可并发执行、按 index 稳定 observation 回灌。
 - [ ] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
 - [ ] ApprovalPolicy OnRequest Semantic Hardening：补充显式 escalation request 建模，区分“初始请求提权可询问”和“sandbox failure 自动提权询问”，避免 `OnRequest` 与 `OnFailure` 语义混淆。
 - [ ] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。

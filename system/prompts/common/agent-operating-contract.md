@@ -15,6 +15,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - After review, validation, or commit changes completion, risks, evidence, or next action, synchronize the active learning artifacts.
 - Before a repo-learning commit, run a learning-map sync check. After a repo-learning commit, output a post-commit orientation.
 - Study materials are constrained design cases, not authorities. Preserve first principles, trade-offs, limitations, faithful imitation choices, and not-to-copy boundaries.
+- Principle explanations must expose the mechanism below the abstraction when it affects design: language/runtime/library first, then OS/protocol/hardware as needed, with clear stop rules.
 - Mini demos should consciously imitate the source repo's core mechanism where implementation friction teaches the trade-off, then decide what to simplify, improve, or discard.
 
 ## Engineering Rules

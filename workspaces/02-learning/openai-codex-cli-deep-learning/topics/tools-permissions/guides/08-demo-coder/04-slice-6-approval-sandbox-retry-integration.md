@@ -15,7 +15,7 @@
   - [`tool/function.rs`](../../demo/src/tool/function.rs)：`add/sub` pure function tools。
   - [`tool/runtime.rs`](../../demo/src/tool/runtime.rs)：`ToolRuntime`，已覆盖 pure function path 和 command path。
   - [`tool/shell/`](../../demo/src/tool/shell)：`run_command` command tool 的内部实现模块。
-- After this: 当前不直接进入 README；先按 `06-slice-6-closeout-and-next-slices.md` 进入 Slice 7 `RetryPolicy` hardening。
+- After this: 当前不直接进入 README；Slice 7 / Slice 8 已完成，最新下一步以 [`10-slice-9-multi-tool-independent-execution.md`](10-slice-9-multi-tool-independent-execution.md) 为准。
 
 ## North Star
 
@@ -37,8 +37,8 @@ ToolCallFinished
 1. `add/sub` 继续是 pure function tools，但也要进入统一 `ToolRuntime` 边界。
 2. `run_command` 是模型可见的 command tool，内部由 `tool/shell/` 实现，走完整 `CommandRequest -> ApprovalRequirement -> ExecutionRunner -> RetryDecision` 链路。
 3. `react.rs` 不长期承载 approval / sandbox / retry 细节，只负责 ReAct loop 和 message 回灌。
-4. Phase 1 多 tool call 先按 `index` 顺序执行。
-5. 如果某个 tool call 被 forbidden / rejected，后续 tool call 不真实执行，但要补 skipped observation，保证每个 `tool_call_id` 都有对应 tool message。
+4. Slice 9 最新决策：同批 tool calls 互不影响；能并发就并发执行；最终按原始 `index` 稳定回灌 observations。
+5. Slice 9 最新决策：某个 tool call 被 forbidden / rejected 只影响当前 call，不自动跳过后续 call；每个 `tool_call_id` 都要有对应 tool message。
 
 ## Action Card
 
@@ -124,7 +124,7 @@ ToolCallFinished(add/sub)
 验收：
 
 - 现有 ReAct tests 仍通过。
-- `ToolRuntimeResult` 内部区分 `Finished`、`Failed`、`Denied`、`Skipped`，即使事件暂时仍映射到 `ToolRunFinished` / `ToolRunFailed`。
+- `ToolRuntimeResult` 内部区分 `Finished`、`Failed`、`Denied`；`Skipped` 不再作为 batch-level hard-deny 的主路径，后续若无真实语义应删除或标注为非主路径。
 
 ### 4. Add Command Planning Without Running Yet
 
@@ -209,13 +209,13 @@ Approval passed
 - model proposes dangerous shell -> forbidden -> runner not called。
 - `npm install` sandbox denied -> retry approval accepted -> no-sandbox success。
 - command failed -> no retry。
-- 多 tool call 中前一个 denied -> 后续 skipped observation。
+- 多 tool call 中一个 denied / failed 不影响其他 call 执行，最终 observations 按原始 index 写回。
 
 ## Stop Rules
 
 - 不做真实 OS sandbox。
 - 不做真实用户审批 UI。
-- 不做 tool 并发执行。
+- 不在 Slice 6 做 tool 并发执行；Slice 9 再处理 independent / parallel execution。
 - 不把 `add/sub` 改造成 command。
 - 不扩展多 provider message 抽象。
 

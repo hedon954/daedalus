@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`08-demo-coder`
 - 状态：`active`
-- 下一步：进入 `08-demo-coder`：实现 Repo Mini Demo，准备产物：demo/README.md。
+- 下一步：继续 `08-demo-coder` Slice 9：实现 multi-tool independent execution，改造 `agent/react.rs` 的同批 tool call 调度，并按原始 index 稳定回灌 observations。
 
 ## 枚举约束
 

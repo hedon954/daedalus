@@ -279,8 +279,8 @@ capability matched but approval decision is Forbidden
 user rejects approval / retry approval
   -> RunCommandResult::Denied
 
-previous tool caused hard denial, later calls are not attempted
-  -> ToolRuntimeResult::Skipped
+explicit scheduler-level skip, not caused by same-batch hard-deny propagation
+  -> ToolRuntimeResult::Skipped if this type is kept
 ```
 
 如果以后希望 unknown command 展示成 denied，不要重新加 `ToolRuntimePlan::Deny`；更好的方式是在 registry 层显式匹配到 `unsupported` / `dangerous-shell` capability，再由 approval policy 产出 `Denied`。
@@ -363,7 +363,7 @@ pub enum ToolRuntimeResult {
     },
     Skipped {
         reason: String,
-    },
+    }, // optional; remove if Slice 9 finds no real non-batch skip path
 }
 ```
 
@@ -383,11 +383,11 @@ Denied
   -> role=tool content = tool denied: ...
 
 Skipped
-  -> ToolRunFailed or future ToolRunSkipped
+  -> ToolRunFailed or future ToolRunSkipped if kept
   -> role=tool content = tool skipped: ...
 ```
 
-Phase 1 可以暂时不新增 `ToolRunDenied` / `ToolRunSkipped`，但 `ToolRuntimeResult` 内部最好先区分语义。
+Phase 1 可以暂时不新增 `ToolRunDenied`。`ToolRunSkipped` 不是当前主路径；Slice 9 independent execution 实现后，如果没有显式 scheduler skip 场景，应删除 `ToolRuntimeResult::Skipped`，避免枚举状态膨胀。
 
 ## Answer To The Current Question
 

@@ -40,7 +40,7 @@ phase: repo.phase2-learning
 1. 从生产失败模式出发识别架构边界，不按目录机械枚举。
 2. 先让用户说出 naive 方案会如何失败，再读源码验证 repo 的实际设计。
 3. 每个关键模块都按“生产问题 -> naive 失败 -> 源码应对 -> 不变量 -> 代价 -> 局限 / 迁移边界”解释。
-4. 标注可以画图的部分，并优先生成简约、Typora 兼容的 Mermaid；复杂总览可以拆成 Excalidraw。
+4. 标注可以画图的部分，并优先生成简约、预览兼容的 Mermaid；复杂总览可以拆成 Excalidraw。
 5. 将用户假设、Agent 校准、源码验证路径、不变量和 trade-off 写入 active topic 的 `notes/05-arch-analyzer/README.md` 或同目录专题文件；不要只保留整理后的架构答案。
 
 ## Output Delta
@@ -70,7 +70,7 @@ phase: repo.phase2-learning
 
 ## Repo-Specific Constraints
 
-- 需要画图时，优先生成 mermaid；复杂系统可再拆成多张小图。
+- 需要画图时，优先生成 Mermaid；复杂系统可再拆成多张小图。
 - 不要把目录树当架构分析。
 - 每个关键模块都要说明它保护的边界或不变量。
 - 每个架构结论都必须能回到一个真实失败模式或生产约束。

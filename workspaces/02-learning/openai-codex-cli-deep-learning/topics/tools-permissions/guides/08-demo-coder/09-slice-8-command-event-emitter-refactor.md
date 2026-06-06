@@ -7,7 +7,7 @@
 - Current slice: Slice 8 Event Protocol Hardening
 - Current gap: 已完成。command 事件已经能透出，approval request 已通过当前 run stream 发送，`CommandEventEmitter` 已抽取，`run_execution_attempt` 已集中保护 attempt lifecycle。
 - Paired note: [`../../notes/08-demo-coder/06-slice-8-event-outlet-review.md`](../../notes/08-demo-coder/06-slice-8-event-outlet-review.md)
-- After this: Slice 8 已可以收口；下一步进入 multi-tool hard-deny / skipped semantics。
+- After this: Slice 8 已可以收口；下一步进入 multi-tool independent execution。
 
 ## North Star
 
@@ -225,4 +225,4 @@ flowchart TD
 - 不让 `ExecutionRunner` 直接知道 `StreamEvent`。
 - 不把 `ToolApprovalResult` 加回外部 `StreamEvent`。
 - 不在本 slice 处理 session approval persistence。
-- 不在本 slice 处理 multi-tool hard-deny / skipped propagation。
+- 不在本 slice 处理 multi-tool independent execution。

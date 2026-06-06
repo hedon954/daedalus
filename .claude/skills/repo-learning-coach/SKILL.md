@@ -66,6 +66,7 @@ Load only the prompt(s) needed for the current action:
 - CLI lifecycle, render, validate, review, knowledge commands: `system/prompts/repo/repo-learning-cli-contract.md`
 - Resume or "where are we": `system/prompts/common/resume.md`
 - Checkpoint, cursor sync, pre-commit sync, post-commit orientation: `system/prompts/common/checkpoint-lifecycle.md`
+- First-principles explanation or deep mechanism guide: `system/prompts/common/first-principles.md`
 - Critical lens and trade-off analysis: `system/prompts/common/critical-lens.md`
 - Review plan/session: `system/prompts/common/review-guidance.md`
 - Knowledge-system extraction or promotion: `system/prompts/common/knowledge-system-extraction.md`
@@ -169,6 +170,7 @@ When resuming long-running work:
 - Do not create complete code-reading notes from Agent-only reading.
 - Do not label Agent-only inspection as verified learning.
 - Do not make source-code claims from analogy or product intuition alone; anchor them in source, tests, comments, or runtime evidence.
+- When explaining principles, follow the mechanism depth ladder in `first-principles.md`; do not stop at a framework abstraction if the lower runtime, OS, protocol, or hardware layer changes the design decision.
 - Do not accept a code-reading note that only explains call chains; it must include production constraints, failure handling, invariants, trade-offs, and transfer limits.
 - When a Rust demo `Cargo.toml` is created, moved, or migrated under a topic, run `daedalus ide sync-rust-analyzer`.
 - Do not mark a task complete until demo, business transfer, and knowledge archival are addressed or explicitly justified.

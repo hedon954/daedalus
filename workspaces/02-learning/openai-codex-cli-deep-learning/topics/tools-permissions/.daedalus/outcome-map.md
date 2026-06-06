@@ -27,9 +27,9 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 8 Event Protocol Hardening 已完成；当前事件类型包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed` 和 `CommandRetryEvaluated`，`ApprovalGateway` 通过内部 `ToolApprovalResult` 完成审批回流；run-scoped approval request、send failure fail closed、pending cleanup、`CommandEventEmitter`、retry 成功路径 attempt trace 和 `run_execution_attempt` 已闭合。下一障碍是 Slice 9：同一轮多个 tool call 中 hard-deny 后的 skipped / observation 语义。
+- 当前障碍：Slice 9 策略已定稿：同一轮多个 tool calls 互不影响，失败或拒绝不传播成 batch-level skip；下一步是把 `agent/react.rs` 从顺序 loop 改成独立结果收集，并按原始 index 稳定回灌 observations。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
-- 当前光标：Slice 9 multi-tool hard-deny / skipped semantics；先从 `agent/react.rs` 的多 tool call 调度和 `ToolRuntimeResult::Skipped` 的真实生产路径判断开始。
+- 当前光标：Slice 9 multi-tool independent execution；先从 `agent/react.rs` 的多 tool call 调度、并发收集和 `ToolRuntimeResult::Skipped` 是否保留开始。
 
 ## Artifact Dependency Graph
 
@@ -67,9 +67,9 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 - 当前素材中可能被过度神化的设计：Codex 的权限 / 沙箱 / retry 组合是成熟 CLI Agent 的生产级折中，不是所有 Agent demo 或业务系统都必须照搬的完整复杂度。
 - 当前 demo 需要忠实模仿的核心机制：tool call 不能直接执行；必须经过 capability match、approval requirement、sandbox-first execution、controlled retry 和 observation/event 回流。
 - 当前 demo 不应无意识照抄的设计：跨平台 sandbox 细节、完整 TUI/MCP elicitation、Codex 所有 approval policy 组合和长期 session policy 存储。
-- 当前还没有验证的素材假设：多 tool call 中 hard-deny 是否应该导致后续 tool 被 skipped。Codex / Claude Code 可能会根据工具调度、审批边界和 observation 体验做不同取舍，当前 demo 需要先从需求侧定义而不是盲目照搬。
+- 当前已决策但待实现的 demo 假设：多 tool call 中单个失败或拒绝不应导致后续 tool 被 skipped；更好的纠错体验是回传完整 observations，让 agent 一次性修正多个问题。
 - 当前可以尝试简化、改进或丢弃的部分：Phase 1 先用清晰的 event protocol 表达安全链路，不急着复刻 Codex 的全部 UI/streaming 事件细节。
-- 当前迁移到业务场景前必须重新验证的约束：业务是否真的需要 no-sandbox retry、session approval 复用、网络 host 级审批和多工具 hard-deny 语义。
+- 当前迁移到业务场景前必须重新验证的约束：业务是否真的需要 no-sandbox retry、session approval 复用、网络 host 级审批和多工具独立执行策略。
 
 ### Slice 6 当前待解决问题
 

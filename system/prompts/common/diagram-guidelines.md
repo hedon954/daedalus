@@ -1,6 +1,6 @@
 ---
 title: Diagram Guidelines
-description: 定义 daedalus 生成 Mermaid 图时的简洁性和 Typora 兼容规则。用于 guides 和用户确认后的 notes。
+description: 定义 daedalus 生成 Mermaid 图时的简洁性和预览兼容规则。用于 guides 和用户确认后的 notes。
 ---
 
 # Diagram Guidelines
@@ -17,7 +17,9 @@ description: 定义 daedalus 生成 Mermaid 图时的简洁性和 Typora 兼容�
 - `sequenceDiagram` 的 participant alias 使用大写或明确缩写，例如 `SUB`、`APP`、`CORE`。
 - participant 展示名包含空格、符号或下划线时，用双引号包裹。
 - message 文本中避免写容易被解析误判的 `->`；可以用 `to`、`then` 或中文描述。
-- 不在 Mermaid 中写显式颜色或样式，让渲染器使用默认主题。
+- 默认不写显式颜色或样式，让渲染器使用默认主题。
+- 当图表达跨层机制、职责边界、状态类别或风险等级时，可以使用少量语义样式；优先用 `subgraph` 分层，再用 `classDef` 区分 3-5 类节点。
+- 样式必须服务理解，不做装饰。避免每个节点单独配色；同一语义类别使用同一种样式，并在图前用一句话说明图例。
 - 图保持小而清晰；复杂系统拆成多张图。
 
 ## Notes Rule

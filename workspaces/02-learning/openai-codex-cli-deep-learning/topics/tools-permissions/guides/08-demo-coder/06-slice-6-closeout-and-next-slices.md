@@ -72,7 +72,7 @@ These are useful, but should not block Slice 6 exit:
 These should become later slices:
 
 - `RetryPolicy` integration into retry gate: completed in Slice 7.
-- `ToolRuntimeResult::Skipped` production path for multi-tool hard-deny behavior.
+- Multi-tool independent execution policy and stable observation ordering.
 - Explicit `ToolRunDenied` / `ToolRunSkipped` stream events.
 - Structured approval, sandbox, retry events.
 - Real `OsExecutionRunner`.
@@ -125,25 +125,26 @@ Unlocked:
 - AT-01 to AT-04 become observable from the agent stream, not only from unit tests.
 - README can explain the demo by showing an event trace.
 
-### Slice 9: Multi-Tool Hard-Deny And Skipped Semantics
+### Slice 9: Multi-Tool Independent Execution
 
-Goal: decide what happens when one tool call in the same model turn is rejected.
+Goal: decide and implement what happens when one tool call in the same model turn fails or is rejected.
 
 Current code:
 
 - `ToolRuntimeResult::Skipped` exists.
-- `react.rs` has a TODO for hard-deny behavior.
-- There is no production path yet.
+- `react.rs` currently loops through tool calls in index order.
+- There is no concurrent execution path yet.
 
 Target behavior:
 
-- If a security denial happens, later tool calls in the same turn are not blindly executed.
-- Later calls receive skipped observations so the model can repair or explain.
+- Same-batch tool calls are treated as independent observations.
+- A failure or denial in one call does not cancel or skip the remaining calls.
+- Execution may be concurrent, but observations are written back in original index order.
 
 Unlocked:
 
-- Clear semantics for `Skipped`.
-- Safer behavior for multi-tool turns.
+- Complete multi-tool observation feedback in one model repair turn.
+- Clearer semantics for `Skipped`: remove it or keep it only for explicit non-batch skip cases.
 
 ### Slice 10: Approval Persistence
 
