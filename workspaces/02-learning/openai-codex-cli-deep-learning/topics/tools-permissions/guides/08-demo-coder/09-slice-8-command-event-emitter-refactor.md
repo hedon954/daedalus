@@ -5,9 +5,9 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的可解释 command event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: command 事件已经能透出，approval request 已通过当前 run stream 发送，`CommandEventEmitter` 已抽取；剩余问题是 attempt lifecycle 仍由各分支手写，缺少 `run_execution_attempt` 这样的结构性保护。
+- Current gap: 已完成。command 事件已经能透出，approval request 已通过当前 run stream 发送，`CommandEventEmitter` 已抽取，`run_execution_attempt` 已集中保护 attempt lifecycle。
 - Paired note: [`../../notes/08-demo-coder/06-slice-8-event-outlet-review.md`](../../notes/08-demo-coder/06-slice-8-event-outlet-review.md)
-- After this: 完成 `run_execution_attempt` 后，Slice 8 可以用集中 trace helper 收口，再进入 multi-tool hard-deny / skipped semantics。
+- After this: Slice 8 已可以收口；下一步进入 multi-tool hard-deny / skipped semantics。
 
 ## North Star
 
@@ -149,7 +149,7 @@ cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning
 
 ### Step 2: Introduce `run_execution_attempt`
 
-状态：下一步。把 `SandboxFirst`、`NoSandboxFirst`、`NoSandboxRetry` 都改成通过同一个 helper 执行。
+状态：已完成。`SandboxFirst`、`NoSandboxFirst`、`NoSandboxRetry` 都已经通过同一个 helper 执行。
 
 这一步不需要改变当前测试期望；现有 retry 成功路径已经要求包含 `CommandExecutionFailed(SandboxFirst)`，重构后必须继续通过。
 
@@ -217,7 +217,7 @@ flowchart TD
 - [x] Sandbox retry success closes `SandboxFirst` with `CommandExecutionFailed`.
 - [x] Safe read success still emits exactly one `SandboxFirst` started / finished pair.
 - [x] Dangerous shell denied still does not run execution attempts.
-- [ ] 如果引入 `CommandEventEmitter`，现有 trace tests 仍全部通过。
+- [x] 引入 `CommandEventEmitter` 后，现有 trace tests 仍全部通过。
 
 ## Stop Rules
 

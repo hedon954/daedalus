@@ -70,7 +70,7 @@ pub async fn run_shell_command(
                 return run_sandbox_first_flow(
                     request,
                     matched_capability,
-                    execution_runner,
+                    execution_runner.as_ref(),
                     approval_gateway,
                     &emitter,
                 )
@@ -98,7 +98,7 @@ pub async fn run_shell_command(
                 return run_sandbox_first_flow(
                     request,
                     matched_capability,
-                    execution_runner,
+                    execution_runner.as_ref(),
                     approval_gateway,
                     &emitter,
                 )
@@ -136,7 +136,7 @@ async fn request_approval(
 async fn run_sandbox_first_flow(
     request: &CommandRequest,
     matched_capability: MatchedCapability,
-    execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
+    execution_runner: &dyn ExecutionRunner,
     approval_gateway: Arc<ApprovalGateway>,
     emitter: &CommandEventEmitter,
 ) -> RunCommandResult {
@@ -144,23 +144,19 @@ async fn run_sandbox_first_flow(
         sandbox_profile: request.sandbox_profile,
     };
 
-    emitter.execution_started(&attempt).await;
-
     // 先在沙箱尝试执行
-    let sandbox_first_execution_result = execution_runner.run(&request, &attempt);
+    let sandbox_first_execution_result =
+        run_execution_attempt(request, attempt, execution_runner, emitter).await;
+
+    // 处理沙箱执行结果
     match sandbox_first_execution_result {
         // 沙箱成功直接返回
         ExecutionResult::Success { stdout } => {
-            emitter.execution_finished(&attempt, stdout.clone()).await;
             return RunCommandResult::Finished { output: stdout };
         }
 
         // 沙箱失败则判断是否要进行重试
         ExecutionResult::Failure(failure) => {
-            emitter
-                .execution_failed(&attempt, format!("failed: {:?}", failure))
-                .await;
-
             let retry_decision = decide_retry(
                 request,
                 &failure,
@@ -171,6 +167,7 @@ async fn run_sandbox_first_flow(
 
             emitter.retry_evaluated(retry_decision.clone()).await;
 
+            // 处理重试决策
             match retry_decision {
                 // 不重试直接返回失败
                 RetryDecision::DoNotRetry { reason: _ } => {
@@ -178,13 +175,7 @@ async fn run_sandbox_first_flow(
                 }
                 // 重试且不需要审批则直接运行
                 RetryDecision::RetryWithoutApproval { reason } => {
-                    return run_no_sandbox_retry(
-                        request,
-                        execution_runner.as_ref(),
-                        reason,
-                        emitter,
-                    )
-                    .await;
+                    return run_no_sandbox_retry(request, execution_runner, reason, emitter).await;
                 }
                 // 重新且需要审批则先走审批
                 RetryDecision::RetryWithApproval {
@@ -202,13 +193,8 @@ async fn run_sandbox_first_flow(
                 {
                     // 审批通过则直接本机运行再次尝试
                     UserApprovalDecision::Approved { persistence: _ } => {
-                        return run_no_sandbox_retry(
-                            request,
-                            execution_runner.as_ref(),
-                            reason,
-                            emitter,
-                        )
-                        .await;
+                        return run_no_sandbox_retry(request, execution_runner, reason, emitter)
+                            .await;
                     }
                     // 审批不通过则直接拒绝
                     UserApprovalDecision::Rejected => {
@@ -233,10 +219,9 @@ async fn run_no_sandbox_first(
 ) -> RunCommandResult {
     let attempt = ExecutionAttempt::NoSandboxFirst { reason };
 
-    emitter.execution_started(&attempt).await;
-
-    let result = execution_runner.run(request, &attempt);
-    handle_execution_result(attempt, result, emitter).await
+    run_execution_attempt(request, attempt, execution_runner, emitter)
+        .await
+        .into()
 }
 
 async fn run_no_sandbox_retry(
@@ -247,20 +232,20 @@ async fn run_no_sandbox_retry(
 ) -> RunCommandResult {
     let attempt = ExecutionAttempt::NoSandboxRetry { reason };
 
-    emitter.execution_started(&attempt).await;
-
-    let result = execution_runner.run(request, &attempt);
-    handle_execution_result(attempt, result, emitter).await
+    run_execution_attempt(request, attempt, execution_runner, emitter)
+        .await
+        .into()
 }
 
-/// 处理 ExecutionResult:
-///  1. 向外面透露执行事件
-///  2. 转为 RunCommandResult
-async fn handle_execution_result(
+async fn run_execution_attempt(
+    request: &CommandRequest,
     attempt: ExecutionAttempt,
-    result: ExecutionResult,
+    execution_runner: &dyn ExecutionRunner,
     emitter: &CommandEventEmitter,
-) -> RunCommandResult {
+) -> ExecutionResult {
+    emitter.execution_started(&attempt).await;
+    let result = execution_runner.run(request, &attempt);
+
     match &result {
         ExecutionResult::Success { stdout } => {
             emitter.execution_finished(&attempt, stdout.clone()).await;
@@ -287,7 +272,8 @@ async fn handle_execution_result(
             }
         },
     }
-    result.into()
+
+    result
 }
 
 /// 将底层执行失败折叠成 command runtime 终态。

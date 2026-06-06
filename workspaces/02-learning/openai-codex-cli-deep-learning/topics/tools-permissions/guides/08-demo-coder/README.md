@@ -196,7 +196,7 @@ OpenAI-compatible Chat Completions stream
 
 目标：把 approval、execution attempt、retry decision、denied/skipped 等关键节点透出为可观察事件。
 
-状态：进行中。当前对外事件包含 `CommandNeedsApproval`、`CommandExecution*` 和 `CommandRetryEvaluated`；`ApprovalGateway + PendingApproval` 已保证 approval request 进入当前 run stream，并通过内部 `ToolApprovalResult` 回流；`CommandEventEmitter` 已集中 command event 上下文字段。当前剩余问题是 attempt lifecycle 仍由各分支手写，下一步实现 `run_execution_attempt`，把 `Started -> Finished/Failed` 变成结构性保证。
+状态：已完成。当前对外事件包含 `CommandNeedsApproval`、`CommandExecution*` 和 `CommandRetryEvaluated`；`ApprovalGateway + PendingApproval` 已保证 approval request 进入当前 run stream，并通过内部 `ToolApprovalResult` 回流；`CommandEventEmitter` 已集中 command event 上下文字段；`run_execution_attempt` 已把 `Started -> Finished/Failed` 变成结构性保证。
 
 行动指南：[`08-slice-8-event-protocol-hardening.md`](08-slice-8-event-protocol-hardening.md)、[`09-slice-8-command-event-emitter-refactor.md`](09-slice-8-command-event-emitter-refactor.md)。
 
@@ -208,7 +208,9 @@ OpenAI-compatible Chat Completions stream
 
 ### Slice 9: Multi-Tool Hard-Deny And Skipped Semantics
 
-目标：定义同一轮多个 tool call 中，一个安全拒绝发生后，后续 tool 是否执行以及如何回灌 observation。
+目标：定义同一轮多个 tool call 中，一个安全拒绝发生后，后续 tool 是否执行、如何对外发事件、以及如何回灌 observation。
+
+状态：下一步。
 
 验收：
 

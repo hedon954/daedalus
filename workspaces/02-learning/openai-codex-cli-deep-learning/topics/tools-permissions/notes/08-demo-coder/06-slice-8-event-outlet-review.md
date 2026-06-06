@@ -145,7 +145,7 @@ tool call did not run directly
 
 ## Updated Invariant
 
-后续 Slice 8 应把事件透出收敛为两个不变量：
+Slice 8 已把事件透出收敛为两个不变量：
 
 1. **Run-scoped event invariant**
    当前 run 产生的 approval / execution / retry event 必须进入当前 run 返回的 `EventStream`。
@@ -153,18 +153,18 @@ tool call did not run directly
 2. **Attempt lifecycle invariant**
    每个 `ExecutionAttempt` 一旦发出 `CommandExecutionStarted`，必须最终发出 `CommandExecutionFinished` 或 `CommandExecutionFailed`。
 
-## Minimal Next Move
+## Closeout
 
-下一步不继续到处补事件发送，也不再讨论是否需要 `CommandEventEmitter`。用户已确认 `run_execution_attempt` 有必要，因为生命周期不变量应该由代码结构保证。
+不继续到处补事件发送，也不再讨论是否需要 `CommandEventEmitter`。用户已确认 `run_execution_attempt` 有必要，因为生命周期不变量应该由代码结构保证。
 
-下一步引入：
+当前已经引入：
 
 ```text
 run_execution_attempt
   -> emit execution started
   -> runner.run(...)
   -> emit execution finished / failed
-  -> return ExecutionResult
+ -> return ExecutionResult
 ```
 
 这样事件闭合由 helper 保证，业务分支只处理 approval / retry decision。

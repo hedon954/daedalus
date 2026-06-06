@@ -5,9 +5,9 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的一次命令安全链路 event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: approval request、CommandExecution、CommandRetry 事件已开始透出；run-scoped approval request、send failure fail closed、pending cleanup、`CommandEventEmitter` 和 retry 成功路径 attempt trace 已闭合，剩余问题是 attempt lifecycle 还没有被 `run_execution_attempt` 结构化保护。
+- Current gap: 已完成。approval request、CommandExecution、CommandRetry 事件已透出；run-scoped approval request、send failure fail closed、pending cleanup、`CommandEventEmitter`、retry 成功路径 attempt trace 和 `run_execution_attempt` 已闭合。
 - Evidence needed: [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)、[`../../demo/src/agent/stream_event.rs`](../../demo/src/agent/stream_event.rs)、[`../../demo/src/model/event.rs`](../../demo/src/model/event.rs)、[`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)、[`../../demo/src/tool/shell/mod.rs`](../../demo/src/tool/shell/mod.rs)、[`../../demo/src/tool/shell/retry.rs`](../../demo/src/tool/shell/retry.rs)。
-- After this: 按 [`09-slice-8-command-event-emitter-refactor.md`](09-slice-8-command-event-emitter-refactor.md) 实现 `run_execution_attempt`；完成后 Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics。
+- After this: Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics。
 
 ## Critical Lens
 
@@ -28,12 +28,12 @@
   - 已完成：`ApprovalGateway + PendingApproval` 使用 internal `ToolApprovalResult` channel + pending oneshot，把审批请求和审批结果配对；`CommandNeedsApproval` 由当前 run 的 `EventSender` 发出。
   - 已验证：`cargo test` 通过 63 个默认测试，3 个 live LLM 测试 ignored。
   - 已完成：`CommandEventEmitter` 已集中填充 command event 的 `index / call_id / name`。
-  - 待修正：attempt lifecycle 仍由业务分支手写，下一步用 `run_execution_attempt` 结构化保证。
+  - 已完成：`run_execution_attempt` 已集中保证 attempt lifecycle，不再由业务分支手写 started / terminal event。
 - Steps:
-  1. 引入 `run_execution_attempt`，统一保证每个 attempt 都有 started 和 terminal event。
-  2. 替换 `SandboxFirst`、`NoSandboxFirst`、`NoSandboxRetry` 的手写 started / terminal event 逻辑。
-  3. 保持 approval request 通过当前 run stream 发出，不让 `ApprovalGateway` 长期持有外部 stream sender。
-  4. 保持 trace 测试：safe read、network install sandbox denied -> retry、dangerous shell denied；同时确认 ReAct observation 回灌不被破坏。
+  1. 已完成：引入 `run_execution_attempt`，统一保证每个 attempt 都有 started 和 terminal event。
+  2. 已完成：替换 `SandboxFirst`、`NoSandboxFirst`、`NoSandboxRetry` 的手写 started / terminal event 逻辑。
+  3. 已完成：approval request 通过当前 run stream 发出，不让 `ApprovalGateway` 长期持有外部 stream sender。
+  4. 已验证：trace 测试覆盖 safe read、network install sandbox denied -> retry、dangerous shell denied；ReAct observation 回灌未被破坏。
 - Verify:
   - 单测覆盖 safe command 成功 trace。
   - 单测覆盖 dangerous command denied trace。
