@@ -81,6 +81,23 @@ Review-only 不等于 learning-state-only。只要 review 或验证改变了完�
    - 验证结果。
    - commit hash，若已提交。
    - 下一步行动或下一轮问题。
+   - 若本轮发生 repo-learning commit，必须使用 `Post-Commit Orientation` 形态重新定向学习现场；不要只回复 commit hash。
+
+## Post-Commit Orientation
+
+每次 repo-learning commit 后，最终回复必须包含这个最小结构：
+
+```markdown
+## Post-Commit Orientation
+- Commit:
+- Current:
+- Completed:
+- Updated artifacts:
+- Validation:
+- Next:
+```
+
+这个结构可以很短，但不能省略 `Current` 和 `Next`。提交后的核心任务是让学习者知道“这个 checkpoint 之后我们在哪里，下一步为什么值得做”。
 
 ## Commit Boundary Rule
 

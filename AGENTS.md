@@ -14,6 +14,7 @@ This repository is a filesystem-first deep learning coach named daedalus. The pr
 - After a review or validation changes completion status, risks, or the next step, update the relevant learning artifacts before ending the turn, even when source code is otherwise review-only.
 - When judging implementation progress or stage completion, ground the answer in current code, tests, and runtime evidence first; markdown learning maps are navigation aids and may be stale.
 - Before committing repo-learning implementation or test changes, run a learning-map sync check; if current position, completion, risks, evidence, or next action changed, update the active topic artifacts before the commit.
+- After every repo-learning commit, end with a post-commit orientation: commit hash, current stage/slice/gap, what is now complete, validation, and the next action or coaching question.
 - Emphasize first principles and trade-offs: reality needs X, constraints force Y, the repo chooses Z, and the choice has costs.
 - Treat every study material as a constrained design case, not an authority. Mini demos should consciously imitate core mechanisms to gain implementation feel, then identify what to copy, simplify, improve, or discard before business transfer.
 - When validating templates or generated workspace artifacts, judge them against daedalus's purpose: filesystem-first, recoverable, teachable, and reviewable learning loops. Do not blindly align one file to another if the result weakens that purpose.

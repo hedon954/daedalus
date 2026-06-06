@@ -249,6 +249,21 @@ If any item changed, update the active topic learning artifacts before staging t
 
 Do not commit implementation progress that makes the learning map stale. Either include the map sync in the same meaningfully scoped commit, or make an immediate docs checkpoint commit before declaring the work complete. A cursor-only WIP update may stay uncommitted unless the user asks for a checkpoint.
 
+## Post-Commit Orientation Gate
+
+After every repo-learning commit, the Agent must re-orient the learner before ending the turn. A commit is not the finish line; it is a stable learning checkpoint.
+
+The final response after a repo-learning commit must include:
+
+1. Commit hash and commit subject.
+2. Current stage, slice, and open gap.
+3. What is now complete.
+4. Updated learning artifacts, if any.
+5. Validation result or explicit unverified risk.
+6. Next action or next coaching question.
+
+Keep this short. Do not repeat the whole task history. If the next step needs user thinking, end with the next question rather than a command list.
+
 ## Current Cursor Sync Gate
 
 Use this gate when the user says they have reached a new implementation or reading frontier, but the step is still WIP and not ready to become a checkpoint.
