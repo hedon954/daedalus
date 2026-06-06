@@ -1,5 +1,8 @@
 # Repo Learning 多专题学习项目实现方案
 
+> Date: 2026-05-23
+> Status: done (v1 implemented)
+
 ## Summary
 
 daedalus 当前的 repo learning 模型把一个 workspace 默认建模成一个学习任务，并让这个任务按 10 个 stage 从目标澄清走到知识归档。这对“学习一个明确主题”有效，但对长期学习一个大型 repo 不够自然。

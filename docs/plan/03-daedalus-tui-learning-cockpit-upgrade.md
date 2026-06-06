@@ -1,5 +1,8 @@
 # daedalus-tui 学习驾驶舱升级方案
 
+> Date: 2026-06-03
+> Status: done (v1 implemented)
+
 ## Summary
 
 `daedalus-tui` 从“只读状态摘要页”升级为“学习现场恢复工具”。学习者打开 TUI 后，应能快速回答：

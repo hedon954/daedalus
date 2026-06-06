@@ -1,5 +1,8 @@
 # Review Plan 与 Knowledge System 萃取能力实现方案
 
+> Date: 2026-05-23
+> Status: done (v1 implemented)
+
 ## Summary
 
 daedalus 当前已经支持 repo learning 的主学习闭环：

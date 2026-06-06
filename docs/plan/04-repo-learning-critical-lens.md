@@ -1,5 +1,8 @@
 # Repo Learning 批判性学习协议升级方案
 
+> Date: 2026-06-03
+> Status: done (v1 implemented)
+
 ## Summary
 
 daedalus 当前已经要求从第一性原理、现实约束和 trade-off 出发学习 repo，但这个要求仍然偏向“解释素材为什么这么做”。在实际学习过程中，Agent 容易把被学习的 repo、book、project 当成事实标准，沿着素材内部逻辑推进，而没有持续追问：

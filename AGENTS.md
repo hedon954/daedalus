@@ -1,61 +1,30 @@
 # AGENTS.md
 
-This repository is a filesystem-first deep learning coach named daedalus. The product goal is to guide a user from a real learning/business problem to repo selection, deep code reading, mini-demo implementation, business transfer, and knowledge-base archival.
+daedalus is a filesystem-first deep learning coach. It guides a user from a real learning or business problem to source selection, deep reading, mini-demo implementation, business transfer, and verified knowledge archival.
 
-## Operating Principles
+## Must Follow
 
+- Follow `system/prompts/common/agent-operating-contract.md`; the bullets below are the high-priority local contract.
 - Use Chinese for project-facing learning artifacts unless the user asks otherwise.
-- Treat output as the driver of input. Every reading step should support a concrete artifact: a question roadmap, runbook, architecture note, code reading note, mini demo, business solution, or knowledge-base entry.
-- Keep WIP strict. `workspaces/02-learning` should contain at most one active learning task.
-- Completed learning tasks must move to `workspaces/03-completed`; abandoned tasks must move to `workspaces/04-abandoned`. Use the CLI lifecycle commands instead of leaving closed tasks in `workspaces/02-learning`.
-- Treat `.daedalus/state.toml` as the only source of truth for task lifecycle. The workspace directory bucket is a filesystem projection and must match `task.lifecycle` and `task.workspace_bucket`.
 - Prefer filesystem artifacts over hidden chat memory. Long-running learning state must be recoverable from files.
-- Do not turn summaries into chat logs. Preserve goals, decisions, open questions, todo state, and verified conclusions.
-- After a review or validation changes completion status, risks, or the next step, update the relevant learning artifacts before ending the turn, even when source code is otherwise review-only.
-- When judging implementation progress or stage completion, ground the answer in current code, tests, and runtime evidence first; markdown learning maps are navigation aids and may be stale.
-- Before committing repo-learning implementation or test changes, run a learning-map sync check; if current position, completion, risks, evidence, or next action changed, update the active topic artifacts before the commit.
-- After every repo-learning commit, end with a post-commit orientation: commit hash, current stage/slice/gap, what is now complete, validation, and the next action or coaching question.
-- Emphasize first principles and trade-offs: reality needs X, constraints force Y, the repo chooses Z, and the choice has costs.
-- Treat every study material as a constrained design case, not an authority. Mini demos should consciously imitate core mechanisms to gain implementation feel, then identify what to copy, simplify, improve, or discard before business transfer.
-- When validating templates or generated workspace artifacts, judge them against daedalus's purpose: filesystem-first, recoverable, teachable, and reviewable learning loops. Do not blindly align one file to another if the result weakens that purpose.
+- Keep WIP strict: `workspaces/02-learning` contains at most one active learning project, and each project has at most one active topic.
+- Treat `.daedalus/state.toml` as the lifecycle source of truth. Workspace buckets are filesystem projections and must match state.
+- Ground implementation progress in current code, tests, runtime output, and git diff before trusting learning maps.
+- After review, validation, or commit changes completion status, risks, evidence, or next action, synchronize the relevant learning artifacts.
+- Before repo-learning commits, run a learning-map sync check; after repo-learning commits, end with post-commit orientation.
+- Treat every study material as a constrained design case, not an authority. Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
+- Git commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
+- Tests should assert stable behavior, not incidental wording.
 
-## Project Structure
+## Project Map
 
-- `crates/`: deterministic Rust workspace for MCP servers, CLI tools, agent utilities, and other code-backed capabilities.
-- `knowledge-base/`: durable knowledge distilled from verified learning output.
-- `system/bin/`: scripts for local setup, build, and execution.
-- `system/config/`: user preferences and future runtime configuration.
-- `system/prompts/common/`: reusable prompts shared by repo, book, course, and paper learning.
-- `system/prompts/repo/`: staged prompts for code repository learning.
-- `system/templates/`: future templates for task cards, long context, todo state, and learning boards.
-- `workspaces/`: backlog, active learning, completed, and abandoned tasks.
+- `crates/`: deterministic Rust workspace for CLI, TUI, MCP, and code-backed capabilities.
+- `system/prompts/`: composable prompt protocols.
+- `system/templates/`: generated workspace templates.
+- `knowledge-base/`: verified reusable knowledge.
+- `workspaces/`: learning project lifecycle buckets.
 
-## Repo Learning Flow
+## Repo Learning
 
-1. Clarify the learning goal and real-world problem.
-2. Introduce the goal from first principles and connect prior knowledge when available.
-3. Recommend and narrow code repositories.
-4. Generate a progressive question roadmap.
-5. Run the repo locally and debug the core path from an entry point.
-6. Analyze architecture, modules, patterns, algorithms, and trade-offs.
-7. Read core code deeply and line by line where needed.
-8. Design and implement a mini demo that preserves the repo's core architectural decision.
-9. Apply the learned pattern to the user's original business problem.
-10. Summarize and archive verified knowledge.
-
-## Editing Guidelines
-
-- Keep prompt files concise and composable.
-- Avoid adding broad abstractions before a concrete learning workflow requires them.
-- When adding deterministic logic, prefer Rust code under `crates/` and keep generated or runtime state out of source control.
-- When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed so `make ci` continues to cover formatting, check, clippy, and tests for the whole Rust workspace.
-- Git commit messages should follow `type(scope): 中文描述` when a scope is useful, or `type: 中文描述` for broad changes, matching Conventional Commit style.
-- Tests should assert stable behavior, not incidental wording: for errors, prefer checking the error variant/category or presence unless the exact message is part of the public contract.
-- Before marking a learning task completed, verify that it has at least: goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit reason for no demo, business transfer, and knowledge export.
-
-## Knowledge Base Rules
-
-- Archive only verified knowledge.
-- Prefer reusable patterns over repo-specific trivia.
-- Each knowledge entry should include reality constraints, core approach, trade-off, transferable pattern, and source.
-- Revisit taxonomy as the knowledge base grows; do not over-design categories early.
+- Use `.claude/skills/repo-learning-coach/SKILL.md` for repo learning, review, and knowledge extraction.
+- Before marking a learning task completed, verify goal, core questions, run/debug evidence or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, and knowledge export.
