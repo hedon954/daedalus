@@ -16,17 +16,17 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 8 Event Protocol Hardening 进行中：事件命名已收敛为 command 专属的 `CommandNeedsApproval`、`CommandApprovalResult`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`；`ApprovalBroker` 已能用 outbound event + inbound approval result channel + pending oneshot 完成审批往返。
+- 当前问题：Slice 8 Event Protocol Hardening 进行中：最近 review 的 1/2/3 已闭合，`ApprovalBroker` send failure 不再 panic 且会清理 pending，retry success trace tests 已显式锁定 `SandboxFirst -> Failed -> RetryEvaluated -> NoSandboxRetry` 顺序，`&&context` 已清理。当前剩余结构风险是 approval request sender 仍非 run-scoped，事件发送仍散落在业务分支中。
 - 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
 - 完成后解锁：`demo/README.md` 可以展示完整 command trace，证明 `run_command` 经过 approval、sandbox first、retry gate、no-sandbox retry 或 denied，而不是直接裸跑。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；`run_shell_command` 编排测试覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject，以及 safe-read sandbox denied 不 retry 的 registry 接线；ReAct `run_command` observation 测试覆盖 Finished / Failed / Denied 回灌；`RetryPolicy` 已纳入 retry gate；Slice 8 已补 `ToolCallContext`、async `ApprovalController`、`ApprovalBroker`、command 专属 event 命名；`cargo test` 通过 61 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：给 `ToolRuntime` / command runtime 接入 outbound event sink，让 `run_shell_command` 在 sandbox-first、no-sandbox retry 和 retry gate 分支发出 `CommandExecution*` 与 `CommandRetryEvaluated`；补 safe read、network install retry、dangerous denied 的 event trace tests。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；`run_shell_command` 编排测试覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject，以及 safe-read sandbox denied 不 retry 的 registry 接线；ReAct `run_command` observation 测试覆盖 Finished / Failed / Denied 回灌；`RetryPolicy` 已纳入 retry gate；Slice 8 已补 `ToolCallContext`、async `ApprovalController`、`ApprovalBroker`、command 专属 event 命名和 command execution / retry 事件初步透出；`SandboxFirst` failure event 已在 retry decision 前发出并被 shell / ReAct trace tests 锁定；`cargo test` 通过 63 个默认测试，3 个 live LLM 测试保持 ignored。
+- 当前待解决：按 [`guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md`](../guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md) 引入 `CommandEventEmitter` 和 `run_execution_attempt`，让 command event 发送集中且 attempt trace 闭合；让 approval request 通过当前 run 的 emitter 进入当前 `agent.run()` 返回的 stream。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Slice 8 进行中，当前代码光标在 `agent/stream_event.rs`、`tool/shell/approval.rs`、`tool/runtime.rs` 和 `tool/shell/mod.rs` 的事件出口接线。
+- Code frontier：Slice 8 进行中，当前代码光标在 `tool/shell/mod.rs` 的 command event emission、`tool/shell/approval.rs` 的 approval broker sender 边界，以及即将新增的 `CommandEventEmitter`。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
-- Current open decision：`CommandExecution*` 和 `CommandRetryEvaluated` 应由 `ToolRuntime` 统一透出，还是由 `run_shell_command` 接收 event sink 后直接透出；下一步要在最小侵入和清晰边界之间取舍。
+- Current open decision：不再继续散落 `tx.send`；下一步要把 command-level event 收敛到 `CommandEventEmitter`，并决定 `ApprovalController` 如何通过当前 run emitter 发 `CommandNeedsApproval`。
 - Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”或“补 RetryPolicy”；当前先做 event protocol hardening，再讨论 approval persistence / README。
 
 ## Critical Checkpoint
@@ -53,7 +53,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 6 Agent Orchestrator：真实 LLM ReAct 主链路已 live test 跑通；ReAct hardening 已补齐 `max_turns`、`ToolCallFinished`、fake LLM tests 和 parser fixture tests；用户已重构为 `tool/function.rs`、`tool/runtime.rs`、`tool/shell/`，`ToolRuntime` pure function path 和 `run_command` command path 均已接入并补齐单测；command path 的 `run_shell_command` 单命令编排已通过测试，ReAct 层 `run_command` Finished / Failed / Denied observation 回灌已通过测试。
 - [x] Slice 6 Closeout：同步旧 guides、todo、outcome-map 和 design，冻结 Slice 6 non-goals。
 - [x] Slice 7 Retry Policy And Denial Semantics：让 `decide_retry` 尊重 capability-level `RetryPolicy`，补齐 `safe-read` denied 不 retry、`safe-test` approval retry、network prompt approval retry、network deny 不被 `WithoutApproval` 绕过等边界。
-- [ ] Slice 8 Event Protocol Hardening：approval broker 和事件命名已完成；待透出 command attempt / retry / denied trace，并补 trace tests。
+- [ ] Slice 8 Event Protocol Hardening：approval broker 和事件命名已完成，command attempt / retry event 已初步透出；待用 `CommandEventEmitter` 重构事件出口，修复 approval stream 绑定和 attempt lifecycle 闭合问题，并补 trace tests。
 - [ ] Slice 9 Multi-Tool Hard-Deny And Skipped Semantics：决定并实现同轮多工具安全拒绝后的 skipped 行为。
 - [ ] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
 - [ ] ApprovalPolicy OnRequest Semantic Hardening：补充显式 escalation request 建模，区分“初始请求提权可询问”和“sandbox failure 自动提权询问”，避免 `OnRequest` 与 `OnFailure` 语义混淆。

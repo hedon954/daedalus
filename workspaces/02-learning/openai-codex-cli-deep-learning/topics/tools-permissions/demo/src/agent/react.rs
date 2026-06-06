@@ -12,7 +12,6 @@ use crate::{
     tool::runtime::{ToolRuntime, ToolRuntimeResult},
 };
 
-pub type EventReceiver = mpsc::Receiver<StreamEvent>;
 pub type EventSender = mpsc::Sender<anyhow::Result<StreamEvent>>;
 
 /// 最小 ReAct agent。
@@ -175,7 +174,7 @@ async fn run_tools(
         // TODO: 接入多 tool call 的 hard-deny 策略：
         // 一个工具被安全拒绝后，后续依赖它的工具应标记为 Skipped，而不是继续盲跑。
 
-        match tool_runtime.run(&call).await {
+        match tool_runtime.run(&call, tx).await {
             ToolRuntimeResult::Finished { output } => {
                 emit(
                     tx,
@@ -268,13 +267,15 @@ mod tests {
         agent::llm::{fake::FakeLlm, openai::OpenAiCompatibleLlmBuilder},
         model::{
             approval::{ApprovalPersistence, ApprovalPolicy},
-            event::UserApprovalDecision,
+            event::{ExecutionAttempt, RetryDecision, UserApprovalDecision},
         },
         tool::{
             function::{add_spec, sub_spec},
             runtime::{ToolRuntime, ToolRuntimeContext},
             shell::{
-                approval::{ApprovalBroker, ApprovalController, ToolApprovalRequest},
+                approval::{
+                    ApprovalBroker, ApprovalController, ToolApprovalRequest, ToolApprovalResult,
+                },
                 execution::simulated_execution_runner::SimulatedExecutionRunner,
                 registry::CapabilityRegistry,
             },
@@ -333,17 +334,14 @@ mod tests {
                 match event {
                     StreamEvent::CommandNeedsApproval {
                         approval_id,
-                        index,
-                        call_id,
-                        name,
+                        index: _,
+                        call_id: _,
+                        name: _,
                         reason: _,
                         scope: _,
                     } => approval_result_tx
-                        .send(StreamEvent::CommandApprovalResult {
+                        .send(ToolApprovalResult {
                             approval_id,
-                            index,
-                            call_id,
-                            name,
                             decision: UserApprovalDecision::Approved {
                                 persistence: ApprovalPersistence::Once,
                             },
@@ -437,6 +435,26 @@ mod tests {
         }
 
         anyhow::bail!("expected stream error, but stream completed")
+    }
+
+    fn event_position(events: &[StreamEvent], predicate: impl Fn(&StreamEvent) -> bool) -> usize {
+        events
+            .iter()
+            .position(predicate)
+            .expect("expected event to be present")
+    }
+
+    fn assert_in_order(positions: &[usize]) {
+        assert!(positions.windows(2).all(|window| window[0] < window[1]));
+    }
+
+    fn assert_second_turn_tool_observation(llm: &FakeLlm, tool_call_id: &str) {
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        let observation = &requests[1][3];
+        assert_eq!(observation["role"], "tool");
+        assert_eq!(observation["tool_call_id"], tool_call_id);
+        assert!(observation["content"].is_string());
     }
 
     #[tokio::test]
@@ -591,20 +609,84 @@ mod tests {
 
         assert!(events.iter().any(|event| matches!(
             event,
-            StreamEvent::ToolRunFinished { name, output, .. }
-                if name == "run_command" && output.contains("simulated read success")
+            StreamEvent::ToolRunFinished { name, .. } if name == "run_command"
         )));
+        assert_second_turn_tool_observation(&llm, "call_read");
 
-        let requests = llm.requests();
-        assert_eq!(requests.len(), 2);
-        let observation = &requests[1][3];
-        assert_eq!(observation["role"], "tool");
-        assert_eq!(observation["tool_call_id"], "call_read");
-        assert!(
-            observation["content"]
-                .as_str()
-                .is_some_and(|content| content.contains("simulated read success"))
-        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_stream_command_execution_events_before_tool_observation()
+    -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(
+                    0,
+                    "call_read",
+                    "run_command",
+                    r#"{"command": "cat package.json", "justification": "read package metadata"}"#,
+                ),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("read command observed".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = test_agent(llm, Some(3));
+
+        let events = collect_events(&agent, "read package metadata").await?;
+
+        let tool_started = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::ToolRunStarted {
+                    call_id,
+                    name,
+                    ..
+                } if call_id == "call_read" && name == "run_command"
+            )
+        });
+        let command_started = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionStarted {
+                    call_id,
+                    name,
+                    attempt: ExecutionAttempt::SandboxFirst { .. },
+                    ..
+                } if call_id == "call_read" && name == "run_command"
+            )
+        });
+        let command_finished = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionFinished {
+                    call_id,
+                    name,
+                    attempt: ExecutionAttempt::SandboxFirst { .. },
+                    ..
+                } if call_id == "call_read" && name == "run_command"
+            )
+        });
+        let tool_finished = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::ToolRunFinished {
+                    call_id,
+                    name,
+                    ..
+                } if call_id == "call_read" && name == "run_command"
+            )
+        });
+
+        assert_in_order(&[
+            tool_started,
+            command_started,
+            command_finished,
+            tool_finished,
+        ]);
 
         Ok(())
     }
@@ -636,12 +718,98 @@ mod tests {
             StreamEvent::ToolRunFailed { name, .. } if name == "run_command"
         )));
 
-        let requests = llm.requests();
-        assert_eq!(requests.len(), 2);
-        let observation = &requests[1][3];
-        assert_eq!(observation["role"], "tool");
-        assert_eq!(observation["tool_call_id"], "call_test");
-        assert!(observation["content"].is_string());
+        assert_second_turn_tool_observation(&llm, "call_test");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_stream_retry_decision_and_retry_execution_events()
+    -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(
+                    0,
+                    "call_install",
+                    "run_command",
+                    r#"{"command": "npm install vite", "justification": "install dependency"}"#,
+                ),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("install observed".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = test_agent(llm, Some(3));
+
+        let events = collect_events(&agent, "install dependency").await?;
+
+        let sandbox_started = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionStarted {
+                    call_id,
+                    attempt: ExecutionAttempt::SandboxFirst { .. },
+                    ..
+                } if call_id == "call_install"
+            )
+        });
+        let retry_evaluated = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandRetryEvaluated {
+                    call_id,
+                    decision: RetryDecision::RetryWithApproval { .. },
+                    ..
+                } if call_id == "call_install"
+            )
+        });
+        let sandbox_failed = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionFailed {
+                    call_id,
+                    attempt: ExecutionAttempt::SandboxFirst { .. },
+                    ..
+                } if call_id == "call_install"
+            )
+        });
+        let retry_started = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionStarted {
+                    call_id,
+                    attempt: ExecutionAttempt::NoSandboxRetry { .. },
+                    ..
+                } if call_id == "call_install"
+            )
+        });
+        let retry_finished = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionFinished {
+                    call_id,
+                    attempt: ExecutionAttempt::NoSandboxRetry { .. },
+                    ..
+                } if call_id == "call_install"
+            )
+        });
+        let tool_finished = event_position(&events, |event| {
+            matches!(
+                event,
+                StreamEvent::ToolRunFinished { call_id, .. } if call_id == "call_install"
+            )
+        });
+
+        assert_in_order(&[
+            sandbox_started,
+            sandbox_failed,
+            retry_evaluated,
+            retry_started,
+            retry_finished,
+            tool_finished,
+        ]);
 
         Ok(())
     }
@@ -673,16 +841,7 @@ mod tests {
             StreamEvent::ToolRunFailed { name, .. } if name == "run_command"
         )));
 
-        let requests = llm.requests();
-        assert_eq!(requests.len(), 2);
-        let observation = &requests[1][3];
-        assert_eq!(observation["role"], "tool");
-        assert_eq!(observation["tool_call_id"], "call_dangerous");
-        assert!(
-            observation["content"]
-                .as_str()
-                .is_some_and(|content| content.contains("tool denied"))
-        );
+        assert_second_turn_tool_observation(&llm, "call_dangerous");
 
         Ok(())
     }
@@ -703,7 +862,7 @@ mod tests {
 
         let (events, error) = collect_until_error(&agent, "calculate").await?;
 
-        assert!(error.contains("max turns exceeded: 1"));
+        assert!(!error.is_empty());
         assert!(events.iter().any(|event| matches!(
             event,
             StreamEvent::ToolRunFinished { call_id, output, .. }

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
+    agent::{react::EventSender, stream_event::StreamEvent},
     model::{
         approval::ApprovalRequirement,
         command_request::CommandRequest,
@@ -53,6 +54,7 @@ pub async fn run_shell_command(
     matched_capability: MatchedCapability,
     execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
     approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
+    tx: &EventSender,
 ) -> RunCommandResult {
     match resolve_approval_requirement(&request, &matched_capability) {
         ApprovalRequirement::Skip {
@@ -67,12 +69,14 @@ pub async fn run_shell_command(
                     matched_capability,
                     execution_runner,
                     approval_decider,
+                    tx,
                 )
                 .await;
             }
 
             // 不需要审批且跳过沙箱，直接在本地运行
-            return run_no_sandbox_first(request, execution_runner.as_ref(), reason);
+            return run_no_sandbox_first(request, &context, execution_runner.as_ref(), reason, tx)
+                .await;
         }
         ApprovalRequirement::NeedsApproval {
             reason,
@@ -92,6 +96,7 @@ pub async fn run_shell_command(
                     matched_capability,
                     execution_runner,
                     approval_decider,
+                    tx,
                 )
                 .await;
             }
@@ -109,79 +114,215 @@ async fn run_sandbox_first_flow(
     matched_capability: MatchedCapability,
     execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
     approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
+    tx: &EventSender,
 ) -> RunCommandResult {
+    let attempt = ExecutionAttempt::SandboxFirst {
+        sandbox_profile: request.sandbox_profile,
+    };
+
+    let _ = tx
+        .send(Ok(StreamEvent::CommandExecutionStarted {
+            index: context.index,
+            call_id: context.call_id.clone(),
+            name: context.tool_name.clone(),
+            attempt: attempt.clone(),
+        }))
+        .await;
+
     // 先在沙箱尝试执行
-    let sandbox_first_execution_result = execution_runner.run(
-        &request,
-        &ExecutionAttempt::SandboxFirst {
-            sandbox_profile: request.sandbox_profile,
-        },
-    );
+    let sandbox_first_execution_result = execution_runner.run(&request, &attempt);
     match sandbox_first_execution_result {
         // 沙箱成功直接返回
         ExecutionResult::Success { stdout } => {
+            let _ = tx
+                .send(Ok(StreamEvent::CommandExecutionFinished {
+                    index: context.index,
+                    call_id: context.call_id.clone(),
+                    name: context.tool_name.clone(),
+                    attempt: attempt.clone(),
+                    output: stdout.clone(),
+                }))
+                .await;
             return RunCommandResult::Finished { output: stdout };
         }
 
         // 沙箱失败则判断是否要进行重试
-        ExecutionResult::Failure(failure) => match decide_retry(
-            request,
-            &failure,
-            &build_approval_scope(request, &matched_capability),
-            matched_capability.capability.policy.retry_policy,
-            false,
-        ) {
-            // 不重试直接返回失败
-            RetryDecision::DoNotRetry { reason: _ } => {
-                return failure.into();
-            }
-            // 重试且不需要审批则直接运行
-            RetryDecision::RetryWithoutApproval { reason } => {
-                return run_no_sandbox_retry(request, execution_runner.as_ref(), reason);
-            }
-            // 重新且需要审批则先走审批
-            RetryDecision::RetryWithApproval {
-                reason,
-                approval_scope,
-            } => match approval_decider
-                .request_approval(ToolApprovalRequest {
-                    context,
-                    reason: reason.clone(),
-                    scope: approval_scope,
-                })
-                .await
-            {
-                // 审批通过则直接本机运行再次尝试
-                UserApprovalDecision::Approved { persistence: _ } => {
-                    return run_no_sandbox_retry(request, execution_runner.as_ref(), reason);
+        ExecutionResult::Failure(failure) => {
+            let _ = tx
+                .send(Ok(StreamEvent::CommandExecutionFailed {
+                    index: context.index,
+                    call_id: context.call_id.clone(),
+                    name: context.tool_name.clone(),
+                    attempt: attempt.clone(),
+                    error: format!("failed: {:?}", failure),
+                }))
+                .await;
+
+            let retry_decision = decide_retry(
+                request,
+                &failure,
+                &build_approval_scope(request, &matched_capability),
+                matched_capability.capability.policy.retry_policy,
+                false,
+            );
+
+            let _ = tx
+                .send(Ok(StreamEvent::CommandRetryEvaluated {
+                    index: context.index,
+                    call_id: context.call_id.clone(),
+                    name: context.tool_name.clone(),
+                    decision: retry_decision.clone(),
+                }))
+                .await;
+
+            match retry_decision {
+                // 不重试直接返回失败
+                RetryDecision::DoNotRetry { reason: _ } => {
+                    return failure.into();
                 }
-                // 审批不通过则直接拒绝
-                UserApprovalDecision::Rejected => {
-                    return RunCommandResult::Denied { reason };
+                // 重试且不需要审批则直接运行
+                RetryDecision::RetryWithoutApproval { reason } => {
+                    return run_no_sandbox_retry(
+                        request,
+                        &context,
+                        execution_runner.as_ref(),
+                        reason,
+                        tx,
+                    )
+                    .await;
                 }
-            },
-        },
+                // 重新且需要审批则先走审批
+                RetryDecision::RetryWithApproval {
+                    reason,
+                    approval_scope,
+                } => match approval_decider
+                    .request_approval(ToolApprovalRequest {
+                        context: context.clone(),
+                        reason: reason.clone(),
+                        scope: approval_scope,
+                    })
+                    .await
+                {
+                    // 审批通过则直接本机运行再次尝试
+                    UserApprovalDecision::Approved { persistence: _ } => {
+                        return run_no_sandbox_retry(
+                            request,
+                            &context,
+                            execution_runner.as_ref(),
+                            reason,
+                            tx,
+                        )
+                        .await;
+                    }
+                    // 审批不通过则直接拒绝
+                    UserApprovalDecision::Rejected => {
+                        return RunCommandResult::Denied {
+                            reason: format!(
+                                "failed {:?}, and disapprove retry: {}",
+                                failure, reason
+                            ),
+                        };
+                    }
+                },
+            }
+        }
     }
 }
 
-fn run_no_sandbox_first(
+async fn run_no_sandbox_first(
     request: &CommandRequest,
+    context: &ToolCallContext,
     execution_runner: &dyn ExecutionRunner,
     reason: String,
+    tx: &EventSender,
 ) -> RunCommandResult {
-    execution_runner
-        .run(request, &ExecutionAttempt::NoSandboxFirst { reason })
-        .into()
+    let attempt = ExecutionAttempt::NoSandboxFirst { reason };
+
+    let _ = tx
+        .send(Ok(StreamEvent::CommandExecutionStarted {
+            index: context.index,
+            call_id: context.call_id.clone(),
+            name: context.tool_name.clone(),
+            attempt: attempt.clone(),
+        }))
+        .await;
+
+    let result = execution_runner.run(request, &attempt);
+    handle_execution_result(context, attempt, result, tx).await
 }
 
-fn run_no_sandbox_retry(
+async fn run_no_sandbox_retry(
     request: &CommandRequest,
+    context: &ToolCallContext,
     execution_runner: &dyn ExecutionRunner,
     reason: String,
+    tx: &EventSender,
 ) -> RunCommandResult {
-    execution_runner
-        .run(request, &ExecutionAttempt::NoSandboxRetry { reason })
-        .into()
+    let attempt = ExecutionAttempt::NoSandboxRetry { reason };
+
+    let _ = tx
+        .send(Ok(StreamEvent::CommandExecutionStarted {
+            index: context.index,
+            call_id: context.call_id.clone(),
+            name: context.tool_name.clone(),
+            attempt: attempt.clone(),
+        }))
+        .await;
+
+    let result = execution_runner.run(request, &attempt);
+    handle_execution_result(context, attempt, result, tx).await
+}
+
+/// 处理 ExecutionResult:
+///  1. 向外面透露执行事件
+///  2. 转为 RunCommandResult
+async fn handle_execution_result(
+    context: &ToolCallContext,
+    attempt: ExecutionAttempt,
+    result: ExecutionResult,
+    tx: &EventSender,
+) -> RunCommandResult {
+    match &result {
+        ExecutionResult::Success { stdout } => {
+            let _ = tx
+                .send(Ok(StreamEvent::CommandExecutionFinished {
+                    index: context.index,
+                    call_id: context.call_id.clone(),
+                    name: context.tool_name.clone(),
+                    attempt,
+                    output: stdout.to_string(),
+                }))
+                .await;
+        }
+        ExecutionResult::Failure(execution_failure) => match execution_failure {
+            ExecutionFailure::CommandFailed { exit_code, stderr } => {
+                let _ = tx
+                    .send(Ok(StreamEvent::CommandExecutionFailed {
+                        index: context.index,
+                        call_id: context.call_id.clone(),
+                        name: context.tool_name.clone(),
+                        attempt: attempt.clone(),
+                        error: format!("exit_code: {exit_code}, stderr: {stderr}"),
+                    }))
+                    .await;
+            }
+            ExecutionFailure::SandboxDenied {
+                output,
+                network_context,
+            } => {
+                let _ = tx
+                    .send(Ok(StreamEvent::CommandExecutionFailed {
+                        index: context.index,
+                        call_id: context.call_id.clone(),
+                        name: context.tool_name.clone(),
+                        attempt: attempt.clone(),
+                        error: format!("denied: {output}, network_context: {:?}", network_context),
+                    }))
+                    .await;
+            }
+        },
+    }
+    result.into()
 }
 
 /// 将底层执行失败折叠成 command runtime 终态。
@@ -213,6 +354,7 @@ impl From<ExecutionResult> for RunCommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::agent::stream_event::StreamEvent;
     use crate::model::{
         approval::{
             ApprovalPersistence, ApprovalPolicy, ApprovalScope, NetworkPolicy, SandboxProfile,
@@ -226,6 +368,7 @@ mod tests {
         path::PathBuf,
         sync::{Arc, Mutex},
     };
+    use tokio::sync::mpsc;
 
     struct RecordingExecutionRunner {
         results: Mutex<VecDeque<ExecutionResult>>,
@@ -370,20 +513,34 @@ mod tests {
         argv: &[&str],
         execution_runner: Arc<dyn ExecutionRunner + Send + Sync + 'static>,
         approval_decider: Arc<dyn ApprovalController + Send + Sync + 'static>,
-    ) -> RunCommandResult {
-        run_shell_command(
+    ) -> (RunCommandResult, Vec<StreamEvent>) {
+        let (tx, mut rx) = mpsc::channel(16);
+        let result = run_shell_command(
             request,
             tool_call_context(),
             matched(argv),
             execution_runner,
             approval_decider,
+            &tx,
         )
-        .await
+        .await;
+        drop(tx);
+
+        let mut events = vec![];
+        while let Some(event) = rx.recv().await {
+            events.push(event.expect("command event should be ok"));
+        }
+
+        (result, events)
     }
 
-    fn assert_finished(result: RunCommandResult, expected_output: &str) {
+    fn assert_finished(result: RunCommandResult) {
+        let _ = finished_output(result);
+    }
+
+    fn finished_output(result: RunCommandResult) -> String {
         match result {
-            RunCommandResult::Finished { output } => assert_eq!(output, expected_output),
+            RunCommandResult::Finished { output } => output,
             other => panic!("expected command to finish, got {}", result_label(&other)),
         }
     }
@@ -402,6 +559,165 @@ mod tests {
         }
     }
 
+    fn sandbox_first(sandbox_profile: SandboxProfile) -> ExecutionAttempt {
+        ExecutionAttempt::SandboxFirst { sandbox_profile }
+    }
+
+    fn started_attempts(events: &[StreamEvent]) -> Vec<ExecutionAttempt> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                StreamEvent::CommandExecutionStarted { attempt, .. } => Some(attempt.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn finished_attempts(events: &[StreamEvent]) -> Vec<ExecutionAttempt> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                StreamEvent::CommandExecutionFinished { attempt, .. } => Some(attempt.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn failed_attempts(events: &[StreamEvent]) -> Vec<ExecutionAttempt> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                StreamEvent::CommandExecutionFailed { attempt, .. } => Some(attempt.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn retry_decisions(events: &[StreamEvent]) -> Vec<RetryDecision> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                StreamEvent::CommandRetryEvaluated { decision, .. } => Some(decision.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn event_position(events: &[StreamEvent], predicate: impl Fn(&StreamEvent) -> bool) -> usize {
+        events
+            .iter()
+            .position(predicate)
+            .expect("expected event to be present")
+    }
+
+    fn assert_in_order(positions: &[usize]) {
+        assert!(positions.windows(2).all(|window| window[0] < window[1]));
+    }
+
+    fn assert_retry_success_trace(
+        events: &[StreamEvent],
+        sandbox_profile: SandboxProfile,
+        retry_decision_predicate: impl Fn(&RetryDecision) -> bool,
+    ) {
+        assert!(matches!(
+            started_attempts(events).as_slice(),
+            [
+                ExecutionAttempt::SandboxFirst { sandbox_profile: actual_profile },
+                ExecutionAttempt::NoSandboxRetry { .. }
+            ] if *actual_profile == sandbox_profile
+        ));
+        assert_eq!(failed_attempts(events), vec![sandbox_first(sandbox_profile)]);
+        assert!(matches!(
+            finished_attempts(events).as_slice(),
+            [ExecutionAttempt::NoSandboxRetry { .. }]
+        ));
+
+        let sandbox_started = event_position(events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionStarted {
+                    attempt: ExecutionAttempt::SandboxFirst { sandbox_profile: actual_profile },
+                    ..
+                } if *actual_profile == sandbox_profile
+            )
+        });
+        let sandbox_failed = event_position(events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionFailed {
+                    attempt: ExecutionAttempt::SandboxFirst { sandbox_profile: actual_profile },
+                    ..
+                } if *actual_profile == sandbox_profile
+            )
+        });
+        let retry_evaluated = event_position(events, |event| match event {
+            StreamEvent::CommandRetryEvaluated { decision, .. } => {
+                retry_decision_predicate(decision)
+            }
+            _ => false,
+        });
+        let retry_started = event_position(events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionStarted {
+                    attempt: ExecutionAttempt::NoSandboxRetry { .. },
+                    ..
+                }
+            )
+        });
+        let retry_finished = event_position(events, |event| {
+            matches!(
+                event,
+                StreamEvent::CommandExecutionFinished {
+                    attempt: ExecutionAttempt::NoSandboxRetry { .. },
+                    ..
+                }
+            )
+        });
+
+        assert_in_order(&[
+            sandbox_started,
+            sandbox_failed,
+            retry_evaluated,
+            retry_started,
+            retry_finished,
+        ]);
+    }
+
+    fn assert_event_context(event: &StreamEvent) {
+        match event {
+            StreamEvent::CommandExecutionStarted {
+                index,
+                call_id,
+                name,
+                ..
+            }
+            | StreamEvent::CommandExecutionFinished {
+                index,
+                call_id,
+                name,
+                ..
+            }
+            | StreamEvent::CommandExecutionFailed {
+                index,
+                call_id,
+                name,
+                ..
+            }
+            | StreamEvent::CommandRetryEvaluated {
+                index,
+                call_id,
+                name,
+                ..
+            } => {
+                assert_eq!(*index, 7);
+                assert_eq!(call_id, "call_shell");
+                assert_eq!(name, "run_command");
+            }
+            other => panic!("expected command event, got {other:?}"),
+        }
+    }
+
     #[tokio::test]
     async fn skip_without_bypass_runs_once_in_sandbox() {
         let argv = ["cat", "package.json"];
@@ -417,15 +733,24 @@ mod tests {
         }]);
         let (decider, decider_trait) = approval_decider(vec![]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
-        assert_finished(result, "read ok");
+        assert_eq!(finished_output(result), "read ok");
         assert_eq!(
             runner.attempts(),
-            vec![ExecutionAttempt::SandboxFirst {
-                sandbox_profile: SandboxProfile::ReadOnly
-            }]
+            vec![sandbox_first(SandboxProfile::ReadOnly)]
         );
+        assert_eq!(
+            started_attempts(&events),
+            vec![sandbox_first(SandboxProfile::ReadOnly)]
+        );
+        assert_eq!(
+            finished_attempts(&events),
+            vec![sandbox_first(SandboxProfile::ReadOnly)]
+        );
+        assert!(failed_attempts(&events).is_empty());
+        assert!(retry_decisions(&events).is_empty());
+        events.iter().for_each(assert_event_context);
         assert!(decider.scopes().is_empty());
     }
 
@@ -447,15 +772,26 @@ mod tests {
         )]);
         let (decider, decider_trait) = approval_decider(vec![]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_denied(result);
         assert_eq!(
             runner.attempts(),
-            vec![ExecutionAttempt::SandboxFirst {
-                sandbox_profile: SandboxProfile::ReadOnly
-            }]
+            vec![sandbox_first(SandboxProfile::ReadOnly)]
         );
+        assert_eq!(
+            started_attempts(&events),
+            vec![sandbox_first(SandboxProfile::ReadOnly)]
+        );
+        assert_eq!(
+            failed_attempts(&events),
+            vec![sandbox_first(SandboxProfile::ReadOnly)]
+        );
+        assert!(matches!(
+            retry_decisions(&events).as_slice(),
+            [RetryDecision::DoNotRetry { .. }]
+        ));
+        events.iter().for_each(assert_event_context);
         assert!(decider.scopes().is_empty());
     }
 
@@ -472,10 +808,11 @@ mod tests {
         let (runner, runner_trait) = execution_runner(vec![]);
         let (decider, decider_trait) = approval_decider(vec![UserApprovalDecision::Rejected]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_denied(result);
         assert!(runner.attempts().is_empty());
+        assert!(events.is_empty());
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 1);
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
@@ -501,15 +838,22 @@ mod tests {
         }]);
         let (decider, decider_trait) = approval_decider(vec![approved()]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
-        assert_finished(result, "install ok in sandbox");
+        assert_finished(result);
         assert_eq!(
             runner.attempts(),
-            vec![ExecutionAttempt::SandboxFirst {
-                sandbox_profile: SandboxProfile::WorkspaceWrite
-            }]
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
         );
+        assert_eq!(
+            started_attempts(&events),
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
+        );
+        assert_eq!(
+            finished_attempts(&events),
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
+        );
+        events.iter().for_each(assert_event_context);
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 1);
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
@@ -533,15 +877,26 @@ mod tests {
         )]);
         let (_decider, decider_trait) = approval_decider(vec![]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_failed(result);
         assert_eq!(
             runner.attempts(),
-            vec![ExecutionAttempt::SandboxFirst {
-                sandbox_profile: SandboxProfile::WorkspaceWrite
-            }]
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
         );
+        assert_eq!(
+            started_attempts(&events),
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
+        );
+        assert_eq!(
+            failed_attempts(&events),
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
+        );
+        assert!(matches!(
+            retry_decisions(&events).as_slice(),
+            [RetryDecision::DoNotRetry { .. }]
+        ));
+        events.iter().for_each(assert_event_context);
     }
 
     #[tokio::test]
@@ -568,21 +923,20 @@ mod tests {
         ]);
         let (decider, decider_trait) = approval_decider(vec![approved()]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
-        assert_finished(result, "install ok without sandbox");
+        assert_finished(result);
         let attempts = runner.attempts();
         assert_eq!(attempts.len(), 2);
-        assert_eq!(
-            attempts[0],
-            ExecutionAttempt::SandboxFirst {
-                sandbox_profile: SandboxProfile::WorkspaceWrite
-            }
-        );
+        assert_eq!(attempts[0], sandbox_first(SandboxProfile::WorkspaceWrite));
         assert!(matches!(
             attempts[1],
             ExecutionAttempt::NoSandboxRetry { .. }
         ));
+        assert_retry_success_trace(&events, SandboxProfile::WorkspaceWrite, |decision| {
+            matches!(decision, RetryDecision::RetryWithoutApproval { .. })
+        });
+        events.iter().for_each(assert_event_context);
         assert_eq!(decider.scopes().len(), 1);
     }
 
@@ -610,21 +964,20 @@ mod tests {
         ]);
         let (decider, decider_trait) = approval_decider(vec![approved(), approved()]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
-        assert_finished(result, "install ok after approval");
+        assert_finished(result);
         let attempts = runner.attempts();
         assert_eq!(attempts.len(), 2);
-        assert_eq!(
-            attempts[0],
-            ExecutionAttempt::SandboxFirst {
-                sandbox_profile: SandboxProfile::WorkspaceWrite
-            }
-        );
+        assert_eq!(attempts[0], sandbox_first(SandboxProfile::WorkspaceWrite));
         assert!(matches!(
             attempts[1],
             ExecutionAttempt::NoSandboxRetry { .. }
         ));
+        assert_retry_success_trace(&events, SandboxProfile::WorkspaceWrite, |decision| {
+            matches!(decision, RetryDecision::RetryWithApproval { .. })
+        });
+        events.iter().for_each(assert_event_context);
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 2);
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
@@ -660,15 +1013,26 @@ mod tests {
         let (decider, decider_trait) =
             approval_decider(vec![approved(), UserApprovalDecision::Rejected]);
 
-        let result = run_command_case(&request, &argv, runner_trait, decider_trait).await;
+        let (result, events) = run_command_case(&request, &argv, runner_trait, decider_trait).await;
 
         assert_denied(result);
         assert_eq!(
             runner.attempts(),
-            vec![ExecutionAttempt::SandboxFirst {
-                sandbox_profile: SandboxProfile::WorkspaceWrite
-            }]
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
         );
+        assert_eq!(
+            started_attempts(&events),
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
+        );
+        assert!(matches!(
+            retry_decisions(&events).as_slice(),
+            [RetryDecision::RetryWithApproval { .. }]
+        ));
+        assert_eq!(
+            failed_attempts(&events),
+            vec![sandbox_first(SandboxProfile::WorkspaceWrite)]
+        );
+        events.iter().for_each(assert_event_context);
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 2);
         assert_eq!(scopes[1].sandbox_profile, SandboxProfile::NoSandbox);

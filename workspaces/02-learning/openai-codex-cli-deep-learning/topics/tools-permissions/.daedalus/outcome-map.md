@@ -27,9 +27,9 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 8 Event Protocol Hardening 进行中；`StreamEvent` 已收敛为 command 专属事件命名，`ApprovalBroker` 已能通过 `CommandNeedsApproval` / `CommandApprovalResult` 完成审批往返；但 `CommandExecutionStarted/Finished/Failed` 与 `CommandRetryEvaluated` 还没有从 `run_shell_command` 真实透出。
+- 当前障碍：Slice 8 Event Protocol Hardening 进行中；当前事件类型包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed` 和 `CommandRetryEvaluated`，`ApprovalBroker` 通过内部 `ToolApprovalResult` 完成审批回流；review 发现事件已初步透出，但发送逻辑散落、approval request sender 非 run-scoped、retry 成功路径 attempt trace 不闭合。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
-- 当前光标：Slice 8 event protocol；下一代码光标是给 `ToolRuntime` / command runtime 增加 outbound event sink，并补 safe read、sandbox denied retry、dangerous denied 的 trace tests。
+- 当前光标：Slice 8 event protocol；下一代码光标是按 `guides/08-demo-coder/09-slice-8-command-event-emitter-refactor.md` 引入 `CommandEventEmitter` 和 `run_execution_attempt`，再补 safe read、sandbox denied retry、dangerous denied 的 trace tests。
 
 ## Artifact Dependency Graph
 
@@ -67,7 +67,7 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 - 当前素材中可能被过度神化的设计：Codex 的权限 / 沙箱 / retry 组合是成熟 CLI Agent 的生产级折中，不是所有 Agent demo 或业务系统都必须照搬的完整复杂度。
 - 当前 demo 需要忠实模仿的核心机制：tool call 不能直接执行；必须经过 capability match、approval requirement、sandbox-first execution、controlled retry 和 observation/event 回流。
 - 当前 demo 不应无意识照抄的设计：跨平台 sandbox 细节、完整 TUI/MCP elicitation、Codex 所有 approval policy 组合和长期 session policy 存储。
-- 当前还没有验证的素材假设：`CommandExecution*` / `CommandRetryEvaluated` 是否应该由 shell runtime 直接发出，还是由 `ToolRuntime` 包装后统一发出，需要用最小 trace tests 验证边界是否清晰。
+- 当前还没有验证的素材假设：command-level event 应由一个轻量 `CommandEventEmitter` 集中发出，而不是散落在 `run_shell_command` 分支里；需要用最小 trace tests 验证边界是否清晰。
 - 当前可以尝试简化、改进或丢弃的部分：Phase 1 先用清晰的 event protocol 表达安全链路，不急着复刻 Codex 的全部 UI/streaming 事件细节。
 - 当前迁移到业务场景前必须重新验证的约束：业务是否真的需要 no-sandbox retry、session approval 复用、网络 host 级审批和多工具 hard-deny 语义。
 
@@ -83,8 +83,8 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 - [x] `ToolRuntime::run(run_command)` 直接测试：已覆盖 safe read 成功、network install retry 成功、command failure、dangerous shell denied、invalid JSON、unmatched capability。
 - [x] ReAct 层 `run_command` observation 验收：已确认 shell runtime 的 Finished / Failed / Denied 能正确转为下一轮 LLM 可见的 tool observation。
 - [x] Slice 6 closeout：已同步旧 guides、todo、outcome-map 和 design 中的旧命名和旧规划，冻结 non-goals。
-- [x] Slice 7 closeout：`cargo test` 通过 61 个默认测试，3 个 live LLM 测试 ignored。
-- [ ] Slice 8 event outlet：approval broker 和事件命名已接入，待把 command attempt / retry decision 事件从内部链路透出到外部 stream。
+- [x] Slice 7 closeout：`cargo test` 通过 61 个默认测试，3 个 live LLM 测试 ignored；当前 Slice 8 review 后最新 demo 测试为 63 passed、3 ignored。
+- [ ] Slice 8 event outlet：approval broker 和事件命名已接入，command attempt / retry decision 已初步透出；待重构为统一 emitter，确保当前 run stream 可见审批请求，并保证每个 attempt trace 闭合。
 - `OpenAiCompatibleLlm::default()` 缺少 env 时 panic 作为 demo 约束暂时接受；Phase 2 或库化时再考虑 `from_env()` / `try_from_env()`。
 
 ## Why This Step Matters

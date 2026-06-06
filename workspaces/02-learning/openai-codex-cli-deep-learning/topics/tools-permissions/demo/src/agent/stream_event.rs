@@ -4,7 +4,7 @@ use futures_core::Stream;
 
 use crate::model::{
     approval::ApprovalScope,
-    event::{ExecutionAttempt, RetryDecision, UserApprovalDecision},
+    event::{ExecutionAttempt, RetryDecision},
 };
 
 pub type EventStream = Pin<Box<dyn Stream<Item = anyhow::Result<StreamEvent>> + Send + 'static>>;
@@ -50,13 +50,6 @@ pub enum StreamEvent {
         name: String,
         reason: String,
         scope: ApprovalScope,
-    },
-    CommandApprovalResult {
-        approval_id: String,
-        index: i64,
-        call_id: String,
-        name: String,
-        decision: UserApprovalDecision,
     },
     CommandExecutionStarted {
         index: i64,

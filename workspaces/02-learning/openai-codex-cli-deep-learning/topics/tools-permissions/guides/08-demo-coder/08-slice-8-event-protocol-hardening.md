@@ -5,9 +5,9 @@
 - Final artifact: [`../../demo/README.md`](../../demo/README.md) 中的一次命令安全链路 event trace。
 - Current stage: `08-demo-coder`
 - Current slice: Slice 8 Event Protocol Hardening
-- Current gap: approval 事件命名和 broker 已接入；CommandExecution / CommandRetry 事件仍未从 `run_shell_command` 透出到外部 stream。
+- Current gap: approval request、CommandExecution、CommandRetry 事件已开始透出；review 发现事件发送散落、approval request sender 非 run-scoped、retry 成功路径 attempt trace 不闭合。
 - Evidence needed: [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs)、[`../../demo/src/agent/stream_event.rs`](../../demo/src/agent/stream_event.rs)、[`../../demo/src/model/event.rs`](../../demo/src/model/event.rs)、[`../../demo/src/tool/runtime.rs`](../../demo/src/tool/runtime.rs)、[`../../demo/src/tool/shell/mod.rs`](../../demo/src/tool/shell/mod.rs)、[`../../demo/src/tool/shell/retry.rs`](../../demo/src/tool/shell/retry.rs)。
-- After this: Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics，`demo/README.md` 可以解释一次命令为什么被允许、拒绝、sandbox retry 或结束。
+- After this: 先按 [`09-slice-8-command-event-emitter-refactor.md`](09-slice-8-command-event-emitter-refactor.md) 收敛事件出口；完成后 Slice 9 可以基于稳定事件协议讨论 multi-tool hard-deny 和 skipped semantics。
 
 ## Critical Lens
 
@@ -24,18 +24,19 @@
 - Goal: 让 `run_command` 的关键安全节点进入外部 stream，而不是只存在于内部测试和返回值里。
 - Why: `demo/README.md` 需要展示一条可解释 trace，证明 tool call 经过了 approval、sandbox first、retry 和 observation，而不是直接执行。
 - Current checkpoint:
-  - 已完成：`StreamEvent` 命名已收敛为 `CommandNeedsApproval`、`CommandApprovalResult`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`。
-  - 已完成：`ApprovalBroker` 使用 outbound event + inbound approval result channel + pending oneshot，把审批请求和审批结果配对。
-  - 已验证：`cargo test` 通过 61 个默认测试，3 个 live LLM 测试 ignored。
-  - 未完成：`CommandApprovalResult` 目前主要是 broker 的控制输入；`CommandExecution*` 和 `CommandRetryEvaluated` 也还没有从 shell execution / retry path 发到 ReAct 外部 stream。
+  - 已完成：`StreamEvent` 包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`。
+  - 已完成：`ApprovalBroker` 使用 outbound approval request event + internal `ToolApprovalResult` channel + pending oneshot，把审批请求和审批结果配对。
+  - 已验证：`cargo test` 通过 63 个默认测试，3 个 live LLM 测试 ignored。
+  - 待修正：事件已经从 shell execution / retry path 发出，但发送逻辑散落且 trace lifecycle 不完全闭合。
 - Steps:
-  1. 给 `ToolRuntimeContext` 或 command runtime 增加 outbound event sink，让 shell path 能发送内部 command 事件。
-  2. 在 `run_shell_command` 的三处关键路径发事件：approval result、command attempt started/finished/failed、retry evaluated。
-  3. 补 trace 测试：safe read、network install sandbox denied -> retry、dangerous shell denied；同时确认 ReAct observation 回灌不被破坏。
+  1. 引入 `CommandEventEmitter`，集中填充 `index / call_id / name` 并发送 command-level event。
+  2. 引入 `run_execution_attempt`，统一保证每个 attempt 都有 started 和 terminal event。
+  3. 让 approval request 通过当前 run 的 emitter 发出，不让 `ApprovalBroker` 长期持有外部 stream sender。
+  4. 补 trace 测试：safe read、network install sandbox denied -> retry、dangerous shell denied；同时确认 ReAct observation 回灌不被破坏。
 - Verify:
   - 单测覆盖 safe command 成功 trace。
   - 单测覆盖 dangerous command denied trace。
-  - 单测覆盖 sandbox denied 后 retry trace。
+  - 单测覆盖 sandbox denied 后 retry trace，并确认 `SandboxFirst` 失败事件先于 `NoSandboxRetry`。
   - ReAct 层 observation 仍能进入下一轮 LLM messages。
 
 ## Design Questions

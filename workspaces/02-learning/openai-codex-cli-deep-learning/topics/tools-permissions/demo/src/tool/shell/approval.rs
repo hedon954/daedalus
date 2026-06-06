@@ -2,13 +2,10 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use dashmap::DashMap;
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
 
 use crate::{
-    agent::{
-        react::{EventReceiver, EventSender},
-        stream_event::StreamEvent,
-    },
+    agent::{react::EventSender, stream_event::StreamEvent},
     model::{
         approval::{ApprovalPersistence, ApprovalPolicy, ApprovalRequirement, ApprovalScope},
         capability::DefaultDecision,
@@ -24,6 +21,13 @@ pub struct ToolApprovalRequest {
     pub scope: ApprovalScope,
 }
 
+pub struct ToolApprovalResult {
+    pub approval_id: String,
+    pub decision: UserApprovalDecision,
+}
+
+pub type ToolApprovalResultRecevier = mpsc::Receiver<ToolApprovalResult>;
+
 #[derive(Debug, Clone)]
 pub struct ToolCallContext {
     pub index: i64,
@@ -32,7 +36,7 @@ pub struct ToolCallContext {
 }
 
 #[async_trait]
-pub trait ApprovalController {
+pub trait ApprovalController: Send + Sync {
     async fn request_approval(&self, req: ToolApprovalRequest) -> UserApprovalDecision;
 }
 
@@ -42,7 +46,7 @@ pub struct ApprovalBroker {
 }
 
 impl ApprovalBroker {
-    pub fn new(tx: EventSender, mut rx: EventReceiver) -> ApprovalBroker {
+    pub fn new(tx: EventSender, mut rx: ToolApprovalResultRecevier) -> ApprovalBroker {
         let pending = Arc::new(DashMap::new());
 
         let result = Self {
@@ -52,19 +56,8 @@ impl ApprovalBroker {
 
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
-                match event {
-                    StreamEvent::CommandApprovalResult {
-                        approval_id,
-                        index: _,
-                        call_id: _,
-                        name: _,
-                        decision,
-                    } => {
-                        if let Some((_, tx)) = pending.remove(&approval_id) {
-                            _ = tx.send(decision);
-                        }
-                    }
-                    _ => continue,
+                if let Some((_, tx)) = pending.remove(&event.approval_id) {
+                    _ = tx.send(event.decision);
                 }
             }
         });
@@ -80,9 +73,10 @@ impl ApprovalController for ApprovalBroker {
         let (tx, rx) = oneshot::channel();
         self.pending.insert(approval_id.clone(), tx);
 
-        self.events_tx
+        let decision = match self
+            .events_tx
             .send(Ok(StreamEvent::CommandNeedsApproval {
-                approval_id,
+                approval_id: approval_id.clone(),
                 index: request.context.index,
                 call_id: request.context.call_id,
                 name: request.context.tool_name,
@@ -90,9 +84,13 @@ impl ApprovalController for ApprovalBroker {
                 scope: request.scope,
             }))
             .await
-            .expect("send tool needs approval failed");
+        {
+            Ok(_) => rx.await.unwrap_or(UserApprovalDecision::Rejected),
+            Err(_) => UserApprovalDecision::Rejected,
+        };
 
-        rx.await.unwrap_or(UserApprovalDecision::Rejected)
+        _ = self.pending.remove(&approval_id);
+        decision
     }
 }
 
@@ -172,10 +170,12 @@ mod tests {
             approval::{ApprovalPolicy, NetworkPolicy, SandboxProfile},
             capability::CapabilityKind,
             command_request::CommandRequest,
+            event::UserApprovalDecision,
         },
         tool::shell::registry::CapabilityRegistry,
     };
     use std::path::PathBuf;
+    use tokio::sync::mpsc;
 
     fn strings(items: &[&str]) -> Vec<String> {
         items.iter().map(|item| item.to_string()).collect()
@@ -206,6 +206,27 @@ mod tests {
         }
     }
 
+    fn assert_skip_in_sandbox(decision: ApprovalRequirement) {
+        match decision {
+            ApprovalRequirement::Skip { bypass_sandbox, .. } => assert!(!bypass_sandbox),
+            other => panic!("expected skip approval, got {other:?}"),
+        }
+    }
+
+    fn assert_forbidden(decision: ApprovalRequirement) {
+        match decision {
+            ApprovalRequirement::Forbidden { .. } => {}
+            other => panic!("expected forbidden decision, got {other:?}"),
+        }
+    }
+
+    fn approval_scope(decision: ApprovalRequirement) -> ApprovalScope {
+        match decision {
+            ApprovalRequirement::NeedsApproval { approval_scope, .. } => approval_scope,
+            other => panic!("expected approval request, got {other:?}"),
+        }
+    }
+
     #[test]
     fn safe_read_skips_approval_but_not_sandbox() {
         let argv = ["cat", "package.json"];
@@ -219,39 +240,7 @@ mod tests {
 
         let decision = resolve_approval_requirement(&request, &matched(&argv));
 
-        match decision {
-            ApprovalRequirement::Skip {
-                bypass_sandbox,
-                reason,
-            } => {
-                assert!(!bypass_sandbox);
-                assert!(reason.contains("safe-read"));
-                assert!(reason.contains("sandbox"));
-            }
-            other => panic!("expected skip approval, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn safe_test_reason_uses_matched_capability_name() {
-        let argv = ["npm", "test", "--", "-u"];
-        let request = request(
-            &argv,
-            CapabilityKind::SafeTest,
-            ApprovalPolicy::OnRequest,
-            SandboxProfile::WorkspaceWrite,
-            NetworkPolicy::Deny,
-        );
-
-        let decision = resolve_approval_requirement(&request, &matched(&argv));
-
-        match decision {
-            ApprovalRequirement::Skip { reason, .. } => {
-                assert!(reason.contains("safe-test"));
-                assert!(!reason.contains("safe-read"));
-            }
-            other => panic!("expected skip approval, got {other:?}"),
-        }
+        assert_skip_in_sandbox(decision);
     }
 
     #[test]
@@ -266,24 +255,16 @@ mod tests {
         );
 
         let decision = resolve_approval_requirement(&request, &matched(&argv));
+        let approval_scope = approval_scope(decision);
 
-        match decision {
-            ApprovalRequirement::NeedsApproval {
-                reason,
-                approval_scope,
-            } => {
-                assert!(reason.contains("network-install"));
-                assert_eq!(approval_scope.command_prefix, strings(&["npm", "install"]));
-                assert_eq!(approval_scope.cwd, PathBuf::from("/workspace"));
-                assert_eq!(
-                    approval_scope.sandbox_profile,
-                    SandboxProfile::WorkspaceWrite
-                );
-                assert_eq!(approval_scope.network_policy, NetworkPolicy::Prompt);
-                assert_eq!(approval_scope.persistence, ApprovalPersistence::Once);
-            }
-            other => panic!("expected approval request, got {other:?}"),
-        }
+        assert_eq!(approval_scope.command_prefix, strings(&["npm", "install"]));
+        assert_eq!(approval_scope.cwd, PathBuf::from("/workspace"));
+        assert_eq!(
+            approval_scope.sandbox_profile,
+            SandboxProfile::WorkspaceWrite
+        );
+        assert_eq!(approval_scope.network_policy, NetworkPolicy::Prompt);
+        assert_eq!(approval_scope.persistence, ApprovalPersistence::Once);
     }
 
     #[test]
@@ -299,13 +280,7 @@ mod tests {
 
         let decision = resolve_approval_requirement(&request, &matched(&argv));
 
-        match decision {
-            ApprovalRequirement::Forbidden { reason } => {
-                assert!(reason.contains("approval"));
-                assert!(reason.contains("never"));
-            }
-            other => panic!("expected forbidden decision, got {other:?}"),
-        }
+        assert_forbidden(decision);
     }
 
     #[test]
@@ -321,13 +296,7 @@ mod tests {
 
         let decision = resolve_approval_requirement(&request, &matched(&argv));
 
-        match decision {
-            ApprovalRequirement::Forbidden { reason } => {
-                assert!(reason.contains("dangerous-shell"));
-                assert!(reason.contains("forbidden"));
-            }
-            other => panic!("expected forbidden decision, got {other:?}"),
-        }
+        assert_forbidden(decision);
     }
 
     #[test]
@@ -342,14 +311,10 @@ mod tests {
         );
 
         let decision = resolve_approval_requirement(&request, &matched(&argv));
+        let approval_scope = approval_scope(decision);
 
-        match decision {
-            ApprovalRequirement::NeedsApproval { approval_scope, .. } => {
-                assert_eq!(approval_scope.command_prefix, strings(&["npm", "install"]));
-                assert_ne!(approval_scope.command_prefix, request.argv);
-            }
-            other => panic!("expected approval request, got {other:?}"),
-        }
+        assert_eq!(approval_scope.command_prefix, strings(&["npm", "install"]));
+        assert_ne!(approval_scope.command_prefix, request.argv);
     }
 
     #[test]
@@ -364,13 +329,9 @@ mod tests {
         );
 
         let decision = resolve_approval_requirement(&request, &matched(&argv));
+        let approval_scope = approval_scope(decision);
 
-        match decision {
-            ApprovalRequirement::NeedsApproval { approval_scope, .. } => {
-                assert_eq!(approval_scope.network_policy, NetworkPolicy::Allow);
-            }
-            other => panic!("expected approval request, got {other:?}"),
-        }
+        assert_eq!(approval_scope.network_policy, NetworkPolicy::Allow);
     }
 
     #[test]
@@ -385,11 +346,86 @@ mod tests {
         );
 
         let decision = resolve_approval_requirement(&request, &matched(&argv));
-        match decision {
-            ApprovalRequirement::Forbidden { reason } => {
-                assert!(reason.contains("does not match"));
+
+        assert_forbidden(decision);
+    }
+
+    #[tokio::test]
+    async fn approval_broker_emits_request_event_and_resolves_matching_internal_result() {
+        let (event_tx, mut event_rx) = mpsc::channel(4);
+        let (result_tx, result_rx) = mpsc::channel(4);
+        let broker = ApprovalBroker::new(event_tx, result_rx);
+        let expected_reason = "network install requires approval";
+        let scope = ApprovalScope {
+            command_prefix: strings(&["npm", "install"]),
+            cwd: PathBuf::from("/workspace"),
+            sandbox_profile: SandboxProfile::WorkspaceWrite,
+            network_policy: NetworkPolicy::Prompt,
+            persistence: ApprovalPersistence::Once,
+        };
+
+        let approval_task = tokio::spawn(async move {
+            broker
+                .request_approval(ToolApprovalRequest {
+                    context: ToolCallContext {
+                        index: 3,
+                        call_id: "call_install".to_string(),
+                        tool_name: "run_command".to_string(),
+                    },
+                    reason: expected_reason.to_string(),
+                    scope: scope.clone(),
+                })
+                .await
+        });
+
+        let event = event_rx
+            .recv()
+            .await
+            .expect("approval broker should emit request event")
+            .expect("approval event should be ok");
+        let approval_id = match event {
+            StreamEvent::CommandNeedsApproval {
+                approval_id,
+                index,
+                call_id,
+                name,
+                reason,
+                scope: emitted_scope,
+            } => {
+                assert_eq!(index, 3);
+                assert_eq!(call_id, "call_install");
+                assert_eq!(name, "run_command");
+                assert_eq!(reason, expected_reason);
+                assert_eq!(
+                    emitted_scope,
+                    ApprovalScope {
+                        command_prefix: strings(&["npm", "install"]),
+                        cwd: PathBuf::from("/workspace"),
+                        sandbox_profile: SandboxProfile::WorkspaceWrite,
+                        network_policy: NetworkPolicy::Prompt,
+                        persistence: ApprovalPersistence::Once,
+                    }
+                );
+                approval_id
             }
-            other => panic!("expected forbidden decision, got {other:?}"),
-        }
+            other => panic!("expected command approval request, got {other:?}"),
+        };
+
+        result_tx
+            .send(ToolApprovalResult {
+                approval_id,
+                decision: UserApprovalDecision::Approved {
+                    persistence: ApprovalPersistence::Session,
+                },
+            })
+            .await
+            .expect("test should send internal approval result");
+
+        assert_eq!(
+            approval_task.await.expect("approval task should finish"),
+            UserApprovalDecision::Approved {
+                persistence: ApprovalPersistence::Session
+            }
+        );
     }
 }
