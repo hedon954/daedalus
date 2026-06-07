@@ -22,6 +22,7 @@ Non-negotiables:
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
 - Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
+- Before long-running repo-learning work, give the learner a small parallel study handoff instead of leaving them idle.
 - Before repo-learning commits, run checkpoint lifecycle pre-commit sync; after commits, output post-commit orientation.
 
 ## Project / Topic Model
@@ -171,6 +172,7 @@ When resuming long-running work:
 - Do not label Agent-only inspection as verified learning.
 - Do not make source-code claims from analogy or product intuition alone; anchor them in source, tests, comments, or runtime evidence.
 - When explaining principles, follow the mechanism depth ladder in `first-principles.md`; do not stop at a framework abstraction if the lower runtime, OS, protocol, or hardware layer changes the design decision.
+- When a review, validation, scan, doc rewrite, test loop, or commit sequence may take more than roughly 30-60 seconds, use `Long-Running Turn Handoff` from `checkpoint-lifecycle.md` before continuing.
 - Do not accept a code-reading note that only explains call chains; it must include production constraints, failure handling, invariants, trade-offs, and transfer limits.
 - When a Rust demo `Cargo.toml` is created, moved, or migrated under a topic, run `daedalus ide sync-rust-analyzer`.
 - Do not mark a task complete until demo, business transfer, and knowledge archival are addressed or explicitly justified.

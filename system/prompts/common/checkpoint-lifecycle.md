@@ -6,6 +6,31 @@ Checkpoint lifecycle keeps code facts, learning maps, commits, and next actions 
 
 Use this protocol after review, validation, user-practice completion, design acceptance, implementation closeout, or any repo-learning commit.
 
+## Long-Running Turn Handoff
+
+When a repo-learning action is likely to take noticeable time, do not make the learner wait with no path forward.
+
+Use this before long code review, broad file scans, test/debug loops, large doc rewrites, validation/commit sequences, or any task expected to take more than roughly 30-60 seconds.
+
+First send a short handoff card, then continue the Agent work:
+
+```markdown
+## While I Work
+- What I am doing:
+- Why it matters:
+- You can read / inspect:
+- Question to think about:
+- Expected checkpoint:
+```
+
+Rules:
+
+- Keep it actionable, not motivational. Give the learner one small reading target, one observation task, or one question.
+- Tie the handoff to the current final artifact or blocked decision.
+- Do not use handoff for quick commands or tiny edits; unnecessary handoff adds noise.
+- If the work changes direction, update the learner with the new focus instead of letting the old handoff become misleading.
+- The final response must reconcile what the Agent found with the handoff question, so the learner's parallel thinking can reconnect to the result.
+
 ## Evidence First
 
 Before changing stage, slice, or completion status, inspect the strongest available evidence:
