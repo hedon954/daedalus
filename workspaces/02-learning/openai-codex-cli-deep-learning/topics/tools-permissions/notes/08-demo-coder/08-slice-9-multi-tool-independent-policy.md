@@ -1,12 +1,14 @@
 # Slice 9 Multi-Tool Independent Policy
 
+> Status: policy implemented in first version. See [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) for review and current refactor target.
+
 ## Learning Navigation
 
 - Final artifact: `demo/README.md`
 - Current stage: `08-demo-coder`
 - Current slice: Slice 9 Multi-Tool Independent Execution
-- Current gap: 同一轮多个 tool call 的调度语义需要定稿，避免旧的 hard-deny skipped 方向误导实现。
-- After this: 可以改 `agent/react.rs`，把同批 tool calls 改为按工具能力并发执行，并按原 index 回灌 observation。
+- Current gap: 调度语义已定稿并落地第一版；下一步是结构收口。
+- After this: 抽出 batch boundary，让 ReAct loop 回到轮次和 transcript 职责。
 
 ## First-Principles Framing
 
@@ -60,7 +62,7 @@ Slice 9 采用 independent observation policy：
 - 执行可以并发，但写回 `messages` 的 tool observations 必须按原始 `index` 排序，保证 transcript 和测试稳定。
 - 每个 `tool_call_id` 都必须得到 observation，包括 `Failed` 和 `Denied`。
 - `Denied` 是当前 call 的结果，不传播成 batch-level hard stop。
-- `ToolRuntimeResult::Skipped` 暂时没有主路径；后续如果没有独立使用场景，应删除或保留为明确非主路径类型。
+- `ToolRuntimeResult::Skipped` 当前已删除；后续只有出现显式 scheduler skip 场景时才重新引入。
 
 ## Why This Beats Hard-Deny Skipped For This Demo
 
@@ -85,7 +87,7 @@ run_tools(tool_calls)
   -> next LLM turn
 ```
 
-第一版可以先保持所有当前 demo tools 可并发，因为 `add/sub` 是纯函数，`run_command` 使用 simulated execution runner。随后再加 `supports_parallel_tool_calls`，让 mutating / shell-like tool 可以声明串行。
+第一版已经保持所有当前 demo tools 可并发，因为 `add/sub` 是纯函数，`run_command` 使用 simulated execution runner。随后再加 `supports_parallel_tool_calls`，让 mutating / shell-like tool 可以声明串行。
 
 ## Acceptance Tests
 
@@ -93,10 +95,9 @@ run_tools(tool_calls)
 - 同一轮一个 unknown tool 失败、另一个 pure tool 成功：成功工具不受失败工具影响。
 - 同一轮 `run_command` 被 `Denied`、另一个 pure tool 成功：两个 observations 都写回，且不会生成 skipped。
 - 如果执行层并发，最终 message 顺序仍按原始 index，而不是完成先后。
-- 若保留 `ToolRuntimeResult::Skipped`，测试应证明它不是由 batch-level hard-deny 自动产生。
+- 当前不保留 `ToolRuntimeResult::Skipped`；测试应继续证明 batch-level hard-deny 不会自动产生 skipped observation。
 
 ## Open Questions
 
 - `run_command` 是否默认支持 parallel？Phase 1 simulated runner 可以支持；Phase 2 `OsExecutionRunner` 前需要重新评估。
-- 是否需要显式 `ToolDefinition::supports_parallel`？如果 `run_tools` 开始并发，这个字段会成为自然扩展点。
-- `ToolRuntimeResult::Skipped` 是否删除？本轮先不急，等 Slice 9 实现时看是否还有真实语义。
+- 是否需要显式 `ToolDefinition::supports_parallel`？当前第一版已经并发执行；Phase 2 前这个字段会成为自然扩展点。

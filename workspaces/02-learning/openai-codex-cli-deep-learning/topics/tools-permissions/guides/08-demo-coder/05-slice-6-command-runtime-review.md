@@ -87,7 +87,7 @@ capability matched but approval decision is Forbidden
   -> RunCommandResult::Denied
 
 previous tool caused hard denial, later calls are not attempted
-  -> ToolRuntimeResult::Skipped
+  -> 历史方案，当前已废弃；Slice 9 采用 independent observation
 ```
 
 也就是说：

@@ -209,4 +209,4 @@ Skipped
   -> 但这个选择不是由同批其他 call 的失败自动传播而来
 ```
 
-如果 Slice 9 实现后仍找不到真实生产路径，可以删除 `ToolRuntimeResult::Skipped`，减少状态枚举噪声。
+Slice 9 第一版实现后没有找到真实生产路径，当前代码已删除 `ToolRuntimeResult::Skipped`，减少状态枚举噪声。

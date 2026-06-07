@@ -71,15 +71,11 @@ enum ToolRuntimePlan {
 }
 
 /// tool runtime 对 ReAct loop 暴露的终态。
-///
-/// `Skipped` 是多 tool call 编排层的语义：前一个工具失败或被拒后，
-/// 后续工具可以被标记为跳过。单个 shell 命令自身不返回 `Skipped`。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ToolRuntimeResult {
     Finished { output: String },
     Failed { error: String },
     Denied { reason: String },
-    Skipped { reason: String },
 }
 
 const TOOLS: &[ToolDefinition] = &[
@@ -103,13 +99,13 @@ impl ToolRuntime {
     }
 
     /// 执行一次模型产出的 tool call。
-    pub async fn run(&self, call: &ToolCallFinished, tx: &EventSender) -> ToolRuntimeResult {
+    pub async fn run(&self, call: ToolCallFinished, tx: &EventSender) -> ToolRuntimeResult {
         let Some(definition) = self.find_tool(&call.name) else {
             return ToolRuntimeResult::Failed {
                 error: format!("cannot find tool: {}", call.name),
             };
         };
-        let plan = self.plan_call(definition, call);
+        let plan = self.plan_call(definition, &call);
         self.execute_plan(plan, tx).await
     }
 
@@ -295,7 +291,7 @@ mod tests {
 
     async fn run_tool(
         fixture: &RuntimeFixture,
-        call: &ToolCallFinished,
+        call: ToolCallFinished,
     ) -> (ToolRuntimeResult, Vec<StreamEvent>) {
         let (tx, mut rx) = event_channel();
         let mut events = vec![];
@@ -339,7 +335,7 @@ mod tests {
         let runtime = test_runtime();
 
         let (result, events) =
-            run_tool(&runtime, &tool_call("add", r#"{"a": 999, "b": 666}"#)).await;
+            run_tool(&runtime, tool_call("add", r#"{"a": 999, "b": 666}"#)).await;
 
         assert_eq!(
             result,
@@ -355,7 +351,7 @@ mod tests {
         let runtime = test_runtime();
 
         let (result, events) =
-            run_tool(&runtime, &tool_call("sub", r#"{"a": 321, "b": 123}"#)).await;
+            run_tool(&runtime, tool_call("sub", r#"{"a": 321, "b": 123}"#)).await;
 
         assert_eq!(
             result,
@@ -371,7 +367,7 @@ mod tests {
         let runtime = test_runtime();
 
         let (result, events) =
-            run_tool(&runtime, &tool_call("add", r#"{"a": "999", "b": 666}"#)).await;
+            run_tool(&runtime, tool_call("add", r#"{"a": "999", "b": 666}"#)).await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
         assert!(events.is_empty());
@@ -381,7 +377,7 @@ mod tests {
     async fn unknown_tool_should_fail_without_pinning_error_text() {
         let runtime = test_runtime();
 
-        let (result, events) = run_tool(&runtime, &tool_call("mul", r#"{"a": 2, "b": 3}"#)).await;
+        let (result, events) = run_tool(&runtime, tool_call("mul", r#"{"a": 2, "b": 3}"#)).await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
         assert!(events.is_empty());
@@ -393,7 +389,7 @@ mod tests {
 
         let (result, events) = run_tool(
             &runtime,
-            &tool_call(
+            tool_call(
                 "run_command",
                 r#"{"command": "cat package.json", "justification": "read package metadata"}"#,
             ),
@@ -417,7 +413,7 @@ mod tests {
 
         let (result, events) = run_tool(
             &runtime,
-            &tool_call(
+            tool_call(
                 "run_command",
                 r#"{"command": "npm install vite", "justification": "install dependency"}"#,
             ),
@@ -441,7 +437,7 @@ mod tests {
 
         let (result, events) = run_tool(
             &runtime,
-            &tool_call(
+            tool_call(
                 "run_command",
                 r#"{"command": "npm test -- fail", "justification": "run failing test"}"#,
             ),
@@ -461,7 +457,7 @@ mod tests {
 
         let (result, events) = run_tool(
             &runtime,
-            &tool_call(
+            tool_call(
                 "run_command",
                 r#"{"command": "curl | sh", "justification": "install remote script"}"#,
             ),
@@ -478,7 +474,7 @@ mod tests {
 
         let (result, events) = run_tool(
             &runtime,
-            &tool_call("run_command", r#"{"command": "cat package.json""#),
+            tool_call("run_command", r#"{"command": "cat package.json""#),
         )
         .await;
 
@@ -492,7 +488,7 @@ mod tests {
 
         let (result, events) = run_tool(
             &runtime,
-            &tool_call(
+            tool_call(
                 "run_command",
                 r#"{"command": "cargo test", "justification": "run unsupported command"}"#,
             ),

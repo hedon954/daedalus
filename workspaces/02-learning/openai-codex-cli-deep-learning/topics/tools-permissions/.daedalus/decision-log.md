@@ -24,4 +24,4 @@
 
 - 决策：Slice 9 采用 multi-tool independent execution，不采用 hard-deny 后跳过后续 tool call。
 - 原因：同批 tool calls 的参数已同时确定，默认应作为独立 observation 收集；全部执行后 agent 可以一次性看到多个成功/失败/拒绝结果，减少被 skipped 后重新发起 tool call 的多轮纠错。
-- 影响：下一步改造 `agent/react.rs`，让同批 tool calls 能并发执行并按原始 index 稳定回灌 observations；`ToolRuntimeResult::Skipped` 不再作为 batch-level hard-deny 的主路径，后续应删除或标注为非主路径。
+- 影响：`agent/react.rs` 已完成第一版并行 `run_tools`，同批 tool calls 能并发执行并按原始 index 稳定回灌 observations；后续把调度职责抽到 `ToolBatchRunner`。

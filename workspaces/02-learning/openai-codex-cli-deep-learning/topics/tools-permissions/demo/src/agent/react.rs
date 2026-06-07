@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use futures_util::{StreamExt, stream};
+use futures_util::{StreamExt, future::join_all, stream};
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
@@ -54,8 +54,7 @@ impl ReActAgent {
         let max_turns = self.max_turns;
 
         tokio::spawn(async move {
-            if let Err(err) =
-                run_agent_loop(llm, prompt, max_turns, tx.clone(), &tool_runtime).await
+            if let Err(err) = run_agent_loop(llm, prompt, max_turns, tx.clone(), tool_runtime).await
             {
                 let _ = tx.send(Err(err)).await;
             }
@@ -74,7 +73,7 @@ async fn run_agent_loop(
     prompt: String,
     max_turns: u8,
     tx: EventSender,
-    tool_runtime: &ToolRuntime,
+    tool_runtime: Arc<ToolRuntime>,
 ) -> anyhow::Result<()> {
     let mut messages = vec![
         json!({"role": "system", "content": ""}),
@@ -143,9 +142,8 @@ async fn run_agent_loop(
             }).collect::<Vec<_>>()
         }));
 
-        // 当前先按 index 顺序逐个执行工具。这样 observation 顺序稳定，便于测试。
-        // TODO: 后续如果并发执行多个 tool，需要仍按原 index 回灌 messages。
-        run_tools(&tx, pending_tool_calls, &mut messages, tool_runtime).await?;
+        // 执行所有的工具
+        run_tools(&tx, pending_tool_calls, &mut messages, tool_runtime.clone()).await?;
 
         // TODO: 加入结构化 logger，记录每轮 LLM start/end、tool choice 和 observation。
     }
@@ -155,10 +153,14 @@ async fn run_agent_loop(
 
 async fn run_tools(
     tx: &EventSender,
-    tool_calls: Vec<ToolCallFinished>,
+    mut tool_calls: Vec<ToolCallFinished>,
     messages: &mut Vec<Value>,
-    tool_runtime: &ToolRuntime,
+    tool_runtime: Arc<ToolRuntime>,
 ) -> anyhow::Result<()> {
+    tool_calls.sort_by_key(|call| call.index);
+
+    let mut futures = vec![];
+
     for call in tool_calls {
         emit(
             tx,
@@ -171,82 +173,95 @@ async fn run_tools(
         )
         .await?;
 
-        // TODO: 接入多 tool call 的 hard-deny 策略：
-        // 一个工具被安全拒绝后，后续依赖它的工具应标记为 Skipped，而不是继续盲跑。
+        let tx_cloned = tx.clone();
+        let tool_runtime = tool_runtime.clone();
+        let future = tokio::spawn(async move {
+            let result = tool_runtime.run(call.clone(), &tx_cloned).await;
+            (call, result)
+        });
 
-        match tool_runtime.run(&call, tx).await {
-            ToolRuntimeResult::Finished { output } => {
-                emit(
-                    tx,
-                    StreamEvent::ToolRunFinished {
-                        index: call.index,
-                        call_id: call.call_id.clone(),
-                        name: call.name.clone(),
-                        output: output.clone(),
-                    },
-                )
-                .await?;
+        futures.push(future);
+    }
 
-                messages.push(json!({
-                    "role": "tool",
-                    "tool_call_id": call.call_id,
-                    "content": output,
-                }));
+    let mut outcomes = Vec::new();
+    for join_result in join_all(futures).await {
+        let (call, runtime_result) = match join_result {
+            Ok(pair) => pair,
+            Err(join_err) => {
+                anyhow::bail!("tool task panicked: {join_err}");
             }
-            ToolRuntimeResult::Failed { error } => {
-                emit(
-                    tx,
-                    StreamEvent::ToolRunFailed {
-                        index: call.index,
-                        call_id: call.call_id.clone(),
-                        name: call.name.clone(),
-                        error: error.clone(),
-                    },
-                )
-                .await?;
+        };
+        outcomes.push((call, runtime_result));
+    }
+    outcomes.sort_by_key(|(call, _)| call.index);
 
-                messages.push(json!({
-                    "role": "tool",
-                    "tool_call_id": call.call_id,
-                    "content": error
-                }));
-            }
-            ToolRuntimeResult::Denied { reason } => {
-                emit(
-                    tx,
-                    StreamEvent::ToolRunFailed {
-                        index: call.index,
-                        call_id: call.call_id.clone(),
-                        name: call.name.clone(),
-                        error: reason.clone(),
-                    },
-                )
-                .await?;
+    for (call, result) in outcomes {
+        handle_tool_call_result(&call, result, tx, messages).await?;
+    }
 
-                messages.push(json!({
-                    "role": "tool",
-                    "tool_call_id": call.call_id,
-                    "content": format!("tool denied: {reason}")
-                }));
-            }
-            ToolRuntimeResult::Skipped { reason } => {
-                emit(
-                    tx,
-                    StreamEvent::ToolRunFailed {
-                        index: call.index,
-                        call_id: call.call_id.clone(),
-                        name: call.name.clone(),
-                        error: reason.clone(),
-                    },
-                )
-                .await?;
+    Ok(())
+}
 
-                messages.push(json!({
-                    "role": "tool",
-                    "tool_call_id": call.call_id,
-                    "content": format!("tool skipped: {reason}")
-                }));
-            }
+async fn handle_tool_call_result(
+    call: &ToolCallFinished,
+    result: ToolRuntimeResult,
+    tx: &EventSender,
+    messages: &mut Vec<Value>,
+) -> anyhow::Result<()> {
+    match result {
+        ToolRuntimeResult::Finished { output } => {
+            emit(
+                tx,
+                StreamEvent::ToolRunFinished {
+                    index: call.index,
+                    call_id: call.call_id.clone(),
+                    name: call.name.clone(),
+                    output: output.clone(),
+                },
+            )
+            .await?;
+
+            messages.push(json!({
+                "role": "tool",
+                "tool_call_id": call.call_id,
+                "content": output,
+            }));
+        }
+        ToolRuntimeResult::Failed { error } => {
+            emit(
+                tx,
+                StreamEvent::ToolRunFailed {
+                    index: call.index,
+                    call_id: call.call_id.clone(),
+                    name: call.name.clone(),
+                    error: error.clone(),
+                },
+            )
+            .await?;
+
+            messages.push(json!({
+                "role": "tool",
+                "tool_call_id": call.call_id,
+                "content": error
+            }));
+        }
+        ToolRuntimeResult::Denied { reason } => {
+            emit(
+                tx,
+                StreamEvent::ToolRunFailed {
+                    index: call.index,
+                    call_id: call.call_id.clone(),
+                    name: call.name.clone(),
+                    error: reason.clone(),
+                },
+            )
+            .await?;
+
+            messages.push(json!({
+                "role": "tool",
+                "tool_call_id": call.call_id,
+                "content": format!("tool denied: {reason}")
+            }));
         }
     }
 
@@ -522,6 +537,55 @@ mod tests {
         assert_eq!(requests.len(), 2);
         assert_eq!(requests[1][2]["tool_calls"][0]["id"], "call_add");
         assert_eq!(requests[1][2]["tool_calls"][1]["id"], "call_sub");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_observe_every_result_in_mixed_tool_batch() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(
+                    2,
+                    "call_dangerous",
+                    "run_command",
+                    r#"{"command": "curl | sh", "justification": "install remote script"}"#,
+                ),
+                tool_call(0, "call_add", "add", r#"{"a": 1, "b": 2}"#),
+                tool_call(1, "call_unknown", "mul", r#"{"a": 2, "b": 3}"#),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("handled mixed batch".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = test_agent(llm.clone(), Some(3));
+
+        let events = collect_events(&agent, "run mixed tools").await?;
+
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFinished { call_id, .. } if call_id == "call_add"
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFailed { call_id, .. } if call_id == "call_unknown"
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFailed { call_id, .. } if call_id == "call_dangerous"
+        )));
+
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1][3]["tool_call_id"], "call_add");
+        assert_eq!(requests[1][4]["tool_call_id"], "call_unknown");
+        assert_eq!(requests[1][5]["tool_call_id"], "call_dangerous");
+        for observation in &requests[1][3..=5] {
+            assert_eq!(observation["role"], "tool");
+            assert!(observation["content"].is_string());
+        }
 
         Ok(())
     }

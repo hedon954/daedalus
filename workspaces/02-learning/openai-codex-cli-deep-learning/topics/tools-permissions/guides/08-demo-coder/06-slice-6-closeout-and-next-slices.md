@@ -131,9 +131,9 @@ Goal: decide and implement what happens when one tool call in the same model tur
 
 Current code:
 
-- `ToolRuntimeResult::Skipped` exists.
-- `react.rs` currently loops through tool calls in index order.
-- There is no concurrent execution path yet.
+- `ToolRuntimeResult::Skipped` has been removed.
+- `react.rs` already has the first parallel `run_tools` implementation.
+- The remaining problem is structural cleanup, not the first behavior implementation.
 
 Target behavior:
 
@@ -144,7 +144,7 @@ Target behavior:
 Unlocked:
 
 - Complete multi-tool observation feedback in one model repair turn.
-- Clearer semantics for `Skipped`: remove it or keep it only for explicit non-batch skip cases.
+- Clearer batch boundary: extract `ToolBatchRunner` so ReAct loop does not own scheduling details.
 
 ### Slice 10: Approval Persistence
 

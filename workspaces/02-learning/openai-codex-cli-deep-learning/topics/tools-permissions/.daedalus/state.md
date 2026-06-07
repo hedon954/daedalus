@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`08-demo-coder`
 - 状态：`active`
-- 下一步：继续 `08-demo-coder` Slice 9：实现 multi-tool independent execution，改造 `agent/react.rs` 的同批 tool call 调度，并按原始 index 稳定回灌 observations。
+- 下一步：继续 `08-demo-coder` Slice 9：并行 `run_tools` 第一版已实现；下一步按 `guides/08-demo-coder/12-slice-9-tool-batch-runner-refactor.md` 抽出 ToolBatchRunner，收口 ReAct loop 职责。
 
 ## 枚举约束
 

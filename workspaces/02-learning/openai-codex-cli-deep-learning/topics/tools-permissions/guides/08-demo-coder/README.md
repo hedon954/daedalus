@@ -210,18 +210,20 @@ OpenAI-compatible Chat Completions stream
 
 目标：定义并实现同一轮多个 tool call 的独立执行语义：能并发就并发执行，每个 call 独立返回 `Finished / Failed / Denied`，最终按原始 index 稳定回灌 observation。
 
-状态：策略已定，待实现。
+状态：第一版已实现，待结构收口。当前 `react.rs` 已用 `tokio::spawn + join_all` 并发执行同批 tool calls，并按 index 回灌 observations；下一步应抽出 `ToolBatchRunner`，避免 ReAct loop 继续承载 batch 调度、event 映射和 transcript 写入。
 
 行动指南：[`10-slice-9-multi-tool-independent-execution.md`](10-slice-9-multi-tool-independent-execution.md)。
 
 技术补充：[`11-tokio-runtime-scheduling.md`](11-tokio-runtime-scheduling.md) 解释 Slice 9 需要的 Tokio runtime、`Future::poll`、`Waker`、调度、等待和取消语义。
+
+结构重构：[`12-slice-9-tool-batch-runner-refactor.md`](12-slice-9-tool-batch-runner-refactor.md)。
 
 验收：
 
 - 同批 tool calls 中一个失败或被拒，不影响其他 call 执行。
 - 每个 `tool_call_id` 都有 observation。
 - observations 按原始 index 写回。
-- `ToolRuntimeResult::Skipped` 不再作为 batch-level hard-deny 的主路径；实现后应删除或标注为非主路径。
+- `ToolRuntimeResult::Skipped` 不再作为 batch-level hard-deny 的主路径；当前已无主路径。
 
 ### Slice 10: Approval Persistence
 

@@ -1,11 +1,14 @@
 # Slice 9 Multi-Tool Independent Execution
 
+> Status: historical action card. Slice 9 first implementation is now complete in `react.rs`.
+> Current follow-up is structural cleanup: [`12-slice-9-tool-batch-runner-refactor.md`](12-slice-9-tool-batch-runner-refactor.md).
+
 ## Learning Navigation
 
 - Final artifact: `demo/README.md`
 - Current stage: `08-demo-coder`
 - Current slice: Slice 9 Multi-Tool Independent Execution
-- Current gap: `agent/react.rs` 还按顺序执行同批 tool calls，且旧 TODO 指向 hard-deny skipped；当前已决策改为独立 observation。
+- Current gap: 已完成第一版并行 `run_tools`；当前缺口是从 `agent/react.rs` 抽出 batch boundary，降低 ReAct loop 职责密度。
 - Evidence needed: `react.rs` 多 tool 调度、`ToolRuntimeResult` 分支、fake LLM deterministic tests。
 - After this: 可以进入 Slice 10 approval persistence，或先写 README trace 展示多 tool observation。
 
@@ -26,7 +29,9 @@
 
 这不是盲目照抄 Codex，但和 Codex 的方向一致：并发能力由工具声明控制，失败作为模型可见 observation 返回，而不是 batch-level hard stop。
 
-## Implementation Plan
+## Original Implementation Plan
+
+以下是第一版实现时使用的行动计划。当前已完成，不要再把它当作下一步。
 
 ### Step 1: 删除旧 hard-deny TODO 的方向
 
@@ -99,7 +104,7 @@ emit_and_append_tool_observation(tx, messages, call, result)
 - 同批 tool calls 中一个失败或被拒，不影响其他 call 执行。
 - 每个 `tool_call_id` 都有 observation。
 - observations 按原始 index 写回。
-- `ToolRuntimeResult::Skipped` 要么没有生产路径且被删除，要么被明确标注为非 batch-level hard-deny 语义。
+- `ToolRuntimeResult::Skipped` 当前已删除；不要再为 batch-level hard-deny 重新引入它。
 
 ## Tokio Runtime Reference
 
