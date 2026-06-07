@@ -22,7 +22,7 @@ Non-negotiables:
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
 - Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
-- Before long-running repo-learning work, give the learner a small parallel study handoff instead of leaving them idle.
+- Before long-running repo-learning work, make the first working message a small parallel study handoff instead of leaving the learner idle.
 - Before repo-learning commits, run checkpoint lifecycle pre-commit sync; after commits, output post-commit orientation.
 
 ## Project / Topic Model

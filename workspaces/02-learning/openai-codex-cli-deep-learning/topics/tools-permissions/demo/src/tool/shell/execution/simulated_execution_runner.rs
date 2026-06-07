@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+
 use crate::{
     model::{
         approval::SandboxProfile,
@@ -109,9 +111,10 @@ impl Default for SimulatedExecutionRunner {
     }
 }
 
+#[async_trait]
 impl ExecutionRunner for SimulatedExecutionRunner {
     /// 根据命令前缀和 attempt 查找模拟结果。
-    fn run(&self, request: &CommandRequest, attempt: &ExecutionAttempt) -> ExecutionResult {
+    async fn run(&self, request: &CommandRequest, attempt: &ExecutionAttempt) -> ExecutionResult {
         let attempt = SimulatedAttempt::from(attempt);
         let rule = self.rules.iter().find(|rule| {
             args_has_prefix(&request.argv, &rule.command_prefix) && rule.attempt == attempt
@@ -209,8 +212,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn read_command_succeeds_in_read_only_sandbox() {
+    #[tokio::test]
+    async fn read_command_succeeds_in_read_only_sandbox() {
         let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["cat", "package.json"],
@@ -222,7 +225,7 @@ mod tests {
             sandbox_profile: SandboxProfile::ReadOnly,
         };
 
-        let result = runner.run(&request, &attempt);
+        let result = runner.run(&request, &attempt).await;
 
         match result {
             ExecutionResult::Success { .. } => {}
@@ -230,8 +233,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_command_failure_is_command_failed_not_sandbox_denied() {
+    #[tokio::test]
+    async fn test_command_failure_is_command_failed_not_sandbox_denied() {
         let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["npm", "test", "--", "fail"],
@@ -243,7 +246,7 @@ mod tests {
             sandbox_profile: SandboxProfile::WorkspaceWrite,
         };
 
-        let result = runner.run(&request, &attempt);
+        let result = runner.run(&request, &attempt).await;
 
         match result {
             ExecutionResult::Failure(ExecutionFailure::CommandFailed { exit_code, .. }) => {
@@ -253,8 +256,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn install_command_is_sandbox_denied_in_workspace_write_sandbox() {
+    #[tokio::test]
+    async fn install_command_is_sandbox_denied_in_workspace_write_sandbox() {
         let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["npm", "install", "vite"],
@@ -266,7 +269,7 @@ mod tests {
             sandbox_profile: SandboxProfile::WorkspaceWrite,
         };
 
-        let result = runner.run(&request, &attempt);
+        let result = runner.run(&request, &attempt).await;
 
         match result {
             ExecutionResult::Failure(ExecutionFailure::SandboxDenied {
@@ -285,8 +288,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn install_command_succeeds_without_sandbox_on_retry() {
+    #[tokio::test]
+    async fn install_command_succeeds_without_sandbox_on_retry() {
         let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["npm", "install", "vite"],
@@ -298,7 +301,7 @@ mod tests {
             reason: "approved retry outside sandbox".to_string(),
         };
 
-        let result = runner.run(&request, &attempt);
+        let result = runner.run(&request, &attempt).await;
 
         match result {
             ExecutionResult::Success { .. } => {}
@@ -306,8 +309,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn unsupported_command_attempt_returns_command_failed() {
+    #[tokio::test]
+    async fn unsupported_command_attempt_returns_command_failed() {
         let runner = SimulatedExecutionRunner::new();
         let request = request(
             &["cargo", "test"],
@@ -319,7 +322,7 @@ mod tests {
             sandbox_profile: SandboxProfile::WorkspaceWrite,
         };
 
-        let result = runner.run(&request, &attempt);
+        let result = runner.run(&request, &attempt).await;
 
         match result {
             ExecutionResult::Failure(ExecutionFailure::CommandFailed { exit_code, .. }) => {

@@ -4,6 +4,7 @@ use crate::{
     agent::{react::EventSender, stream_event::ToolCallFinished},
     model::{approval::ApprovalPolicy, command_request::CommandRequest},
     tool::{
+        event_emitter::ToolEventEmitter,
         function::run_pure_function,
         shell::{
             RunCommandArgs, RunCommandResult,
@@ -98,15 +99,56 @@ impl ToolRuntime {
         Self { context }
     }
 
-    /// 执行一次模型产出的 tool call。
-    pub async fn run(&self, call: ToolCallFinished, tx: &EventSender) -> ToolRuntimeResult {
-        let Some(definition) = self.find_tool(&call.name) else {
+    pub async fn batch_run(
+        self: Arc<Self>,
+        mut calls: Vec<ToolCallFinished>,
+        tx: &EventSender,
+    ) -> Vec<(ToolCallFinished, ToolRuntimeResult)> {
+        calls.sort_by_key(|call| call.index);
+
+        let mut handles = Vec::new();
+        for call in calls {
+            let call_cloned = call.clone();
+            let runtime = Arc::clone(&self);
+            let tx = tx.clone();
+            let handle = tokio::spawn(async move { runtime.run(call, &tx).await });
+            handles.push((call_cloned, handle));
+        }
+
+        let mut results = Vec::new();
+        for (call, handle) in handles {
+            let result = match handle.await {
+                Ok(result) => result,
+                Err(join_err) => ToolRuntimeResult::Failed {
+                    error: format!("tool task failed: {join_err}"),
+                },
+            };
+            results.push((call, result));
+        }
+        results
+    }
+
+    async fn run(&self, call: ToolCallFinished, tx: &EventSender) -> ToolRuntimeResult {
+        let emitter = ToolEventEmitter::new(tx.clone(), call.clone());
+        if let Err(err) = emitter.start().await {
             return ToolRuntimeResult::Failed {
-                error: format!("cannot find tool: {}", call.name),
+                error: err.to_string(),
             };
         };
+
+        let Some(definition) = self.find_tool(&call.name) else {
+            let result = ToolRuntimeResult::Failed {
+                error: format!("cannot find tool: {}", call.name),
+            };
+            emitter.end(&result).await;
+            return result;
+        };
+
         let plan = self.plan_call(definition, &call);
-        self.execute_plan(plan, tx).await
+        let result = self.execute_plan(plan, tx).await;
+
+        emitter.end(&result).await;
+        result
     }
 
     /// 查找模型可见 tool。
@@ -255,31 +297,43 @@ mod tests {
             },
         },
     };
-    use tokio::sync::mpsc;
+    use tokio::{
+        sync::mpsc,
+        time::{Duration, timeout},
+    };
 
     struct RuntimeFixture {
-        runtime: ToolRuntime,
+        runtime: Arc<ToolRuntime>,
         approval_result_tx: mpsc::Sender<ToolApprovalResult>,
     }
 
     fn test_runtime() -> RuntimeFixture {
         let (approval_result_tx, approval_result_rx) = mpsc::channel(16);
         RuntimeFixture {
-            runtime: ToolRuntime::new(ToolRuntimeContext {
+            runtime: Arc::new(ToolRuntime::new(ToolRuntimeContext {
                 cwd: PathBuf::from("/workspace"),
                 approval_policy: ApprovalPolicy::OnFailure,
                 registry: CapabilityRegistry::new(),
                 execution_runner: Arc::new(SimulatedExecutionRunner::new()),
                 approval_gateway: Arc::new(ApprovalGateway::new(approval_result_rx)),
-            }),
+            })),
             approval_result_tx,
         }
     }
 
     fn tool_call(name: &str, arguments: &str) -> ToolCallFinished {
+        indexed_tool_call(0, "call_test", name, arguments)
+    }
+
+    fn indexed_tool_call(
+        index: i64,
+        call_id: &str,
+        name: &str,
+        arguments: &str,
+    ) -> ToolCallFinished {
         ToolCallFinished {
-            index: 0,
-            call_id: "call_test".to_string(),
+            index,
+            call_id: call_id.to_string(),
             name: name.to_string(),
             arguments: arguments.to_string(),
         }
@@ -330,6 +384,39 @@ mod tests {
         (result.expect("runtime should return result"), events)
     }
 
+    fn assert_tool_started(events: &[StreamEvent], call_id: &str, name: &str) {
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunStarted {
+                call_id: got_call_id,
+                name: got_name,
+                ..
+            } if got_call_id == call_id && got_name == name
+        )));
+    }
+
+    fn assert_tool_finished(events: &[StreamEvent], call_id: &str, name: &str) {
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFinished {
+                call_id: got_call_id,
+                name: got_name,
+                ..
+            } if got_call_id == call_id && got_name == name
+        )));
+    }
+
+    fn assert_tool_failed(events: &[StreamEvent], call_id: &str, name: &str) {
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::ToolRunFailed {
+                call_id: got_call_id,
+                name: got_name,
+                ..
+            } if got_call_id == call_id && got_name == name
+        )));
+    }
+
     #[tokio::test]
     async fn pure_function_add_should_finish_with_output() {
         let runtime = test_runtime();
@@ -343,7 +430,8 @@ mod tests {
                 output: "1665".to_string()
             }
         );
-        assert!(events.is_empty());
+        assert_tool_started(&events, "call_test", "add");
+        assert_tool_finished(&events, "call_test", "add");
     }
 
     #[tokio::test]
@@ -359,7 +447,8 @@ mod tests {
                 output: "198".to_string()
             }
         );
-        assert!(events.is_empty());
+        assert_tool_started(&events, "call_test", "sub");
+        assert_tool_finished(&events, "call_test", "sub");
     }
 
     #[tokio::test]
@@ -370,7 +459,8 @@ mod tests {
             run_tool(&runtime, tool_call("add", r#"{"a": "999", "b": 666}"#)).await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
-        assert!(events.is_empty());
+        assert_tool_started(&events, "call_test", "add");
+        assert_tool_failed(&events, "call_test", "add");
     }
 
     #[tokio::test]
@@ -380,7 +470,8 @@ mod tests {
         let (result, events) = run_tool(&runtime, tool_call("mul", r#"{"a": 2, "b": 3}"#)).await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
-        assert!(events.is_empty());
+        assert_tool_started(&events, "call_test", "mul");
+        assert_tool_failed(&events, "call_test", "mul");
     }
 
     #[tokio::test]
@@ -405,6 +496,8 @@ mod tests {
             event,
             StreamEvent::CommandExecutionFinished { name, .. } if name == "run_command"
         )));
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_finished(&events, "call_test", "run_command");
     }
 
     #[tokio::test]
@@ -429,6 +522,8 @@ mod tests {
             event,
             StreamEvent::CommandExecutionFinished { name, .. } if name == "run_command"
         )));
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_finished(&events, "call_test", "run_command");
     }
 
     #[tokio::test]
@@ -449,6 +544,8 @@ mod tests {
             event,
             StreamEvent::CommandExecutionFailed { name, .. } if name == "run_command"
         )));
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_failed(&events, "call_test", "run_command");
     }
 
     #[tokio::test]
@@ -465,7 +562,8 @@ mod tests {
         .await;
 
         assert!(matches!(result, ToolRuntimeResult::Denied { .. }));
-        assert!(events.is_empty());
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_failed(&events, "call_test", "run_command");
     }
 
     #[tokio::test]
@@ -479,7 +577,8 @@ mod tests {
         .await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
-        assert!(events.is_empty());
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_failed(&events, "call_test", "run_command");
     }
 
     #[tokio::test]
@@ -496,6 +595,114 @@ mod tests {
         .await;
 
         assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
-        assert!(events.is_empty());
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_failed(&events, "call_test", "run_command");
+    }
+
+    #[tokio::test]
+    async fn batch_run_should_surface_all_approval_requests_before_any_is_approved() {
+        let fixture = test_runtime();
+        let (tx, mut rx) = event_channel();
+        let calls = vec![
+            indexed_tool_call(
+                1,
+                "call_install_react",
+                "run_command",
+                r#"{"command": "npm install react", "justification": "install react"}"#,
+            ),
+            indexed_tool_call(
+                0,
+                "call_install_vite",
+                "run_command",
+                r#"{"command": "npm install vite", "justification": "install vite"}"#,
+            ),
+        ];
+
+        let runtime = Arc::clone(&fixture.runtime);
+        let tx_for_batch = tx.clone();
+        let mut batch = tokio::spawn(async move { runtime.batch_run(calls, &tx_for_batch).await });
+
+        let initial_approvals = timeout(Duration::from_secs(1), async {
+            let mut approvals = Vec::new();
+            while approvals.len() < 2 {
+                let event = rx
+                    .recv()
+                    .await
+                    .expect("runtime should emit events while waiting for approval")
+                    .expect("runtime event should be ok");
+                if let StreamEvent::CommandNeedsApproval {
+                    approval_id,
+                    call_id,
+                    ..
+                } = event
+                {
+                    approvals.push((approval_id, call_id));
+                }
+            }
+            approvals
+        })
+        .await
+        .expect(
+            "concurrent batch should request approval for both tools before either is approved",
+        );
+
+        let mut initial_call_ids = initial_approvals
+            .iter()
+            .map(|(_, call_id)| call_id.as_str())
+            .collect::<Vec<_>>();
+        initial_call_ids.sort();
+        assert_eq!(
+            initial_call_ids,
+            vec!["call_install_react", "call_install_vite"]
+        );
+
+        for (approval_id, _) in initial_approvals {
+            fixture
+                .approval_result_tx
+                .send(ToolApprovalResult {
+                    approval_id,
+                    decision: UserApprovalDecision::Approved {
+                        persistence: ApprovalPersistence::Once,
+                    },
+                })
+                .await
+                .expect("test should approve initial tool approval");
+        }
+
+        let results = loop {
+            tokio::select! {
+                join_result = &mut batch => {
+                    break join_result.expect("batch task should not panic");
+                }
+                event = rx.recv() => {
+                    let event = event
+                        .expect("runtime should emit events before batch finishes")
+                        .expect("runtime event should be ok");
+                    if let StreamEvent::CommandNeedsApproval { approval_id, .. } = event {
+                        fixture
+                            .approval_result_tx
+                            .send(ToolApprovalResult {
+                                approval_id,
+                                decision: UserApprovalDecision::Approved {
+                                    persistence: ApprovalPersistence::Once,
+                                },
+                            })
+                            .await
+                            .expect("test should approve retry approval");
+                    }
+                }
+            }
+        };
+
+        let call_ids = results
+            .iter()
+            .map(|(call, _)| call.call_id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(call_ids, vec!["call_install_vite", "call_install_react"]);
+        assert!(
+            results
+                .iter()
+                .all(|(_, result)| matches!(result, ToolRuntimeResult::Finished { .. }))
+        );
     }
 }

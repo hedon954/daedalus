@@ -16,18 +16,18 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Slice 9 第一版已实现：同一轮多个 tool calls 互不影响；当前 `react.rs` 通过 `tokio::spawn + join_all` 并发执行同批 call，并按原始 index 稳定回灌 observations。新的问题是结构偏重，ReAct loop 同时承担 batch 调度、event 映射和 transcript 写入，需要按 [`guides/08-demo-coder/12-slice-9-tool-batch-runner-refactor.md`](../guides/08-demo-coder/12-slice-9-tool-batch-runner-refactor.md) 收口。
+- 当前问题：Slice 9 batch boundary 第一轮已落地：同一轮多个 tool calls 互不影响，`ToolRuntime::batch_run` 负责并发调度并按原始 index 稳定返回 results，terminal tool events 由 `ToolEventEmitter` 统一发出。最新测试已补齐 runtime tool event 断言和并发审批验证，确认两个 approval-blocked tools 会在任一审批通过前同时透出审批请求。
 - 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
-- 完成后解锁：抽出 batch boundary 后，ReAct loop 可以保持“轮次和 transcript”职责，后续更容易进入 Slice 10 approval persistence，或先写 `demo/README.md` 展示 command trace 与 multi-tool trace。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；`run_shell_command` 编排测试覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject，以及 safe-read sandbox denied 不 retry 的 registry 接线；ReAct `run_command` observation 测试覆盖 Finished / Failed / Denied 回灌；`RetryPolicy` 已纳入 retry gate；Slice 8 已补 `ToolCallContext`、`ApprovalGateway`、`PendingApproval`、内部 `ToolApprovalResult` 回流、`CommandEventEmitter`、`run_execution_attempt`、command 专属 event 命名和 command execution / retry 事件透出；`SandboxFirst` failure event 已在 retry decision 前发出并被 shell / ReAct trace tests 锁定；Slice 9 第一版已补同批 mixed success / failure / denial observation 测试；`cargo test` 通过 64 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：Slice 9 结构收口：抽出 `ToolBatchRunner / ToolRunOutcome / ToolObservation`，让 ReAct loop 不再直接承担 batch 调度和 observation 映射；同时后续为 Phase 2 预留 `supports_parallel` 能力声明。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 完成后解锁：Slice 9 closeout 后，ReAct loop 可以保持“轮次和 transcript”职责，后续更容易进入 Slice 10 approval persistence，或先写 `demo/README.md` 展示 command trace 与 multi-tool trace。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；`run_shell_command` 编排测试覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject，以及 safe-read sandbox denied 不 retry 的 registry 接线；ReAct `run_command` observation 测试覆盖 Finished / Failed / Denied 回灌；`RetryPolicy` 已纳入 retry gate；Slice 8 已补 `ToolCallContext`、`ApprovalGateway`、`PendingApproval`、内部 `ToolApprovalResult` 回流、`CommandEventEmitter`、`run_execution_attempt`、command 专属 event 命名和 command execution / retry 事件透出；`SandboxFirst` failure event 已在 retry decision 前发出并被 shell / ReAct trace tests 锁定；Slice 9 已补同批 mixed success / failure / denial observation 测试、runtime tool event tests、并发 approval-blocked batch 测试；`cargo test` 通过 65 个默认测试，3 个 live LLM 测试保持 ignored。
+- 当前待解决：进入 Slice 10 approval persistence，或先补 `demo/README.md` trace/runbook。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Slice 9 第一版已完成，当前代码光标转向 `agent/react.rs` 的 batch boundary 重构；需要从 inline `run_tools` 抽出 `ToolBatchRunner`，并让 terminal tool events 与 transcript observation 的职责分开。
+- Code frontier：Slice 9 已完成。`tool/runtime.rs::ToolRuntime::batch_run` 负责 batch 调度，`tool/event_emitter.rs` 负责 terminal tool events，`react.rs` 只负责把 runtime results 写入下一轮 tool observations。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
-- Current decision：同一轮多个 tool call 互不影响；失败或拒绝只属于当前 call，不传播成 batch-level skip；最终 observations 按 index 写回；第一版可并发，下一步把调度职责从 ReAct loop 中拆出。
-- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”或“hard-deny 后跳过后续工具”；当前进入 ToolBatchRunner refactor。
+- Current decision：同一轮多个 tool call 互不影响；失败或拒绝只属于当前 call，不传播成 batch-level skip；最终 observations 按 index 写回；tool run start 顺序反映真实并发调度，不作为稳定顺序契约。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”或“强制新增 ToolBatchRunner”；当前应进入 Slice 10 或补 `demo/README.md`。
 
 ## Critical Checkpoint
 
@@ -54,8 +54,9 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 6 Closeout：同步旧 guides、todo、outcome-map 和 design，冻结 Slice 6 non-goals。
 - [x] Slice 7 Retry Policy And Denial Semantics：让 `decide_retry` 尊重 capability-level `RetryPolicy`，补齐 `safe-read` denied 不 retry、`safe-test` approval retry、network prompt approval retry、network deny 不被 `WithoutApproval` 绕过等边界。
 - [x] Slice 8 Event Protocol Hardening：`ApprovalGateway + PendingApproval`、run-scoped `CommandNeedsApproval`、`CommandEventEmitter`、command attempt / retry event、trace tests 和 `run_execution_attempt` 已完成；command attempt lifecycle 已由 helper 结构性保证。
-- [x] Slice 9 Multi-Tool Independent Execution 第一版：实现同轮多工具互不影响、可并发执行、按 index 稳定 observation 回灌，并补 mixed batch 测试。
-- [ ] Slice 9 ToolBatchRunner Refactor：抽出 batch boundary，降低 `react.rs` 的职责密度。
+- [x] Slice 9 Multi-Tool Independent Execution：实现同轮多工具互不影响、可并发执行、按 index 稳定 observation 回灌，并补 mixed batch 测试。
+- [x] Slice 9 Batch Boundary Refactor 第一轮：以 `ToolRuntime::batch_run` 收口并发调度，以 `ToolEventEmitter` 收口 terminal tool events；补 runtime event tests 和 approval-blocked batch 并发验证测试。
+- [x] Slice 9 Closeout Review：当前边界足够清晰，不强制新增单独 `ToolBatchRunner` 类型；notes/guides 已按当前实现重写。
 - [ ] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
 - [ ] ApprovalPolicy OnRequest Semantic Hardening：补充显式 escalation request 建模，区分“初始请求提权可询问”和“sandbox failure 自动提权询问”，避免 `OnRequest` 与 `OnFailure` 语义混淆。
 - [ ] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。

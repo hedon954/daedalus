@@ -12,7 +12,7 @@ When a repo-learning action is likely to take noticeable time, do not make the l
 
 Use this before long code review, broad file scans, test/debug loops, large doc rewrites, validation/commit sequences, or any task expected to take more than roughly 30-60 seconds.
 
-First send a short handoff card, then continue the Agent work:
+If unsure whether the work is long, prefer a compact handoff over silence. First send a short handoff card, then continue the Agent work:
 
 ```markdown
 ## While I Work
@@ -25,6 +25,7 @@ First send a short handoff card, then continue the Agent work:
 
 Rules:
 
+- The handoff can be as short as 3 lines: what I am doing, what the learner can inspect, and one question to think about.
 - Keep it actionable, not motivational. Give the learner one small reading target, one observation task, or one question.
 - Tie the handoff to the current final artifact or blocked decision.
 - Do not use handoff for quick commands or tiny edits; unnecessary handoff adds noise.

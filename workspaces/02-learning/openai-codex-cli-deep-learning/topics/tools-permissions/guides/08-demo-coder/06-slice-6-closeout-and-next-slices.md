@@ -132,8 +132,9 @@ Goal: decide and implement what happens when one tool call in the same model tur
 Current code:
 
 - `ToolRuntimeResult::Skipped` has been removed.
-- `react.rs` already has the first parallel `run_tools` implementation.
-- The remaining problem is structural cleanup, not the first behavior implementation.
+- `ToolRuntime::batch_run` owns same-batch tool scheduling.
+- `ToolEventEmitter` owns tool-level lifecycle events.
+- `react.rs` owns transcript observations.
 
 Target behavior:
 
@@ -144,7 +145,7 @@ Target behavior:
 Unlocked:
 
 - Complete multi-tool observation feedback in one model repair turn.
-- Clearer batch boundary: extract `ToolBatchRunner` so ReAct loop does not own scheduling details.
+- Clearer boundary for Slice 10: approval persistence can be added below command runtime without changing ReAct batch semantics.
 
 ### Slice 10: Approval Persistence
 

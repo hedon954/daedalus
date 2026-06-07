@@ -244,7 +244,7 @@ async fn run_execution_attempt(
     emitter: &CommandEventEmitter,
 ) -> ExecutionResult {
     emitter.execution_started(&attempt).await;
-    let result = execution_runner.run(request, &attempt);
+    let result = execution_runner.run(request, &attempt).await;
 
     match &result {
         ExecutionResult::Success { stdout } => {
@@ -315,6 +315,7 @@ mod tests {
     };
     use crate::tool::shell::approval::ToolApprovalResult;
     use crate::tool::shell::registry::CapabilityRegistry;
+    use async_trait::async_trait;
     use std::{
         collections::VecDeque,
         path::PathBuf,
@@ -340,8 +341,13 @@ mod tests {
         }
     }
 
+    #[async_trait]
     impl ExecutionRunner for RecordingExecutionRunner {
-        fn run(&self, _request: &CommandRequest, attempt: &ExecutionAttempt) -> ExecutionResult {
+        async fn run(
+            &self,
+            _request: &CommandRequest,
+            attempt: &ExecutionAttempt,
+        ) -> ExecutionResult {
             self.attempts.lock().unwrap().push(attempt.clone());
             self.results
                 .lock()

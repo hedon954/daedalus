@@ -1,87 +1,71 @@
-# Slice 9 Parallel Run Tools Review
+# Slice 9 Parallel Tool Runtime Review
 
 ## Learning Navigation
 
 - Final artifact: `demo/README.md`
 - Current stage: `08-demo-coder`
 - Current slice: Slice 9 Multi-Tool Independent Execution
-- Current code frontier: [`../../demo/src/agent/react.rs`](../../demo/src/agent/react.rs) 中的 `run_tools`
-- Result: 第一版并行 `run_tools` 功能成立，但结构需要收口。
+- Current implementation: `ToolRuntime::batch_run` handles batch scheduling; `ToolEventEmitter` handles tool-level terminal events; `react.rs` handles transcript observation.
+- Result: 当前实现可以作为 Slice 9 checkpoint。
 
-## What Changed
+## Current Boundary
 
-当前 `react.rs` 的同批 tool call 流程已经从顺序执行改为：
-
-```text
-pending_tool_calls
-  -> sort by index
-  -> emit ToolRunStarted for each call
-  -> tokio::spawn one task per call
-  -> join_all waits all JoinHandle
-  -> collect (ToolCallFinished, ToolRuntimeResult)
-  -> sort outcomes by index
-  -> emit ToolRunFinished / ToolRunFailed
-  -> append role=tool observations
+```mermaid
+flowchart TD
+    A["ReAct loop collects tool calls"] --> B["append assistant tool_calls message"]
+    B --> C["ToolRuntime::batch_run"]
+    C --> D["spawn one task per tool call"]
+    D --> E["ToolRuntime::run single call"]
+    E --> F["ToolEventEmitter emits ToolRunStarted / terminal event"]
+    E --> G["command runtime may emit approval / execution / retry events"]
+    C --> H["return results sorted by call.index"]
+    H --> I["ReAct loop appends role=tool observations"]
+    I --> J["next LLM turn"]
 ```
 
-这符合 Slice 9 的核心策略：同批 tool calls 互不影响，失败或拒绝只属于当前 call，不扩散成 batch-level skip。
+职责划分是清楚的：
+
+- `react.rs`：维护 model turns、assistant message 和 `role=tool` observation。
+- `ToolRuntime::batch_run`：同批 tool call 的并发调度和稳定结果收集。
+- `ToolRuntime::run`：单个 tool call 的 plan / execute。
+- `ToolEventEmitter`：统一发送 `ToolRunStarted`、`ToolRunFinished`、`ToolRunFailed`。
+- `tool::shell`：处理 command approval、execution attempt、retry decision。
+
+## Semantics
+
+- 同批 tool calls 互不影响，一个失败或被拒不会取消其他 call。
+- 所有 call 都会得到模型可见 observation。
+- tool run start / finish events 反映真实 runtime 生命周期，不要求按 index 顺序出现。
+- `batch_run` 返回值按 `call.index` 稳定排序，保证下一轮 LLM 看到的 tool observations 可预测。
+- `Denied` 对外表现为 `ToolRunFailed` event，并在 observation 中写成 `tool denied: ...`。
+
+## Tests
+
+当前测试覆盖：
+
+- pure function success / invalid args / unknown tool。
+- `run_command` safe read、network install retry、command failure、dangerous denied、invalid JSON、unmatched capability。
+- ReAct 层 mixed batch：success / failed / denied 都独立回灌。
+- ReAct 层 tool observations 按 index 写入下一轮 request。
+- command trace 顺序：`ToolRunStarted -> CommandExecution* -> ToolRunFinished/Failed`。
+- runtime 层并发审批验证：两个 approval-blocked `run_command` 在任一审批通过前都能先透出 `CommandNeedsApproval`。
+
+验证命令：
+
+```bash
+cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
+```
+
+最新结果：65 passed，3 ignored。
 
 ## Review Result
 
-没有发现阻塞提交的正确性问题。
+没有发现阻塞提交的问题。
 
-已经补充一个 mixed batch 验收测试：
+当前暂不强制新增独立 `ToolBatchRunner` 类型。`ToolRuntime::batch_run` 已经把 batch 调度从 ReAct loop 中收口，保持了足够清晰的边界。后续只有出现更多 batch policy，例如 `supports_parallel = false`、取消、限流、优先级调度时，再把它提升为独立结构。
 
-- `add` 成功。
-- `mul` unknown tool 失败。
-- `run_command "curl | sh"` 被安全拒绝。
-- 下一轮 LLM request 中仍有三条 `role=tool` observations，且按原始 `index` 排序。
+## Remaining Risk
 
-验证结果：
-
-```text
-cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
-64 passed; 3 ignored
-```
-
-## Why It Feels Ugly
-
-丑不是因为并发本身复杂，而是 `run_tools` 同时承担了 5 个职责：
-
-- batch 调度：决定同批 call 如何并发。
-- lifecycle event：发 `ToolRunStarted`、`ToolRunFinished`、`ToolRunFailed`。
-- runtime invocation：调用 `ToolRuntime::run`。
-- join error policy：处理 `JoinError`。
-- transcript writing：把结果写成下一轮 LLM 可见的 `role=tool` message。
-
-这些职责现在挤在 ReAct loop 旁边，导致 `react.rs` 既像 agent loop，又像 tool scheduler，又像 event adapter。
-
-## Important Semantics
-
-当前版本有一个值得记住的事件语义：
-
-- `ToolRunStarted` 在 spawn 前按 index 发出。
-- command 内部事件会在 tool task 内实时发出。
-- `ToolRunFinished / ToolRunFailed` 等所有 task join 完以后，再按 index 发出。
-
-这保证 transcript 稳定，但意味着外部观察者看到的 terminal tool event 不是严格的“完成即发”。如果后续 UI 需要实时展示每个 tool 完成状态，应把 terminal event 移进单个 tool future 内部，而 transcript 仍然按 index 排序。
-
-## Codex Calibration
-
-Codex 的生产实现没有把并发策略塞在 ReAct loop 的一段 inline 代码里，而是放在 tool runtime 层：
-
-- [`../../source/codex/codex-rs/core/src/tools/parallel.rs`](../../source/codex/codex-rs/core/src/tools/parallel.rs)：`ToolCallRuntime` 负责创建 tool future、处理 cancellation、把 tool failure 转成模型可见 output。
-- [`../../source/codex/codex-rs/core/src/tools/router.rs`](../../source/codex/codex-rs/core/src/tools/router.rs)：`tool_supports_parallel` 根据 tool / MCP server 配置决定是否支持并行。
-- Codex 使用 `RwLock` 做 capability-aware parallelism：支持并行的工具拿 read lock，不支持并行的工具拿 write lock。
-
-对 demo 的启发：并发不是 ReAct loop 的临时技巧，而应该成为 tool runtime / batch runner 的明确责任。
-
-## Design Decision
-
-当前第一版先保留，因为它已经验证了 Slice 9 的行为不变量：
-
-- every call gets observation
-- mixed success / failure / denial 不互相影响
-- transcript order stable by index
-
-下一步不继续堆逻辑到 `run_tools`，而是按 guide 抽出 batch boundary。
+- 当前所有 tool 默认可并发；Phase 2 接入真实 OS execution 前，需要重新评估 `run_command` 是否应默认串行或增加 `supports_parallel`。
+- `ToolEventEmitter::end` 当前忽略 terminal event send failure；这是 demo 可接受的取舍，不把 UI receiver drop 放大成工具执行失败。
+- `split_whitespace` 仍只是 Phase 1 单命令简化；多命令 parser 不属于 Slice 9。

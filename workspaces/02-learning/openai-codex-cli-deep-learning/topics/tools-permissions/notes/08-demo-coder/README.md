@@ -22,8 +22,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 | Slice 8 event protocol design | [`05-slice-8-event-protocol-design.md`](05-slice-8-event-protocol-design.md) | 已实现 / 已验证 | 决定 command approval、command attempt、retry 事件和 broker-based approval 的落地方向 |
 | Slice 8 event outlet review | [`06-slice-8-event-outlet-review.md`](06-slice-8-event-outlet-review.md) | 已完成 / 已收口 | 记录事件透出 review 发现：run-scoped sender、approval panic、attempt lifecycle、横切事件散落问题 |
 | Slice 8 event protocol refactor retrospective | [`07-slice-8-event-protocol-refactor-retrospective.md`](07-slice-8-event-protocol-refactor-retrospective.md) | 已记录 | 复盘从散落事件发送到 `ApprovalGateway + CommandEventEmitter + run_execution_attempt` 的决策缘由 |
-| Slice 9 multi-tool independent policy | [`08-slice-9-multi-tool-independent-policy.md`](08-slice-9-multi-tool-independent-policy.md) | 已决策 / 第一版已实现 | 决定同批 tool calls 互不影响、可并发执行、按 index 稳定回灌 observation，不做 batch-level hard stop |
-| Slice 9 parallel run tools review | [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) | 第一版已实现 / 待结构收口 | 验证并行 `run_tools` 的 independent observation 行为，并记录下一步抽出 batch boundary 的原因 |
+| Slice 9 multi-tool independent policy | [`08-slice-9-multi-tool-independent-policy.md`](08-slice-9-multi-tool-independent-policy.md) | 已实现 / 已验证 | 决定同批 tool calls 互不影响、可并发执行、按 index 稳定回灌 observation，不做 batch-level hard stop |
+| Slice 9 parallel tool runtime review | [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) | 已实现 / 已验证 | 记录当前 `ToolRuntime::batch_run + ToolEventEmitter + ReAct observation` 的职责边界和测试证据 |
 
 ## Stage Exit Criteria
 
@@ -37,4 +37,4 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - [x] Slice 6 closeout 完成：guides / todo / outcome-map / design 与当前代码结构同步。
 - [x] Slice 7 完成：`RetryPolicy` 已纳入 retry gate，并验证 `safe-read` 不 retry、`safe-test` approval retry、network prompt approval retry、network deny 不被 `WithoutApproval` 绕过。
 - [x] Slice 8 完成：approval / command attempt / retry decision 等关键节点透出为外部可观察事件，并通过统一 emitter 和 `run_execution_attempt` 保证 trace 闭合。
-- [x] Slice 9 第一版完成：同批 tool calls 可并发执行，mixed success / failure / denial 都能独立回灌 observation，最终 message 顺序按原始 index 稳定。
+- [x] Slice 9 完成：同批 tool calls 可并发执行，mixed success / failure / denial 都能独立回灌 observation，terminal tool events 由 runtime 透出，最终 message 顺序按原始 index 稳定。

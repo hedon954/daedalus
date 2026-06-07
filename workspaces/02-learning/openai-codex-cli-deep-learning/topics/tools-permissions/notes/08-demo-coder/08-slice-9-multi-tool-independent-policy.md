@@ -1,14 +1,14 @@
 # Slice 9 Multi-Tool Independent Policy
 
-> Status: policy implemented in first version. See [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) for review and current refactor target.
+> Status: implemented and verified. See [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) for current review result.
 
 ## Learning Navigation
 
 - Final artifact: `demo/README.md`
 - Current stage: `08-demo-coder`
 - Current slice: Slice 9 Multi-Tool Independent Execution
-- Current gap: 调度语义已定稿并落地第一版；下一步是结构收口。
-- After this: 抽出 batch boundary，让 ReAct loop 回到轮次和 transcript 职责。
+- Current gap: 无阻塞；当前 batch boundary 已由 `ToolRuntime::batch_run` 承接。
+- After this: 进入 Slice 10 approval persistence，或先补 `demo/README.md` 运行和 trace 说明。
 
 ## First-Principles Framing
 
@@ -78,16 +78,17 @@ independent observation 的优点是：
 ## Implementation Shape
 
 ```text
-run_tools(tool_calls)
-  -> sort by index
-  -> create execution futures for calls that support parallel execution
+ReAct run_tools(tool_calls)
+  -> ToolRuntime::batch_run(tool_calls)
+  -> tokio::spawn each tool call
+  -> ToolEventEmitter emits tool-level lifecycle events
   -> collect ToolRuntimeResult with original call metadata
-  -> sort results by index
-  -> append role=tool observations in stable order
+  -> return results in index order
+  -> ReAct appends role=tool observations in stable order
   -> next LLM turn
 ```
 
-第一版已经保持所有当前 demo tools 可并发，因为 `add/sub` 是纯函数，`run_command` 使用 simulated execution runner。随后再加 `supports_parallel_tool_calls`，让 mutating / shell-like tool 可以声明串行。
+当前所有 demo tools 可并发，因为 `add/sub` 是纯函数，`run_command` 使用 simulated execution runner。Phase 2 接真实 OS execution 前，需要重新评估 mutating / shell-like tool 是否需要 `supports_parallel` 或串行化策略。
 
 ## Acceptance Tests
 
@@ -100,4 +101,4 @@ run_tools(tool_calls)
 ## Open Questions
 
 - `run_command` 是否默认支持 parallel？Phase 1 simulated runner 可以支持；Phase 2 `OsExecutionRunner` 前需要重新评估。
-- 是否需要显式 `ToolDefinition::supports_parallel`？当前第一版已经并发执行；Phase 2 前这个字段会成为自然扩展点。
+- 是否需要显式 `ToolDefinition::supports_parallel`？当前不需要；Phase 2 前这个字段会成为自然扩展点。

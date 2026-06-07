@@ -231,9 +231,9 @@ Task 调度的关键语义：
 
 对 demo 的直接影响：
 
-- `ToolRuntime::run` 如果只是 async channel、模拟 runner、轻量 CPU，可以直接作为 future 被 `join_all` poll。
+- 当前 `ToolRuntime::batch_run` 使用 `tokio::spawn`，让 approval pending 的 tool call 不阻塞同批其他 call 启动。
 - 如果 Phase 2 接真实 OS command，runner 应该使用 Tokio process API 或专门的执行层，不能在 async task 里直接做长期阻塞等待。
-- 如果工具内部可能跑重 CPU，需要单独标记并走 blocking pool，而不是让它拖住 ReAct loop。
+- 如果工具内部可能跑重 CPU，需要单独标记并走 blocking pool，而不是让它拖住 async worker。
 
 ## 5. 等待多个 Future 的 API 差异
 
@@ -243,7 +243,7 @@ Slice 9 最容易混淆的是：并发等待不一定等于 spawn 多个 task。
 | --- | --- | --- | --- | --- | --- |
 | `.await` | 否 | 单个 future 完成 | 单个结果 | 由 future 自己决定 | 不够，需要多个 |
 | `tokio::join!` | 否 | 所有分支完成 | 宏参数顺序 | 不 fail-fast | 固定数量可用 |
-| `futures::future::join_all` | 否 | 所有 future 完成 | 输入顺序 | 不 fail-fast | 适合第一版 |
+| `futures::future::join_all` | 否 | 所有 future 完成 | 输入顺序 | 不 fail-fast | 适合轻量 future batch |
 | `try_join!` | 否 | 全部成功或第一个错误 | 宏参数顺序 | fail-fast | 不适合当前策略 |
 | `select!` | 否 | 第一个分支完成 | 单个 winner | loser 被 drop | 不适合收集全部 |
 | `FuturesUnordered` | 否 | 可逐个取完成结果 | 完成顺序 | 由 item 决定 | 适合边完成边处理 |
@@ -254,7 +254,7 @@ Slice 9 最容易混淆的是：并发等待不一定等于 spawn 多个 task。
 
 `join_all` 接收一组 future，当前 task 会负责 poll 它们。它不创建新的 Tokio task，也不会自动把 future 移到其他 worker thread。
 
-它适合当前 demo 第一版，因为：
+它适合轻量 future batch，因为：
 
 - 同批 tool call 数量小。
 - 我们需要等全部 call 完成后再按 index 回灌。
@@ -320,7 +320,7 @@ while let Some(joined) = set.join_next().await {
 outcomes.sort_by_key(|outcome| outcome.call.index);
 ```
 
-如果要让 `JoinError` 也能携带 `call_id`，常见做法是让 task 内部 catch 业务错误，不 panic；如果仍担心 panic，可以让 spawn 的 future 返回 `(call_metadata, Result<...>)`，但 panic 发生在返回前仍拿不到 metadata。因此 demo 第一版不需要急着上 `JoinSet`。
+如果要让 `JoinError` 也能携带 `call_id`，当前 demo 的做法是在 `batch_run` 外层把 `(call, JoinHandle)` 一起保存。这样即使 task panic，外层仍然知道是哪一个 call 失败，并能返回该 call 的 `ToolRuntimeResult::Failed`。
 
 ## 6. Completion Order 和 Observation Order 是两件事
 
@@ -398,36 +398,38 @@ async fn run_one(call: ToolCallFinished) -> ToolRunOutcome;
 
 ## 9. Current Slice 9 Recommendation
 
-当前 demo 的推荐实现路径：
+当前 demo 的实现路径：
 
 ```mermaid
 flowchart TD
     A["LLM returns tool_calls"] --> B["sort by original index"]
-    B --> C["build one future per call"]
-    C --> D["join_all waits for every future"]
-    D --> E["collect ToolRunOutcome values"]
-    E --> F["sort outcomes by call.index"]
-    F --> G["emit / append observations"]
-    G --> H["next ReAct turn"]
+    B --> C["ToolRuntime::batch_run"]
+    C --> D["tokio::spawn per call"]
+    D --> E["ToolEventEmitter emits lifecycle events"]
+    E --> F["await handles in index order"]
+    F --> G["return ToolRuntimeResult values"]
+    G --> I["ReAct appends observations"]
+    I --> H["next ReAct turn"]
 ```
 
 具体选择：
 
-- 用 `join_all`，不要先上 `JoinSet`。
-- 每个 future 返回 `ToolRunOutcome`，不要只返回 `ToolRuntimeResult`。
+- 用 `tokio::spawn + JoinHandle`，不需要 `JoinSet`。
+- `batch_run` 保存 `(call, JoinHandle)`，不要丢失 call metadata。
 - per-call 失败转成 `ToolRuntimeResult::Failed` 或 `Denied`。
 - batch 不因为单个失败短路。
-- observation append 前按 `index` 排序。
+- `ToolRunStarted / Finished / Failed` 在 single-call runtime 内发出。
+- `batch_run` 返回前按 `index` 稳定收集结果。
 - 后续如果要“完成一个 tool 就立即吐一个 observation event”，再考虑 `FuturesUnordered` 或 `JoinSet`。
 
-## 10. When To Upgrade Beyond `join_all`
+## 10. When To Upgrade Beyond Current Spawn Handles
 
-`join_all` 不是永远最佳，它只是当前 slice 最小正确实现。出现以下需求时再升级：
+`tokio::spawn + Vec<(call, JoinHandle)>` 是当前 slice 的最小正确实现。出现以下需求时再升级：
 
 | 需求 | 更合适的工具 |
 | --- | --- |
-| 同批 call 数量很多，需要完成一个处理一个 | `FuturesUnordered` |
-| 需要把每个 call 作为独立 task 调度 | `tokio::spawn` |
+| 同批 call 数量很多，需要完成一个处理一个 | `JoinSet` 或 `FuturesUnordered` |
+| 需要统一取消整批 spawned tasks | `JoinSet` |
 | 需要管理一组 spawned tasks 的 join / abort | `JoinSet` |
 | 需要 first-result-wins | `select!` |
 | 需要任一失败立即停止 | `try_join!` 或 `select!` + cancellation |

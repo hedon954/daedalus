@@ -27,9 +27,9 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 9 第一版已实现：`agent/react.rs` 已能并发执行同批 tool calls，并按原始 index 稳定回灌 observations；下一步障碍是结构收口，把 inline `run_tools` 拆成清晰的 batch boundary，避免 ReAct loop 承担过多职责。
+- 当前障碍：Slice 9 已完成并通过 closeout review：`ToolRuntime::batch_run` 负责并发执行同批 tool calls，并按原始 index 稳定返回 results；`ToolEventEmitter` 统一发出 terminal tool events；当前不强制新增独立 `ToolBatchRunner` 类型。下一步进入 Slice 10 approval persistence，或先补 `demo/README.md` trace/runbook。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
-- 当前光标：Slice 9 ToolBatchRunner refactor；先从 `agent/react.rs` 的 `run_tools` 抽出 `ToolRunOutcome`、`ToolObservation` 和 batch runner。
+- 当前光标：`demo/src/tool/runtime.rs` 的 `batch_run` 并发调度与 `demo/src/tool/event_emitter.rs` 的 tool run 事件出口。
 
 ## Artifact Dependency Graph
 
@@ -59,8 +59,10 @@ question-roadmap
 - [x] Slice 5 Retry Gate：用户已实现 `decide_retry`，区分 `CommandFailed`、`SandboxDenied`、`already_retried`、`ApprovalPolicy` 与 `NetworkPolicy`；Agent 补充 8 个 retry unit tests，`cargo test` 通过 24 个测试。
 - [x] Slice 6 Agent Orchestrator：已新增 `agent::llm`、`OpenAiCompatibleLlm`、`agent::react` 和顶层 `tool` module；当前 `tool/function.rs` 承载 `add/sub` pure tools，`tool/runtime.rs` 已承接 `ToolRuntime::run(call)` 的 pure function path 和 `run_command` command path，并补齐 add/sub/invalid args/unknown tool、run_command safe-read/network-install/command-failed/denied/invalid-json/unmatched-capability 单测。真实 LLM ReAct 主链路和 ReAct hardening 已完成，关键类型/函数注释和 TODO 已补齐，`ExecutionRunner` 边界已取代顶层 sandbox module；`run_shell_command` 单命令编排测试已补齐，ToolRuntime / ReAct 层 command path observation 已覆盖 Finished / Failed / Denied。
 - [x] Slice 7 Retry Policy And Denial Semantics：`decide_retry` 已接收并尊重 `RetryPolicy`；`RetryPolicy::Never` 优先阻止 retry，`RetryPolicy::WithApproval` 仍受 `ApprovalPolicy` 和 `NetworkPolicy` 约束，`RetryPolicy::WithoutApproval` 只免除非网络 sandbox denied 的 retry approval，不能绕过 network deny / network prompt。
-- [x] Slice 9 Multi-Tool Independent Execution 第一版：`react.rs` 已用 `tokio::spawn + join_all` 并发执行同批 tool calls；mixed success / failure / denial 都能独立回灌 observation，最终 message 顺序按原始 index 稳定。
-- [ ] Slice 9 ToolBatchRunner Refactor：把 batch 调度、terminal event 和 observation writing 从 ReAct loop 中拆出。
+- [x] Slice 9 Multi-Tool Independent Execution：同批 tool calls 互不影响；mixed success / failure / denial 都能独立回灌 observation，最终 message 顺序按原始 index 稳定。
+- [x] Slice 9 Batch Boundary Refactor 第一轮：`ToolRuntime::batch_run` 已从 ReAct loop 接管 batch 调度，`ToolEventEmitter` 已从 ReAct loop 接管 terminal tool events；runtime tests 已覆盖 tool-level events，并新增 approval-blocked batch 并发验证。
+- [x] Slice 9 Closeout Review：当前边界足够清晰，不强制新增单独 `ToolBatchRunner` 类型；notes/guides 已按当前实现重写。
+- [ ] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
 
 ## Critical Lens
 
@@ -69,7 +71,7 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 - 当前素材中可能被过度神化的设计：Codex 的权限 / 沙箱 / retry 组合是成熟 CLI Agent 的生产级折中，不是所有 Agent demo 或业务系统都必须照搬的完整复杂度。
 - 当前 demo 需要忠实模仿的核心机制：tool call 不能直接执行；必须经过 capability match、approval requirement、sandbox-first execution、controlled retry 和 observation/event 回流。
 - 当前 demo 不应无意识照抄的设计：跨平台 sandbox 细节、完整 TUI/MCP elicitation、Codex 所有 approval policy 组合和长期 session policy 存储。
-- 当前已落地但待结构收口的 demo 假设：多 tool call 中单个失败或拒绝不应导致后续 tool 被 skipped；更好的纠错体验是回传完整 observations，让 agent 一次性修正多个问题。第一版已实现，下一步要把 batch 调度从 ReAct loop 中抽出。
+- 当前已落地并验收的 demo 假设：多 tool call 中单个失败或拒绝不应导致后续 tool 被 skipped；更好的纠错体验是回传完整 observations，让 agent 一次性修正多个问题。当前已通过 `ToolRuntime::batch_run` 实现，并用 approval-blocked batch 测试锁定并发行为。
 - 当前可以尝试简化、改进或丢弃的部分：Phase 1 先用清晰的 event protocol 表达安全链路，不急着复刻 Codex 的全部 UI/streaming 事件细节。
 - 当前迁移到业务场景前必须重新验证的约束：业务是否真的需要 no-sandbox retry、session approval 复用、网络 host 级审批和多工具独立执行策略。
 

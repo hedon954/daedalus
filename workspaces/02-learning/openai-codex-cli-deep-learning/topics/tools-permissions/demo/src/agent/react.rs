@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use futures_util::{StreamExt, future::join_all, stream};
+use futures_util::{StreamExt, stream};
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
@@ -143,7 +143,7 @@ async fn run_agent_loop(
         }));
 
         // 执行所有的工具
-        run_tools(&tx, pending_tool_calls, &mut messages, tool_runtime.clone()).await?;
+        run_tools(&tx, pending_tool_calls, &mut messages, tool_runtime.clone()).await;
 
         // TODO: 加入结构化 logger，记录每轮 LLM start/end、tool choice 和 observation。
     }
@@ -153,74 +153,26 @@ async fn run_agent_loop(
 
 async fn run_tools(
     tx: &EventSender,
-    mut tool_calls: Vec<ToolCallFinished>,
+    tool_calls: Vec<ToolCallFinished>,
     messages: &mut Vec<Value>,
     tool_runtime: Arc<ToolRuntime>,
-) -> anyhow::Result<()> {
-    tool_calls.sort_by_key(|call| call.index);
-
-    let mut futures = vec![];
-
-    for call in tool_calls {
-        emit(
-            tx,
-            StreamEvent::ToolRunStarted {
-                index: call.index,
-                call_id: call.call_id.clone(),
-                name: call.name.clone(),
-                arguments: call.arguments.clone(),
-            },
-        )
-        .await?;
-
-        let tx_cloned = tx.clone();
-        let tool_runtime = tool_runtime.clone();
-        let future = tokio::spawn(async move {
-            let result = tool_runtime.run(call.clone(), &tx_cloned).await;
-            (call, result)
+) {
+    tool_runtime
+        .batch_run(tool_calls, tx)
+        .await
+        .into_iter()
+        .for_each(|(call, result)| {
+            handle_tool_call_result(call, result, messages);
         });
-
-        futures.push(future);
-    }
-
-    let mut outcomes = Vec::new();
-    for join_result in join_all(futures).await {
-        let (call, runtime_result) = match join_result {
-            Ok(pair) => pair,
-            Err(join_err) => {
-                anyhow::bail!("tool task panicked: {join_err}");
-            }
-        };
-        outcomes.push((call, runtime_result));
-    }
-    outcomes.sort_by_key(|(call, _)| call.index);
-
-    for (call, result) in outcomes {
-        handle_tool_call_result(&call, result, tx, messages).await?;
-    }
-
-    Ok(())
 }
 
-async fn handle_tool_call_result(
-    call: &ToolCallFinished,
+fn handle_tool_call_result(
+    call: ToolCallFinished,
     result: ToolRuntimeResult,
-    tx: &EventSender,
     messages: &mut Vec<Value>,
-) -> anyhow::Result<()> {
+) {
     match result {
         ToolRuntimeResult::Finished { output } => {
-            emit(
-                tx,
-                StreamEvent::ToolRunFinished {
-                    index: call.index,
-                    call_id: call.call_id.clone(),
-                    name: call.name.clone(),
-                    output: output.clone(),
-                },
-            )
-            .await?;
-
             messages.push(json!({
                 "role": "tool",
                 "tool_call_id": call.call_id,
@@ -228,17 +180,6 @@ async fn handle_tool_call_result(
             }));
         }
         ToolRuntimeResult::Failed { error } => {
-            emit(
-                tx,
-                StreamEvent::ToolRunFailed {
-                    index: call.index,
-                    call_id: call.call_id.clone(),
-                    name: call.name.clone(),
-                    error: error.clone(),
-                },
-            )
-            .await?;
-
             messages.push(json!({
                 "role": "tool",
                 "tool_call_id": call.call_id,
@@ -246,17 +187,6 @@ async fn handle_tool_call_result(
             }));
         }
         ToolRuntimeResult::Denied { reason } => {
-            emit(
-                tx,
-                StreamEvent::ToolRunFailed {
-                    index: call.index,
-                    call_id: call.call_id.clone(),
-                    name: call.name.clone(),
-                    error: reason.clone(),
-                },
-            )
-            .await?;
-
             messages.push(json!({
                 "role": "tool",
                 "tool_call_id": call.call_id,
@@ -264,8 +194,6 @@ async fn handle_tool_call_result(
             }));
         }
     }
-
-    Ok(())
 }
 
 async fn emit(tx: &EventSender, event: StreamEvent) -> anyhow::Result<()> {
@@ -522,6 +450,8 @@ mod tests {
                 _ => None,
             })
             .collect::<Vec<_>>();
+        let mut started_indexes = started_indexes;
+        started_indexes.sort();
         assert_eq!(started_indexes, vec![0, 1]);
 
         let outputs = events
