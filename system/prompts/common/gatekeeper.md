@@ -13,12 +13,13 @@ scope: common
 ## Trigger
 
 - 用户想开启新学习任务。
-- backlog 中的任务准备进入 active learning。
+- backlog candidate 准备进入 active learning。
 - 当前任务未闭环，但用户想切换方向。
 
 ## Inputs
 
 - 新任务的学习目标。
+- backlog candidate 文件（如适用）。
 - 用户当前 WIP。
 - 现实问题和预期产出。
 - 学习材料质量和可访问性。
@@ -53,5 +54,6 @@ scope: common
 
 - 必须给出理由和下一步动作。
 - 不要为了迎合用户而默认开启新任务。
+- 不要在 gatekeeper 中捕获新的 backlog candidate；新候选项使用 `Capture Backlog Candidate`。
 - 如果 active project 已存在，优先判断这是当前 project 的新 topic，还是应该关闭/暂停/归档当前 project。
 - 如果只是同一 repo/source 下的新学习方向，优先使用 `daedalus topic new`，不要新建第二个 project。
