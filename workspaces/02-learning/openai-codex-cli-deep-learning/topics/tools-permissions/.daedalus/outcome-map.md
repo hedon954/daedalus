@@ -27,9 +27,9 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 - 当前阶段：`08-demo-coder`。
 - 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 9 已完成并通过 closeout review：`ToolRuntime::batch_run` 负责并发执行同批 tool calls，并按原始 index 稳定返回 results；`ToolEventEmitter` 统一发出 terminal tool events；当前不强制新增独立 `ToolBatchRunner` 类型。下一步进入 Slice 10 approval persistence，或先补 `demo/README.md` trace/runbook。
+- 当前障碍：Slice 10 approval persistence 已完成并验证；下一步进入 Slice 11，补 `demo/README.md` / runbook，把 Phase 1 demo 的运行方式、验收命令、live trace、简化边界和迁移说明写清楚。
 - 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
-- 当前光标：`demo/src/tool/runtime.rs` 的 `batch_run` 并发调度与 `demo/src/tool/event_emitter.rs` 的 tool run 事件出口。
+- 当前光标：`demo/README.md`。代码侧当前已具备 `ApprovalGateway` session store、multi-tool batch、command execution events、真实 LLM ReAct smoke test 证据。
 
 ## Artifact Dependency Graph
 
@@ -62,7 +62,8 @@ question-roadmap
 - [x] Slice 9 Multi-Tool Independent Execution：同批 tool calls 互不影响；mixed success / failure / denial 都能独立回灌 observation，最终 message 顺序按原始 index 稳定。
 - [x] Slice 9 Batch Boundary Refactor 第一轮：`ToolRuntime::batch_run` 已从 ReAct loop 接管 batch 调度，`ToolEventEmitter` 已从 ReAct loop 接管 terminal tool events；runtime tests 已覆盖 tool-level events，并新增 approval-blocked batch 并发验证。
 - [x] Slice 9 Closeout Review：当前边界足够清晰，不强制新增单独 `ToolBatchRunner` 类型；notes/guides 已按当前实现重写。
-- [ ] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
+- [x] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效；已确认 session scope 由 `ApprovalGateway` 生命周期承载，多个 ReAct runs 共享同一个 gateway。
+- [ ] Slice 11 Demo README And Runbook：补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移说明。
 
 ## Critical Lens
 

@@ -219,6 +219,7 @@ mod tests {
                 approval::{ApprovalGateway, ToolApprovalResult},
                 execution::simulated_execution_runner::SimulatedExecutionRunner,
                 registry::CapabilityRegistry,
+                run_command_spec,
             },
         },
     };
@@ -255,7 +256,7 @@ mod tests {
     #[ignore = "requires DEEPSEEK_API_KEY and network"]
     async fn react_agent_should_work() -> anyhow::Result<()> {
         let llm = OpenAiCompatibleLlmBuilder::default()
-            .tools(vec![add_spec(), sub_spec()])
+            .tools(vec![add_spec(), sub_spec(), run_command_spec()])
             .build()?;
 
         let (approval_result_tx, approval_result_rx) = mpsc::channel(16);
@@ -269,7 +270,10 @@ mod tests {
 
         let agent = ReActAgent::new(Arc::new(llm), None, Arc::new(ToolRuntime::new(context)));
 
-        let mut stream = agent.run("计算一下999+666和321-123,将把它们俩的结果相加".to_string())?;
+        let mut stream = agent.run(
+            "先调用 run_command 执行 `cat package.json` 读取项目信息；然后计算 999+666 和 321-123，并把两个结果相加。"
+                .to_string(),
+        )?;
 
         while let Some(event) = stream.next().await {
             match event? {
@@ -310,7 +314,7 @@ mod tests {
                         .send(ToolApprovalResult {
                             approval_id,
                             decision: UserApprovalDecision::Approved {
-                                persistence: ApprovalPersistence::Once,
+                                persistence: ApprovalPersistence::Session,
                             },
                         })
                         .await?;
@@ -333,6 +337,14 @@ mod tests {
     }
 
     async fn collect_events(agent: &TestAgent, prompt: &str) -> anyhow::Result<Vec<StreamEvent>> {
+        collect_events_with_approval_persistence(agent, prompt, ApprovalPersistence::Once).await
+    }
+
+    async fn collect_events_with_approval_persistence(
+        agent: &TestAgent,
+        prompt: &str,
+        persistence: ApprovalPersistence,
+    ) -> anyhow::Result<Vec<StreamEvent>> {
         let mut stream = agent.agent.run(prompt.to_string())?;
         let mut events = vec![];
 
@@ -343,9 +355,7 @@ mod tests {
                     .approval_result_tx
                     .send(ToolApprovalResult {
                         approval_id: approval_id.clone(),
-                        decision: UserApprovalDecision::Approved {
-                            persistence: ApprovalPersistence::Once,
-                        },
+                        decision: UserApprovalDecision::Approved { persistence },
                     })
                     .await?;
             }
@@ -353,6 +363,13 @@ mod tests {
         }
 
         Ok(events)
+    }
+
+    fn command_approval_count(events: &[StreamEvent]) -> usize {
+        events
+            .iter()
+            .filter(|event| matches!(event, StreamEvent::CommandNeedsApproval { .. }))
+            .count()
     }
 
     async fn collect_until_error(
@@ -809,6 +826,74 @@ mod tests {
             retry_finished,
             tool_finished,
         ]);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_reuse_session_approval_across_runs() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                tool_call(
+                    0,
+                    "call_install_first",
+                    "run_command",
+                    r#"{"command": "npm install vite", "justification": "install dependency"}"#,
+                ),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("first install observed".to_string()),
+                StreamEvent::Completed,
+            ],
+            vec![
+                tool_call(
+                    0,
+                    "call_install_second",
+                    "run_command",
+                    r#"{"command": "npm install vite", "justification": "install dependency again"}"#,
+                ),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("second install observed".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = test_agent(llm.clone(), Some(3));
+
+        let first_events = collect_events_with_approval_persistence(
+            &agent,
+            "install dependency",
+            ApprovalPersistence::Session,
+        )
+        .await?;
+        let second_events = collect_events_with_approval_persistence(
+            &agent,
+            "install dependency again",
+            ApprovalPersistence::Session,
+        )
+        .await?;
+
+        assert_eq!(command_approval_count(&first_events), 2);
+        assert_eq!(command_approval_count(&second_events), 0);
+        assert!(second_events.iter().any(|event| matches!(
+            event,
+            StreamEvent::CommandExecutionStarted {
+                call_id,
+                attempt: ExecutionAttempt::SandboxFirst { .. },
+                ..
+            } if call_id == "call_install_second"
+        )));
+        assert!(second_events.iter().any(|event| matches!(
+            event,
+            StreamEvent::CommandExecutionStarted {
+                call_id,
+                attempt: ExecutionAttempt::NoSandboxRetry { .. },
+                ..
+            } if call_id == "call_install_second"
+        )));
+        assert_eq!(llm.requests().len(), 4);
 
         Ok(())
     }

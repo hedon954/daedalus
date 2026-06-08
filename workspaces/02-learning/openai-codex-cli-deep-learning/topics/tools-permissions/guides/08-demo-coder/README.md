@@ -229,10 +229,16 @@ batch boundary：[`12-slice-9-tool-batch-runner-refactor.md`](12-slice-9-tool-ba
 
 目标：实现 session approval 复用与 scope mismatch 失效。
 
+状态：已完成。当前 `ApprovalGateway` 持有 session approval store；`ApprovalScopeKey` 绑定 command prefix、cwd、sandbox 和 network，不包含 `persistence` 或 `session_id`；同一个 CLI session 内多个 ReAct runs 共享 gateway 后可复用 session approval。
+
+行动指南：[`13-slice-10-approval-persistence.md`](13-slice-10-approval-persistence.md)。
+
 验收：
 
 - 相同 command prefix、cwd、sandbox、network scope 可以复用 session approval。
 - cwd 或 network policy 变化时不能复用旧 approval。
+- `Once` / `Rejected` 不写入 session store。
+- 同一个 ReAct agent 连续两次 run，同一命令第二次不再发 approval request。
 
 ### Slice 11: Demo README And Runbook
 

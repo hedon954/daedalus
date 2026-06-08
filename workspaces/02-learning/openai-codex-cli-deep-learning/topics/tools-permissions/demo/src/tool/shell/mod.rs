@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
+use serde_json::json;
+
 use crate::{
     agent::react::EventSender,
     model::{
-        approval::ApprovalRequirement,
+        approval::{ApprovalPersistence, ApprovalRequirement},
         command_request::CommandRequest,
         event::{ExecutionAttempt, RetryDecision, UserApprovalDecision},
         execution::{ExecutionFailure, ExecutionResult},
@@ -35,6 +37,32 @@ pub struct RunCommandArgs {
     pub command: String,
     #[serde(default)]
     pub justification: Option<String>,
+}
+
+/// OpenAI-compatible function tool schema for `run_command`.
+pub fn run_command_spec() -> serde_json::Value {
+    json!({
+        "type": "function",
+        "function": {
+            "name": "run_command",
+            "description": "Request execution of one local command. The host application will approve, sandbox, and execute it.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The shell command to run."
+                    },
+                    "justification": {
+                        "type": "string",
+                        "description": "Why this command is needed."
+                    }
+                },
+                "required": ["command", "justification"],
+                "additionalProperties": false
+            }
+        }
+    })
 }
 
 /// shell command runtime 的终态。
@@ -117,11 +145,17 @@ async fn request_approval(
     request: ToolApprovalRequest,
     emitter: &CommandEventEmitter,
 ) -> UserApprovalDecision {
+    if approval_gateway.has_session_approval(&request.scope) {
+        return UserApprovalDecision::Approved {
+            persistence: ApprovalPersistence::Session,
+        };
+    }
+
     let pending = approval_gateway.create_pending_approval(request.clone());
     let approval_id = pending.approval_id.clone();
 
     let decision = match emitter
-        .needs_approval(approval_id.clone(), request.reason, request.scope)
+        .needs_approval(approval_id.clone(), request.reason, request.scope.clone())
         .await
     {
         Ok(_) => pending.wait().await,
@@ -129,6 +163,7 @@ async fn request_approval(
     };
 
     approval_gateway.cancel(&approval_id);
+    approval_gateway.remember_approval(&request.scope, &decision);
 
     decision
 }
@@ -475,6 +510,12 @@ mod tests {
         }
     }
 
+    fn approved_for_session() -> UserApprovalDecision {
+        UserApprovalDecision::Approved {
+            persistence: ApprovalPersistence::Session,
+        }
+    }
+
     fn execution_runner(
         results: Vec<ExecutionResult>,
     ) -> (
@@ -604,6 +645,13 @@ mod tests {
                 _ => None,
             })
             .collect()
+    }
+
+    fn approval_request_count(events: &[StreamEvent]) -> usize {
+        events
+            .iter()
+            .filter(|event| matches!(event, StreamEvent::CommandNeedsApproval { .. }))
+            .count()
     }
 
     fn event_position(events: &[StreamEvent], predicate: impl Fn(&StreamEvent) -> bool) -> usize {
@@ -876,6 +924,133 @@ mod tests {
         let scopes = decider.scopes();
         assert_eq!(scopes.len(), 1);
         assert_eq!(scopes[0].sandbox_profile, SandboxProfile::WorkspaceWrite);
+    }
+
+    #[tokio::test]
+    async fn session_approval_reuses_same_scope_without_new_prompt() {
+        let argv = ["npm", "install", "vite"];
+        let request = request(
+            &argv,
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnRequest,
+            SandboxProfile::WorkspaceWrite,
+            NetworkPolicy::Prompt,
+        );
+        let (runner, runner_trait) = execution_runner(vec![
+            ExecutionResult::Success {
+                stdout: "first install ok".to_string(),
+            },
+            ExecutionResult::Success {
+                stdout: "second install ok".to_string(),
+            },
+        ]);
+        let (decider, gateway) = approval_gateway(vec![approved_for_session()]);
+
+        let (first_result, first_events) = run_command_case(
+            &request,
+            &argv,
+            runner_trait.clone(),
+            decider.clone(),
+            gateway.clone(),
+        )
+        .await;
+        let (second_result, second_events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
+
+        assert_finished(first_result);
+        assert_finished(second_result);
+        assert_eq!(approval_request_count(&first_events), 1);
+        assert_eq!(approval_request_count(&second_events), 0);
+        assert_eq!(decider.scopes().len(), 1);
+        assert_eq!(
+            runner.attempts(),
+            vec![
+                sandbox_first(SandboxProfile::WorkspaceWrite),
+                sandbox_first(SandboxProfile::WorkspaceWrite)
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn once_approval_does_not_reuse_same_scope() {
+        let argv = ["npm", "install", "vite"];
+        let request = request(
+            &argv,
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnRequest,
+            SandboxProfile::WorkspaceWrite,
+            NetworkPolicy::Prompt,
+        );
+        let (_runner, runner_trait) = execution_runner(vec![
+            ExecutionResult::Success {
+                stdout: "first install ok".to_string(),
+            },
+            ExecutionResult::Success {
+                stdout: "second install ok".to_string(),
+            },
+        ]);
+        let (decider, gateway) = approval_gateway(vec![approved(), approved()]);
+
+        let (_first_result, first_events) = run_command_case(
+            &request,
+            &argv,
+            runner_trait.clone(),
+            decider.clone(),
+            gateway.clone(),
+        )
+        .await;
+        let (_second_result, second_events) =
+            run_command_case(&request, &argv, runner_trait, decider.clone(), gateway).await;
+
+        assert_eq!(approval_request_count(&first_events), 1);
+        assert_eq!(approval_request_count(&second_events), 1);
+        assert_eq!(decider.scopes().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn session_approval_does_not_reuse_when_scope_changes() {
+        let argv = ["npm", "install", "vite"];
+        let first_request = request(
+            &argv,
+            CapabilityKind::NetworkInstall,
+            ApprovalPolicy::OnRequest,
+            SandboxProfile::WorkspaceWrite,
+            NetworkPolicy::Prompt,
+        );
+        let mut second_request = first_request.clone();
+        second_request.cwd = PathBuf::from("/other-workspace");
+        let (_runner, runner_trait) = execution_runner(vec![
+            ExecutionResult::Success {
+                stdout: "first install ok".to_string(),
+            },
+            ExecutionResult::Success {
+                stdout: "second install ok".to_string(),
+            },
+        ]);
+        let (decider, gateway) = approval_gateway(vec![approved_for_session(), approved()]);
+
+        let (_first_result, first_events) = run_command_case(
+            &first_request,
+            &argv,
+            runner_trait.clone(),
+            decider.clone(),
+            gateway.clone(),
+        )
+        .await;
+        let (_second_result, second_events) = run_command_case(
+            &second_request,
+            &argv,
+            runner_trait,
+            decider.clone(),
+            gateway,
+        )
+        .await;
+
+        assert_eq!(approval_request_count(&first_events), 1);
+        assert_eq!(approval_request_count(&second_events), 1);
+        let scopes = decider.scopes();
+        assert_eq!(scopes.len(), 2);
+        assert_ne!(scopes[0].cwd, scopes[1].cwd);
     }
 
     #[tokio::test]

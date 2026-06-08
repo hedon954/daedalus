@@ -68,6 +68,18 @@ pub struct ApprovalScope {
     pub persistence: ApprovalPersistence,
 }
 
+/// 可复用审批的匹配 key。
+///
+/// 它只描述“授权对象和执行权限画像”，不包含 `persistence`。
+/// `ApprovalPersistence::Session` 的边界由 `ApprovalGateway` / store 生命周期承载。
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ApprovalScopeKey {
+    pub command_prefix: Vec<String>,
+    pub cwd: PathBuf,
+    pub sandbox_profile: SandboxProfile,
+    pub network_policy: NetworkPolicy,
+}
+
 /// 沙箱策略
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum SandboxProfile {
@@ -97,4 +109,15 @@ pub enum ApprovalPersistence {
     Once,
     /// 会话内有效
     Session,
+}
+
+impl ApprovalScope {
+    pub fn key(&self) -> ApprovalScopeKey {
+        ApprovalScopeKey {
+            command_prefix: self.command_prefix.clone(),
+            cwd: self.cwd.clone(),
+            sandbox_profile: self.sandbox_profile,
+            network_policy: self.network_policy,
+        }
+    }
 }

@@ -8,8 +8,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
-- Current slice: Slice 9 Multi-Tool Independent Execution
-- Current path: real/fake model stream -> ReAct loop -> multiple tool calls -> independent runtime results -> stable observation feedback -> bounded next turn
+- Current slice: Slice 11 Demo README And Runbook
+- Current path: verified Phase 1 demo -> README/runbook -> business transfer preparation
 
 ## Topic Index
 
@@ -24,6 +24,7 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 | Slice 8 event protocol refactor retrospective | [`07-slice-8-event-protocol-refactor-retrospective.md`](07-slice-8-event-protocol-refactor-retrospective.md) | 已记录 | 复盘从散落事件发送到 `ApprovalGateway + CommandEventEmitter + run_execution_attempt` 的决策缘由 |
 | Slice 9 multi-tool independent policy | [`08-slice-9-multi-tool-independent-policy.md`](08-slice-9-multi-tool-independent-policy.md) | 已实现 / 已验证 | 决定同批 tool calls 互不影响、可并发执行、按 index 稳定回灌 observation，不做 batch-level hard stop |
 | Slice 9 parallel tool runtime review | [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) | 已实现 / 已验证 | 记录当前 `ToolRuntime::batch_run + ToolEventEmitter + ReAct observation` 的职责边界和测试证据 |
+| Slice 10 approval session boundary | [`10-slice-10-approval-session-boundary.md`](10-slice-10-approval-session-boundary.md) | 已实现 / 已验证 | 决定 `ApprovalPersistence::Session` 绑定 `ApprovalGateway` 生命周期，CLI session 内跨 ReAct runs 复用 |
 
 ## Stage Exit Criteria
 
@@ -38,3 +39,5 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - [x] Slice 7 完成：`RetryPolicy` 已纳入 retry gate，并验证 `safe-read` 不 retry、`safe-test` approval retry、network prompt approval retry、network deny 不被 `WithoutApproval` 绕过。
 - [x] Slice 8 完成：approval / command attempt / retry decision 等关键节点透出为外部可观察事件，并通过统一 emitter 和 `run_execution_attempt` 保证 trace 闭合。
 - [x] Slice 9 完成：同批 tool calls 可并发执行，mixed success / failure / denial 都能独立回灌 observation，terminal tool events 由 runtime 透出，最终 message 顺序按原始 index 稳定。
+- [x] Slice 10 完成：`ApprovalGateway` 支持 session approval store，相同 scope 在同一 CLI session 内可跨 ReAct runs 复用，Once / Rejected / scope mismatch 不复用。
+- [ ] Slice 11 完成：`demo/README.md` 能说明运行方式、验收测试、live LLM trace、Phase 1/Phase 2 边界和业务迁移前提。

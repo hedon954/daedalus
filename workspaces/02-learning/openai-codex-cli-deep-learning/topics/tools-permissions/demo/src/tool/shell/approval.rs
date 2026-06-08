@@ -5,7 +5,10 @@ use tokio::sync::{mpsc, oneshot};
 
 use crate::{
     model::{
-        approval::{ApprovalPersistence, ApprovalPolicy, ApprovalRequirement, ApprovalScope},
+        approval::{
+            ApprovalPersistence, ApprovalPolicy, ApprovalRequirement, ApprovalScope,
+            ApprovalScopeKey,
+        },
         capability::DefaultDecision,
         command_request::CommandRequest,
         event::UserApprovalDecision,
@@ -35,6 +38,7 @@ pub struct ToolCallContext {
 
 pub struct ApprovalGateway {
     pending: Arc<DashMap<String, oneshot::Sender<UserApprovalDecision>>>,
+    session_approvals: Arc<DashMap<ApprovalScopeKey, ApprovalGrant>>,
 }
 
 pub struct PendingApproval {
@@ -43,12 +47,17 @@ pub struct PendingApproval {
     decision_rx: oneshot::Receiver<UserApprovalDecision>,
 }
 
+pub struct ApprovalGrant {
+    pub persistence: ApprovalPersistence,
+}
+
 impl ApprovalGateway {
     pub fn new(mut rx: ToolApprovalResultReceiver) -> ApprovalGateway {
         let pending = Arc::new(DashMap::new());
 
         let result = Self {
             pending: pending.clone(),
+            session_approvals: Arc::new(DashMap::new()),
         };
 
         tokio::spawn(async move {
@@ -60,6 +69,27 @@ impl ApprovalGateway {
         });
 
         result
+    }
+
+    pub fn remember_approval(&self, scope: &ApprovalScope, decision: &UserApprovalDecision) {
+        match decision {
+            UserApprovalDecision::Approved { persistence } => match persistence {
+                ApprovalPersistence::Once => {}
+                ApprovalPersistence::Session => {
+                    _ = self.session_approvals.insert(
+                        scope.key(),
+                        ApprovalGrant {
+                            persistence: ApprovalPersistence::Session,
+                        },
+                    );
+                }
+            },
+            UserApprovalDecision::Rejected => {}
+        }
+    }
+
+    pub fn has_session_approval(&self, scope: &ApprovalScope) -> bool {
+        self.session_approvals.contains_key(&scope.key())
     }
 
     pub fn create_pending_approval(&self, request: ToolApprovalRequest) -> PendingApproval {
@@ -220,6 +250,29 @@ mod tests {
         }
     }
 
+    fn reusable_scope() -> ApprovalScope {
+        ApprovalScope {
+            command_prefix: strings(&["npm", "install"]),
+            cwd: PathBuf::from("/workspace"),
+            sandbox_profile: SandboxProfile::WorkspaceWrite,
+            network_policy: NetworkPolicy::Prompt,
+            persistence: ApprovalPersistence::Once,
+        }
+    }
+
+    fn scope_with(
+        cwd: &str,
+        network_policy: NetworkPolicy,
+        persistence: ApprovalPersistence,
+    ) -> ApprovalScope {
+        ApprovalScope {
+            cwd: PathBuf::from(cwd),
+            network_policy,
+            persistence,
+            ..reusable_scope()
+        }
+    }
+
     #[test]
     fn safe_read_skips_approval_but_not_sandbox() {
         let argv = ["cat", "package.json"];
@@ -341,6 +394,74 @@ mod tests {
         let decision = resolve_approval_requirement(&request, &matched(&argv));
 
         assert_forbidden(decision);
+    }
+
+    #[test]
+    fn approval_scope_key_ignores_persistence_but_preserves_execution_scope() {
+        let once = scope_with(
+            "/workspace",
+            NetworkPolicy::Prompt,
+            ApprovalPersistence::Once,
+        );
+        let session = scope_with(
+            "/workspace",
+            NetworkPolicy::Prompt,
+            ApprovalPersistence::Session,
+        );
+        let different_cwd = scope_with("/other", NetworkPolicy::Prompt, ApprovalPersistence::Once);
+        let different_network = scope_with(
+            "/workspace",
+            NetworkPolicy::Allow,
+            ApprovalPersistence::Once,
+        );
+
+        assert_eq!(once.key(), session.key());
+        assert_ne!(once.key(), different_cwd.key());
+        assert_ne!(once.key(), different_network.key());
+    }
+
+    #[tokio::test]
+    async fn approval_gateway_only_remembers_session_approval_for_same_scope() {
+        let (_result_tx, result_rx) = mpsc::channel(4);
+        let gateway = ApprovalGateway::new(result_rx);
+        let scope = reusable_scope();
+
+        gateway.remember_approval(
+            &scope,
+            &UserApprovalDecision::Approved {
+                persistence: ApprovalPersistence::Session,
+            },
+        );
+
+        assert!(gateway.has_session_approval(&scope));
+        assert!(!gateway.has_session_approval(&scope_with(
+            "/other",
+            NetworkPolicy::Prompt,
+            ApprovalPersistence::Once
+        )));
+        assert!(!gateway.has_session_approval(&scope_with(
+            "/workspace",
+            NetworkPolicy::Allow,
+            ApprovalPersistence::Once
+        )));
+    }
+
+    #[tokio::test]
+    async fn approval_gateway_does_not_remember_once_or_rejected_decisions() {
+        let (_result_tx, result_rx) = mpsc::channel(4);
+        let gateway = ApprovalGateway::new(result_rx);
+        let scope = reusable_scope();
+
+        gateway.remember_approval(
+            &scope,
+            &UserApprovalDecision::Approved {
+                persistence: ApprovalPersistence::Once,
+            },
+        );
+        assert!(!gateway.has_session_approval(&scope));
+
+        gateway.remember_approval(&scope, &UserApprovalDecision::Rejected);
+        assert!(!gateway.has_session_approval(&scope));
     }
 
     #[tokio::test]
