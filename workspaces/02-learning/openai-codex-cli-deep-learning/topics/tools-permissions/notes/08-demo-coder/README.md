@@ -8,8 +8,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
-- Current slice: Slice 11 Demo README And Runbook
-- Current path: verified Phase 1 demo -> README/runbook -> business transfer preparation
+- Current slice: Slice 11 Demo README And Runbook completed
+- Current path: verified Phase 1 demo -> README/runbook -> `09-biz-solver`
 
 ## Topic Index
 
@@ -40,4 +40,4 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - [x] Slice 8 完成：approval / command attempt / retry decision 等关键节点透出为外部可观察事件，并通过统一 emitter 和 `run_execution_attempt` 保证 trace 闭合。
 - [x] Slice 9 完成：同批 tool calls 可并发执行，mixed success / failure / denial 都能独立回灌 observation，terminal tool events 由 runtime 透出，最终 message 顺序按原始 index 稳定。
 - [x] Slice 10 完成：`ApprovalGateway` 支持 session approval store，相同 scope 在同一 CLI session 内可跨 ReAct runs 复用，Once / Rejected / scope mismatch 不复用。
-- [ ] Slice 11 完成：`demo/README.md` 能说明运行方式、验收测试、live LLM trace、Phase 1/Phase 2 边界和业务迁移前提。
+- [x] Slice 11 完成：`demo/README.md` 能说明运行方式、验收测试、live LLM trace、Phase 1/Phase 2 边界和业务迁移前提。

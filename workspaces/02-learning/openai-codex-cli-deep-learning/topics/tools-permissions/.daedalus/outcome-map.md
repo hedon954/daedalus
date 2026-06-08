@@ -19,17 +19,17 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 | [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 核心源码阅读阶段入口，聚焦 auth/approval/sandbox | 已验证 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计蓝图，包含 Phase 1/Phase 2、状态机、事件协议和验收测试 | 已验证 |
 | [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md) | 08 阶段编码子地图，按 slice 推进 Phase 1 demo | 已验证 |
-| [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 待填 |
+| [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 已验证 |
 | [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 将权限/沙箱模式迁移到业务问题 | 待填 |
 | knowledge-base entry | 已验证知识归档 | 待填 |
 
 ## Current Position
 
-- 当前阶段：`08-demo-coder`。
-- 当前目标：带用户按 08 子地图实现 Phase 1 mini demo。
-- 当前障碍：Slice 10 approval persistence 已完成并验证；下一步进入 Slice 11，补 `demo/README.md` / runbook，把 Phase 1 demo 的运行方式、验收命令、live trace、简化边界和迁移说明写清楚。
-- 当前动作服务的产物：`demo/src/`、后续 `demo/README.md`。
-- 当前光标：`demo/README.md`。代码侧当前已具备 `ApprovalGateway` session store、multi-tool batch、command execution events、真实 LLM ReAct smoke test 证据。
+- 当前阶段：`08-demo-coder` 收口完成。
+- 当前目标：进入 `09-biz-solver`，把 Phase 1 demo 中验证过的权限 / 沙箱 / retry / event 模式迁移回业务 Agent/CLI 场景。
+- 当前障碍：`09-biz-solver` 还未产出业务迁移方案。
+- 当前动作服务的产物：[`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md)。
+- 当前光标：从 [`demo/README.md`](../demo/README.md) 抽取可迁移模式、现实约束和 trade-off。
 
 ## Artifact Dependency Graph
 
@@ -63,7 +63,8 @@ question-roadmap
 - [x] Slice 9 Batch Boundary Refactor 第一轮：`ToolRuntime::batch_run` 已从 ReAct loop 接管 batch 调度，`ToolEventEmitter` 已从 ReAct loop 接管 terminal tool events；runtime tests 已覆盖 tool-level events，并新增 approval-blocked batch 并发验证。
 - [x] Slice 9 Closeout Review：当前边界足够清晰，不强制新增单独 `ToolBatchRunner` 类型；notes/guides 已按当前实现重写。
 - [x] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效；已确认 session scope 由 `ApprovalGateway` 生命周期承载，多个 ReAct runs 共享同一个 gateway。
-- [ ] Slice 11 Demo README And Runbook：补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移说明。
+- [x] Slice 11 Demo README And Runbook：补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移说明。
+- [ ] Business Transfer：将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
 
 ## Critical Lens
 

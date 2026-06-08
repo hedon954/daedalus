@@ -12,22 +12,22 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Current Path
 
-当前位于 `08-demo-coder`。阶段入口是 [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md)，实现产物入口是 [`demo/README.md`](../demo/README.md)。当前目标是由用户按 slice 地图亲手实现 Phase 1 mini demo，Agent 只做引导、校准和验证。
+当前位于 `08-demo-coder` 收口。阶段入口是 [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md)，实现产物入口是 [`demo/README.md`](../demo/README.md)。Phase 1 mini demo 已具备可运行 README / runbook，下一步可进入 `09-biz-solver`。
 
 ## Now
 
-- 当前问题：Slice 10 approval persistence 已落地并验证：`ApprovalGateway` 持有 session approval store，同一 CLI session 内相同 scope 可跨 ReAct runs 复用；`Once`、`Rejected`、cwd mismatch 均不会复用。
-- 为什么现在做它：真实 LLM streaming、tool call、observation 回灌已经可测试；现在需要恢复 Codex 学习的核心不变量：tool call 不能直接执行，必须先经过 capability / approval / sandbox first / controlled retry。
-- 完成后解锁：可以进入 Slice 11 `demo/README.md` / runbook，把 approval persistence、multi-tool batch、command execution event trace 串成可运行、可讲解、可迁移的最终 demo 说明。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 `add/sub` 成功、参数错误、未知工具、`run_command` 安全读成功、网络安装 retry 成功、命令失败、危险命令拒绝、非法 JSON、未匹配 capability；`run_shell_command` 编排测试覆盖 skip、needs approval、command failure、retry without approval、retry with approval approve/reject，以及 safe-read sandbox denied 不 retry 的 registry 接线；ReAct `run_command` observation 测试覆盖 Finished / Failed / Denied 回灌；`RetryPolicy` 已纳入 retry gate；Slice 8 已补 `ToolCallContext`、`ApprovalGateway`、`PendingApproval`、内部 `ToolApprovalResult` 回流、`CommandEventEmitter`、`run_execution_attempt`、command 专属 event 命名和 command execution / retry 事件透出；`SandboxFirst` failure event 已在 retry decision 前发出并被 shell / ReAct trace tests 锁定；Slice 9 已补同批 mixed success / failure / denial observation 测试、runtime tool event tests、并发 approval-blocked batch 测试；`cargo test` 通过 65 个默认测试，3 个 live LLM 测试保持 ignored。
-- 当前待解决：进入 Slice 11，补 [`demo/README.md`](../demo/README.md) 的运行说明、验收命令、live LLM trace、Phase 1 / Phase 2 边界和迁移说明。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前问题：Slice 11 README / runbook 已完成：[`demo/README.md`](../demo/README.md) 说明 Phase 1 证明点、架构、能力策略、approval session scope、默认测试、live LLM smoke test、Phase 1/2 边界和迁移注意事项。
+- 为什么现在做它：Phase 1 代码已经完成，README 是把实现从“能跑”转成“能讲清、能复现、能迁移”的最终产物。
+- 完成后解锁：可以进入 `09-biz-solver`，把 Codex 权限 / 沙箱 / retry / event 模式迁移回业务 Agent/CLI 场景。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`demo/README.md` 已补运行和验收说明；`cargo test` 通过 72 个默认测试，3 个 live LLM 测试保持 ignored，并已手动跑通过真实 API smoke tests。
+- 当前待解决：进入 `09-biz-solver`，产出 [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md)。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Slice 10 已完成。`model/approval.rs::ApprovalScopeKey` 定义复用 key，`tool/shell/approval.rs::ApprovalGateway` 保存 session approvals，`tool/shell/mod.rs::request_approval` 先复用再发 approval request。
+- Code frontier：Phase 1 demo 已收口。当前代码核心在 `agent/react.rs`、`tool/runtime.rs`、`tool/shell/mod.rs`、`tool/shell/approval.rs`、`tool/shell/execution/simulated_execution_runner.rs`；当前产物入口是 `demo/README.md`。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
 - Current decision：`ApprovalPersistence::Session` 对齐 CLI session。一个进程初始化一个 `ApprovalGateway`，多个 ReAct runs 共享它；`ApprovalScopeKey` 不含 `session_id`，因为 session 边界由 gateway/store 生命周期承载。
-- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”或“实现 Slice 10 session approval store”；当前应进入 Slice 11 README/runbook。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”“实现 Slice 10 session approval store”或“补 demo README”；当前应进入 09 business transfer。
 
 ## Critical Checkpoint
 
@@ -58,8 +58,8 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 9 Batch Boundary Refactor 第一轮：以 `ToolRuntime::batch_run` 收口并发调度，以 `ToolEventEmitter` 收口 terminal tool events；补 runtime event tests 和 approval-blocked batch 并发验证测试。
 - [x] Slice 9 Closeout Review：当前边界足够清晰，不强制新增单独 `ToolBatchRunner` 类型；notes/guides 已按当前实现重写。
 - [x] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
-- [ ] ApprovalPolicy OnRequest Semantic Hardening：补充显式 escalation request 建模，区分“初始请求提权可询问”和“sandbox failure 自动提权询问”，避免 `OnRequest` 与 `OnFailure` 语义混淆。
-- [ ] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
+- [ ] ApprovalPolicy OnRequest Semantic Hardening：补充显式 escalation request 建模，区分“初始请求提权可询问”和“sandbox failure 自动提权询问”，避免 `OnRequest` 与 `OnFailure` 语义混淆；这是后续 engineering gap，不阻塞 08 阶段完成。
+- [x] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
 
 ## 06 Code Reader Gaps
 
@@ -73,8 +73,8 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] demo scope、non-goals 和验收用例足以指导实现。
 - [x] 可以明确进入 `08-demo-coder` 的第一个实现切片。
 - [x] 用户确认 demo 蓝图后，进入 `08-demo-coder`。
-- [ ] Phase 1 minimal gate 通过：AT-01、AT-02、AT-03、AT-04、AT-06、AT-08、AT-09、AT-11、AT-14。
-- [ ] `demo/README.md` 能指导用户运行 demo 和验收测试。
+- [x] Phase 1 minimal gate 通过：AT-01、AT-02、AT-03、AT-04、AT-06、AT-08、AT-09、AT-11、AT-14。
+- [x] `demo/README.md` 能指导用户运行 demo 和验收测试。
 
 ## Done
 

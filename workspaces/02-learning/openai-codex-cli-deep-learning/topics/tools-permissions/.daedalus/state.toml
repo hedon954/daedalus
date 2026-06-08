@@ -44,13 +44,13 @@ required_artifacts = ["demo/design.md"]
 [[stages]]
 id = "08-demo-coder"
 title = "实现 Repo Mini Demo"
-status = "active"
+status = "done"
 required_artifacts = ["demo/README.md"]
 
 [[stages]]
 id = "09-biz-solver"
 title = "将 Repo 学习迁移到业务问题"
-status = "pending"
+status = "active"
 required_artifacts = ["notes/09-biz-solver/README.md"]
 
 [[stages]]
@@ -186,11 +186,25 @@ timestamp = "2026-05-16 21:49:16"
 actor = "daedalus-cli"
 reason = "开始 08-demo-coder：按 guides/08-demo-coder/README.md 的 slice 地图实现 Phase 1 mini demo。"
 
+[[transitions]]
+stage = "08-demo-coder"
+action = "complete"
+timestamp = "2026-06-09 00:08:02"
+actor = "daedalus-cli"
+reason = "Phase 1 mini demo 已完成：demo/README.md 已补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移注意事项；cargo test 通过 72 个默认测试。"
+
+[[transitions]]
+stage = "09-biz-solver"
+action = "enter"
+timestamp = "2026-06-09 00:08:20"
+actor = "daedalus-cli"
+reason = "进入业务迁移阶段：基于已完成的 Phase 1 demo，抽取安全本地命令执行模式并迁移到用户自有 Agent/CLI 设计。"
+
 [topic]
 slug = "tools-permissions"
 title = "工具系统与权限系统"
 kind = "repo-learning-topic"
 parent_project = "../.."
 lifecycle = "active"
-current_phase = "08-demo-coder"
-next_action = "完成 `08-demo-coder` Slice 9 closeout：`ToolRuntime::batch_run + ToolEventEmitter` 已收口多工具并发和 tool-level events；下一步进入 Slice 10 approval persistence，或先补 `demo/README.md` trace/runbook。"
+current_phase = "09-biz-solver"
+next_action = "进入 `09-biz-solver`：将 Repo 学习迁移到业务问题，准备产物：notes/09-biz-solver/README.md。"

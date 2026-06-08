@@ -244,17 +244,19 @@ batch boundary：[`12-slice-9-tool-batch-runner-refactor.md`](12-slice-9-tool-ba
 
 目标：让 demo 可运行、可讲解、可迁移。
 
+状态：已完成。[`../../demo/README.md`](../../demo/README.md) 已说明 Phase 1 证明点、架构、运行命令、默认测试、live LLM smoke test、Phase 1 / Phase 2 边界和迁移注意事项。
+
 产出：
 
-- `demo/README.md`
-- 运行命令。
-- 验收测试命令。
-- Phase 1 / Phase 2 差异说明。
+- [`../../demo/README.md`](../../demo/README.md)
+- 运行命令
+- 验收测试命令
+- Phase 1 / Phase 2 差异说明
 
 验收：
 
-- 用户可以按 README 运行 Phase 1 demo。
-- README 能说明哪些设计来自 Codex，哪些是为了 mini demo 做的简化。
+- [x] 用户可以按 README 运行 Phase 1 demo。
+- [x] README 能说明哪些设计来自 Codex，哪些是为了 mini demo 做的简化。
 
 ## Test Gates
 
