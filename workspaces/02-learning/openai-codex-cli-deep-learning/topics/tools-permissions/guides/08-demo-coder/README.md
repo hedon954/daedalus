@@ -1,10 +1,10 @@
 # 08 Demo Coder Stage Map
 
-本阶段子地图用于把 `demo/design.md` 定稿后的架构落成 Phase 1 mini demo。08 的目标不是做完整 Codex，也不是直接攻克 OS sandbox，而是先实现可验证的安全本地命令执行闭环。
+本阶段子地图用于把 `demo/design.md` 定稿后的架构落成可验证的 mini demo。Phase 1 已完成：用 `SimulatedExecutionRunner` 验证权限 / 沙箱 / retry / event 状态机。当前继续 Phase 2：让 demo 从“可解释模型”走向“可用工具”。
 
 ## North Star
 
-实现一个 Phase 1 mini demo：
+已完成 Phase 1 mini demo：
 
 ```text
 real OpenAI-compatible Chat Completions streaming loop
@@ -17,7 +17,20 @@ real OpenAI-compatible Chat Completions streaming loop
   -> final output
 ```
 
-完成后，`demo/README.md` 应能说明如何运行 demo、如何运行验收测试、Phase 1 简化了什么、Phase 2 如何替换为 `OsExecutionRunner`。
+Phase 2 的 North Star：
+
+```text
+real OpenAI-compatible Chat Completions streaming loop
+  -> capability registry
+  -> command request
+  -> approval / session approval
+  -> sandbox-exec backed OsExecutionRunner
+  -> ratatui Agent CLI REPL
+  -> event stream visible to user
+  -> final output
+```
+
+Phase 2 只替换“执行真实性”和“人机交互真实性”，不重写 Phase 1 已验证的 approval / retry / event 状态机。
 
 ## Stage Inputs
 
@@ -278,14 +291,58 @@ AT-01 ... AT-14
 - Phase 1 不做完整 TUI，不引入与核心状态机无关的 UI 框架。
 - 如果实现时发现设计不足，先回到 `demo/design.md` 更新架构，再继续写代码。
 
-## Phase 2 Parking Lot
+## Phase 2 Slices
 
-Phase 2 目标是接入 `OsExecutionRunner`，让 mini demo 从“可解释模型”走向“可用工具”。但它必须复用 Phase 1 的：
+Phase 2 目标是补齐两个真实边界：
+
+```text
+Phase 2A: sandbox-exec OsExecutionRunner
+  -> 用真实 OS sandbox 替换 SimulatedExecutionRunner
+  -> 先继续用测试 / 自动 approval responder 验证执行链路
+
+Phase 2B: ratatui Agent CLI REPL
+  -> 用真实终端 UI 替换测试里的自动 approval responder
+  -> 展示 LLM / tool / approval / execution / retry / final events
+```
+
+Phase 2 必须复用 Phase 1 的：
 
 - `CommandRequest`
 - `ApprovalRequirement`
+- `ApprovalScope`
 - `RetryDecision`
-- `AgentEvent`
-- orchestrator 状态机
+- `StreamEvent`
+- `ToolRuntime`
+- `run_shell_command`
 
-Phase 2 只替换 runner，不重写 approval / retry / event 协议。
+### Slice 12: OsExecutionRunner With sandbox-exec
+
+目标：实现一个 macOS `sandbox-exec` backed `OsExecutionRunner`，证明真实 sandbox 接入后，Phase 1 的 approval / retry / event 状态机仍成立。
+
+行动指南：[`14-slice-12-os-execution-runner.md`](14-slice-12-os-execution-runner.md)。
+
+原理指南：[`15-sandbox-first-principles.md`](15-sandbox-first-principles.md) 解释 `sandbox-exec` 与其他 sandbox 方案的第一性原理差异。
+
+验收：
+
+- `cat package.json` 在 read-only sandbox 内成功。
+- 写入或网络类命令在 sandbox 内被拒绝，并映射为 `ExecutionFailure::SandboxDenied`。
+- `NoSandboxRetry` 能通过同一个 `ExecutionRunner` 在宿主环境执行。
+- `run_shell_command` 不需要知道当前 runner 是 simulated 还是真实 OS runner。
+- 默认测试不破坏现有 Phase 1 deterministic tests；真实 OS sandbox 测试可以按平台条件跳过或显式过滤运行。
+
+### Slice 13: Ratatui Agent CLI REPL
+
+目标：实现最小可用的终端 Agent REPL，把测试中的自动 approval responder 换成真实用户交互。
+
+状态：当前。
+
+行动指南：[`16-slice-13-ratatui-agent-cli-repl.md`](16-slice-13-ratatui-agent-cli-repl.md)。
+
+验收：
+
+- 用户可以输入 prompt。
+- UI 能展示 LLM text delta、tool call、approval request、execution attempt、retry decision 和 final answer。
+- 用户可以选择 approve once、approve session、reject。
+- 同一 CLI session 内 approve session 可以被后续 ReAct runs 复用。
+- TUI 只负责交互，不把 approval / retry 逻辑复制到 UI 层。

@@ -121,7 +121,7 @@ cargo test
 预期结果：
 
 ```text
-72 passed; 0 failed; 3 ignored
+78 passed; 0 failed; 3 ignored
 ```
 
 默认测试是确定性的，不会调用外部 API。
@@ -226,13 +226,19 @@ Phase 1 暂不实现：
 
 ## Phase 2 方向
 
-Phase 2 应该只替换 runner：
+Phase 2 补齐两个真实边界：
 
 ```text
-SimulatedExecutionRunner -> OsExecutionRunner
+Phase 2A:
+  SimulatedExecutionRunner -> OsExecutionRunner
+  用 sandbox-exec 接入真实 OS sandbox
+
+Phase 2B:
+  test-driven approval responder -> ratatui Agent CLI REPL
+  用真实终端交互承接 prompt、事件展示和用户审批
 ```
 
-这些契约应保持稳定：
+这些核心契约应保持稳定：
 
 - `CommandRequest`
 - `ApprovalRequirement`
@@ -242,7 +248,20 @@ SimulatedExecutionRunner -> OsExecutionRunner
 - `ToolRuntime`
 - `run_shell_command`
 
-目标是在不重写 approval / retry / event model 的前提下，让 demo 从“可解释模型”走向“可用工具”。如果 `OsExecutionRunner` 需要平台相关处理，应该藏在 `ExecutionRunner` 后面，并把平台错误映射回统一的 `ExecutionFailure`。
+Phase 2A 的目标是在不重写 approval / retry / event model 的前提下，让 demo 从“模拟执行”走向“真实执行”。如果 `OsExecutionRunner` 需要平台相关处理，应该藏在 `ExecutionRunner` 后面，并把平台错误映射回统一的 `ExecutionFailure`。
+
+Phase 2A 真实 OS sandbox 验收：
+
+```bash
+cargo run --example os_execution_runner
+cargo run --example os_tool_runtime
+```
+
+`os_execution_runner` 验证 runner 本身：no-sandbox read、read-only read、read-only block write、workspace-write allow write、no-sandbox retry write。
+
+`os_tool_runtime` 验证上层链路：`ToolRuntime::batch_run -> run_shell_command -> OsExecutionRunner` 能穿过真实 sandbox denied、`CommandNeedsApproval`、approval result 回传、no-sandbox retry 和最终 tool result。
+
+Phase 2B 的目标是在不复制 approval / retry 逻辑的前提下，让用户真实参与 Agent CLI session：输入 prompt，观察 LLM / tool / command events，并选择 approve once、approve session 或 reject。
 
 ## 迁移提醒
 

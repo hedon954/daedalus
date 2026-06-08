@@ -8,8 +8,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
-- Current slice: Slice 11 Demo README And Runbook completed
-- Current path: verified Phase 1 demo -> README/runbook -> `09-biz-solver`
+- Current slice: Slice 12 Phase 2A OsExecutionRunner
+- Current path: Phase 1 demo complete -> Phase 2A real macOS sandbox with `sandbox-exec`
 
 ## Topic Index
 
@@ -25,6 +25,7 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 | Slice 9 multi-tool independent policy | [`08-slice-9-multi-tool-independent-policy.md`](08-slice-9-multi-tool-independent-policy.md) | 已实现 / 已验证 | 决定同批 tool calls 互不影响、可并发执行、按 index 稳定回灌 observation，不做 batch-level hard stop |
 | Slice 9 parallel tool runtime review | [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) | 已实现 / 已验证 | 记录当前 `ToolRuntime::batch_run + ToolEventEmitter + ReAct observation` 的职责边界和测试证据 |
 | Slice 10 approval session boundary | [`10-slice-10-approval-session-boundary.md`](10-slice-10-approval-session-boundary.md) | 已实现 / 已验证 | 决定 `ApprovalPersistence::Session` 绑定 `ApprovalGateway` 生命周期，CLI session 内跨 ReAct runs 复用 |
+| Slice 12 sandbox-exec Rust usage | [`11-slice-12-sandbox-exec-rust-usage.md`](11-slice-12-sandbox-exec-rust-usage.md) | 进行中 | 记录 `tokio::process::Command` 调用 `sandbox-exec`、`arg/args` 语义、profile DSL 翻译和 `ExecutionResult` 分类边界 |
 
 ## Stage Exit Criteria
 

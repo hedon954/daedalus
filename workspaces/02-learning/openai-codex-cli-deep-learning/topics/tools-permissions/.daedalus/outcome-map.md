@@ -25,11 +25,11 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 ## Current Position
 
-- 当前阶段：`08-demo-coder` 收口完成。
-- 当前目标：进入 `09-biz-solver`，把 Phase 1 demo 中验证过的权限 / 沙箱 / retry / event 模式迁移回业务 Agent/CLI 场景。
-- 当前障碍：`09-biz-solver` 还未产出业务迁移方案。
-- 当前动作服务的产物：[`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md)。
-- 当前光标：从 [`demo/README.md`](../demo/README.md) 抽取可迁移模式、现实约束和 trade-off。
+- 当前阶段：`08-demo-coder` Phase 2。
+- 当前目标：把 Phase 1 demo 从“可解释模型”推进成“可用 mini demo”。
+- 当前障碍：真实 OS sandbox runner 已完成；真人可操作的 Agent CLI REPL 还未实现。
+- 当前动作服务的产物：Phase 2B Agent CLI REPL，包括 prompt 输入、事件展示、approval 交互和 session approval 复用验证。
+- 当前光标：Phase 2B `ratatui` Agent CLI REPL；本地草稿为 [`guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md`](../guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md)。
 
 ## Artifact Dependency Graph
 
@@ -64,6 +64,9 @@ question-roadmap
 - [x] Slice 9 Closeout Review：当前边界足够清晰，不强制新增单独 `ToolBatchRunner` 类型；notes/guides 已按当前实现重写。
 - [x] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效；已确认 session scope 由 `ApprovalGateway` 生命周期承载，多个 ReAct runs 共享同一个 gateway。
 - [x] Slice 11 Demo README And Runbook：补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移说明。
+- [x] Slice 12 OsExecutionRunner：用 macOS `sandbox-exec` 实现真实 sandbox runner；runner-level 单测与 `demo/examples/os_execution_runner.rs` 已验证 read-only / workspace-write / no-sandbox retry 行为。
+- [x] Slice 12 Hardening：收紧 profile 路径转义、`SandboxProfile::NoSandbox` 防御语义和上层 `ToolRuntime + OsExecutionRunner` smoke 验收。
+- [ ] Slice 13 Ratatui Agent CLI REPL：实现真实终端交互、事件展示和 approve once/session/reject。
 - [ ] Business Transfer：将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
 
 ## Critical Lens

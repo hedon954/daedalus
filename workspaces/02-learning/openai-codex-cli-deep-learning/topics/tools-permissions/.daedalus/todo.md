@@ -12,22 +12,22 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Current Path
 
-当前位于 `08-demo-coder` 收口。阶段入口是 [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md)，实现产物入口是 [`demo/README.md`](../demo/README.md)。Phase 1 mini demo 已具备可运行 README / runbook，下一步可进入 `09-biz-solver`。
+当前位于 `08-demo-coder` Phase 2。阶段入口是 [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md)，实现产物入口是 [`demo/README.md`](../demo/README.md)。用户决定暂不进入 `09-biz-solver`，继续把 demo 从 Phase 1 的“可解释模型”推进到 Phase 2 的“可用工具”。
 
 ## Now
 
-- 当前问题：Slice 11 README / runbook 已完成：[`demo/README.md`](../demo/README.md) 说明 Phase 1 证明点、架构、能力策略、approval session scope、默认测试、live LLM smoke test、Phase 1/2 边界和迁移注意事项。
-- 为什么现在做它：Phase 1 代码已经完成，README 是把实现从“能跑”转成“能讲清、能复现、能迁移”的最终产物。
-- 完成后解锁：可以进入 `09-biz-solver`，把 Codex 权限 / 沙箱 / retry / event 模式迁移回业务 Agent/CLI 场景。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`demo/README.md` 已补运行和验收说明；`cargo test` 通过 72 个默认测试，3 个 live LLM 测试保持 ignored，并已手动跑通过真实 API smoke tests。
-- 当前待解决：进入 `09-biz-solver`，产出 [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md)。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前问题：已经进入 Phase 2B，下一步实现真实 Agent CLI REPL，让用户在终端中输入 prompt、观察事件流，并处理 approve once / approve session / reject。
+- 为什么现在做它：Phase 1 已证明状态机正确，但 runner 仍是模拟规则表；如果目标是“可用 mini demo”，必须让 sandbox-first / no-sandbox-retry 接到真实 OS 执行。
+- 完成后解锁：demo 从“可验证库 + examples”升级为“可用 mini Agent CLI”，之后再进入业务迁移阶段。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`demo/README.md` 已补运行和验收说明；`OsExecutionRunner` 已接入 `/usr/bin/sandbox-exec`，覆盖 no-sandbox read、read-only read、read-only block write、workspace-write allow write、no-sandbox retry write、profile 路径转义、`SandboxFirst + NoSandbox` fail closed；`cargo test` 通过 78 个默认测试，3 个 live LLM 测试保持 ignored，并已手动跑通过真实 API smoke tests、`cargo run --example os_execution_runner` 和 `cargo run --example os_tool_runtime`。
+- 当前待解决：实现 Phase 2B Agent CLI REPL。建议先做 plain async REPL 验证 approval channel 和 agent run 边界，再接 `ratatui`；可选补 `ReActAgent + OsExecutionRunner` live smoke。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Phase 1 demo 已收口。当前代码核心在 `agent/react.rs`、`tool/runtime.rs`、`tool/shell/mod.rs`、`tool/shell/approval.rs`、`tool/shell/execution/simulated_execution_runner.rs`；当前产物入口是 `demo/README.md`。
+- Code frontier：Phase 2A 已收口。下一处实现光标是 Phase 2B `ratatui` Agent CLI REPL，除非先补 `ReActAgent + OsExecutionRunner` live smoke。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
 - Current decision：`ApprovalPersistence::Session` 对齐 CLI session。一个进程初始化一个 `ApprovalGateway`，多个 ReAct runs 共享它；`ApprovalScopeKey` 不含 `session_id`，因为 session 边界由 gateway/store 生命周期承载。
-- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”“实现 Slice 10 session approval store”或“补 demo README”；当前应进入 09 business transfer。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”“实现 Slice 10 session approval store”“补 demo README”“从零实现 OsExecutionRunner”“补 OsExecutionRunner hardening”或“进入 09 business transfer”；当前应进入 Phase 2B 或补 ReAct live smoke。
 
 ## Critical Checkpoint
 
@@ -60,6 +60,9 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 10 Approval Persistence：实现 session approval 复用和 scope mismatch 失效。
 - [ ] ApprovalPolicy OnRequest Semantic Hardening：补充显式 escalation request 建模，区分“初始请求提权可询问”和“sandbox failure 自动提权询问”，避免 `OnRequest` 与 `OnFailure` 语义混淆；这是后续 engineering gap，不阻塞 08 阶段完成。
 - [x] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
+- [x] Slice 12 OsExecutionRunner：用 macOS `sandbox-exec` 实现真实 sandbox runner；runner-level 单测与 `demo/examples/os_execution_runner.rs` 已验证 read-only / workspace-write / no-sandbox retry 行为。
+- [x] Slice 12 Hardening：收紧 profile 路径转义、`SandboxProfile::NoSandbox` 防御语义和上层 `ToolRuntime + OsExecutionRunner` smoke 验收。
+- [ ] Slice 13 Ratatui Agent CLI REPL：实现真实终端交互和 approval once/session/reject。
 
 ## 06 Code Reader Gaps
 

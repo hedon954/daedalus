@@ -44,13 +44,13 @@ required_artifacts = ["demo/design.md"]
 [[stages]]
 id = "08-demo-coder"
 title = "实现 Repo Mini Demo"
-status = "done"
+status = "active"
 required_artifacts = ["demo/README.md"]
 
 [[stages]]
 id = "09-biz-solver"
 title = "将 Repo 学习迁移到业务问题"
-status = "active"
+status = "pending"
 required_artifacts = ["notes/09-biz-solver/README.md"]
 
 [[stages]]
@@ -200,11 +200,18 @@ timestamp = "2026-06-09 00:08:20"
 actor = "daedalus-cli"
 reason = "进入业务迁移阶段：基于已完成的 Phase 1 demo，抽取安全本地命令执行模式并迁移到用户自有 Agent/CLI 设计。"
 
+[[transitions]]
+stage = "08-demo-coder"
+action = "rollback"
+timestamp = "2026-06-09 00:33:29"
+actor = "daedalus-cli"
+reason = "用户决定暂不进入 09-biz-solver，继续在 08-demo-coder 中推进 Phase 2：先规划 OsExecutionRunner 与 ratatui Agent REPL，再从真实 sandbox runner 开始。"
+
 [topic]
 slug = "tools-permissions"
 title = "工具系统与权限系统"
 kind = "repo-learning-topic"
 parent_project = "../.."
 lifecycle = "active"
-current_phase = "09-biz-solver"
-next_action = "进入 `09-biz-solver`：将 Repo 学习迁移到业务问题，准备产物：notes/09-biz-solver/README.md。"
+current_phase = "08-demo-coder"
+next_action = "进入 `08-demo-coder` Phase 2B：设计并实现真实 Agent CLI REPL，承接 prompt、事件展示和 approve once/session/reject。"
