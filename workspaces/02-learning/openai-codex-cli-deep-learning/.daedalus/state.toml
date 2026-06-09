@@ -17,18 +17,18 @@ kind = "repo-learning"
 created_at = "2026-05-09 15:58:52"
 lifecycle = "active"
 workspace_bucket = "02-learning"
-next_action = "继续 active topic `tools-permissions`：进入 `08-demo-coder`：实现 Repo Mini Demo，准备产物：demo/README.md。"
+next_action = "tools-permissions topic 已完成；下一步产出 docs/evolution 回顾报告，并按最新 daedalus 状态重写项目 README。"
 
 [project]
 mode = "multi-topic"
-active_topic = "tools-permissions"
+active_topic = ""
 source_kind = "repo"
 source_name = ""
 
 [[topics]]
 slug = "tools-permissions"
 title = "工具系统与权限系统"
-lifecycle = "active"
+lifecycle = "completed"
 path = "topics/tools-permissions"
 inherits = []
 
@@ -45,3 +45,10 @@ action = "migrate"
 timestamp = "2026-05-23 17:58:11"
 actor = "daedalus-cli"
 reason = "从 single-topic workspace 迁移为 multi-topic project，初始 topic 为 `tools-permissions`。"
+
+[[transitions]]
+stage = "project"
+action = "topic-complete"
+timestamp = "2026-06-10 03:27:52"
+actor = "daedalus-cli"
+reason = "Codex tools-permissions topic 已完成：源码阅读、mini demo Phase 1/2、业务迁移和知识归档均已闭环。"

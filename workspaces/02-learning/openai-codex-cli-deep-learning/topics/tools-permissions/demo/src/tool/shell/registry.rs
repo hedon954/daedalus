@@ -71,6 +71,18 @@ impl CapabilityRegistry {
                     },
                 },
                 CapabilityDescriptor {
+                    kind: CapabilityKind::ApprovalTest,
+                    name: "approval-test".to_string(),
+                    description: "Harmless command used to verify approval UX".to_string(),
+                    command_prefixes: vec![vec!["echo".to_string(), "approval-test".to_string()]],
+                    policy: CapabilityPolicy {
+                        default_decision: DefaultDecision::Prompt,
+                        first_attempt_sandbox: SandboxProfile::ReadOnly,
+                        network_policy: NetworkPolicy::Deny,
+                        retry_policy: RetryPolicy::Never,
+                    },
+                },
+                CapabilityDescriptor {
                     kind: CapabilityKind::DangerousShell,
                     name: "dangerous-shell".to_string(),
                     description: "Dangerous shell command".to_string(),
@@ -175,6 +187,15 @@ mod tests {
         assert!(
             capabilities
                 .iter()
+                .any(|c| c.kind == CapabilityKind::ApprovalTest
+                    && c.policy.default_decision == DefaultDecision::Prompt
+                    && c.policy.first_attempt_sandbox == SandboxProfile::ReadOnly
+                    && c.policy.network_policy == NetworkPolicy::Deny
+                    && c.policy.retry_policy == RetryPolicy::Never)
+        );
+        assert!(
+            capabilities
+                .iter()
                 .any(|c| c.kind == CapabilityKind::DangerousShell
                     && c.policy.default_decision == DefaultDecision::Forbidden
                     && c.policy.first_attempt_sandbox == SandboxProfile::ReadOnly
@@ -194,6 +215,10 @@ mod tests {
             (
                 vec!["npm", "install", "vite"],
                 Some(CapabilityKind::NetworkInstall),
+            ),
+            (
+                vec!["echo", "approval-test"],
+                Some(CapabilityKind::ApprovalTest),
             ),
             (vec!["unknown"], None),
         ];

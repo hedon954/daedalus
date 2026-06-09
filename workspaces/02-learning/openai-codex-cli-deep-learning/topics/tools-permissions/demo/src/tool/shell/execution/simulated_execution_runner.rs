@@ -100,6 +100,14 @@ impl SimulatedExecutionRunner {
                         stdout: "simulated install success without sandbox".into(),
                     },
                 },
+                // rule5: approval UX smoke test with sandbox success
+                SimulatedRule {
+                    command_prefix: vec!["echo".into(), "approval-test".into()],
+                    attempt: SimulatedAttempt::Sandbox(SandboxProfile::ReadOnly),
+                    result: SimulatedResult::Success {
+                        stdout: "approval-test".into(),
+                    },
+                },
             ],
         }
     }
@@ -306,6 +314,27 @@ mod tests {
         match result {
             ExecutionResult::Success { .. } => {}
             other => panic!("expected no-sandbox success, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn approval_test_command_succeeds_in_read_only_sandbox() {
+        let runner = SimulatedExecutionRunner::new();
+        let request = request(
+            &["echo", "approval-test"],
+            CapabilityKind::ApprovalTest,
+            SandboxProfile::ReadOnly,
+            NetworkPolicy::Deny,
+        );
+        let attempt = ExecutionAttempt::SandboxFirst {
+            sandbox_profile: SandboxProfile::ReadOnly,
+        };
+
+        let result = runner.run(&request, &attempt).await;
+
+        match result {
+            ExecutionResult::Success { .. } => {}
+            other => panic!("expected approval test success, got {other:?}"),
         }
     }
 

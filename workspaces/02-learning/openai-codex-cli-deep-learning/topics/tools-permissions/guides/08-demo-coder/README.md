@@ -335,7 +335,7 @@ Phase 2 必须复用 Phase 1 的：
 
 目标：实现最小可用的终端 Agent REPL，把测试中的自动 approval responder 换成真实用户交互。
 
-状态：当前。
+状态：已完成。
 
 行动指南：[`16-slice-13-ratatui-agent-cli-repl.md`](16-slice-13-ratatui-agent-cli-repl.md)。
 
@@ -343,8 +343,14 @@ Phase 2 必须复用 Phase 1 的：
 
 验收：
 
-- 用户可以输入 prompt。
-- UI 能展示 LLM text delta、tool call、approval request、execution attempt、retry decision 和 final answer。
-- 用户可以选择 approve once、approve session、reject。
-- 同一 CLI session 内 approve session 可以被后续 ReAct runs 复用。
-- TUI 只负责交互，不把 approval / retry 逻辑复制到 UI 层。
+- [x] 用户可以输入 prompt。
+- [x] UI 能展示 LLM text delta、thinking delta、tool call、approval request、execution attempt、retry decision 和 final answer。
+- [x] 用户可以选择 approve once、approve session、reject。
+- [x] 同一 CLI session 内 approve session 可以被后续 ReAct runs 复用。
+- [x] TUI 只负责交互，不把 approval / retry 逻辑复制到 UI 层。
+- [x] 提供 `echo approval-test` 无副作用 approval 验收入口。
+
+收口规则：
+
+- 不继续扩展鼠标支持、复杂主题、历史持久化或完整 Codex TUI 细节。
+- 后续若继续做 UI，应作为新的 topic 或 review，不阻塞当前 tools-permissions topic 进入业务迁移与归档。

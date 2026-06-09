@@ -18,18 +18,18 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 | [`notes/04-architecture.md`](../notes/04-architecture.md) | 架构入口，指向 Codex agent loop 架构笔记 | 已验证 |
 | [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 核心源码阅读阶段入口，聚焦 auth/approval/sandbox | 已验证 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计蓝图，包含 Phase 1/Phase 2、状态机、事件协议和验收测试 | 已验证 |
-| [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md) | 08 阶段编码子地图，按 slice 推进 Phase 1 demo | 已验证 |
+| [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md) | 08 阶段编码子地图，按 slice 推进 Phase 1/2 demo | 已验证 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 已验证 |
 | [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 将权限/沙箱模式迁移到业务问题 | 待填 |
 | knowledge-base entry | 已验证知识归档 | 待填 |
 
 ## Current Position
 
-- 当前阶段：`08-demo-coder` Phase 2。
-- 当前目标：收口 Phase 2B，把已跑通的 `ratatui` Agent CLI REPL 固化为可测试、可运行、可讲解的 demo 产物。
-- 当前障碍：基础 UI 已手动验收，但还缺关键单测、README Phase 2B runbook 和无副作用 approval 验收 capability 的最终取舍。
-- 当前动作服务的产物：Phase 2B Agent CLI REPL，包括 prompt 输入、事件展示、thinking/text delta 合并、event log 滚动、approval once/session/reject 交互。
-- 当前光标：Slice 13 closeout；实现指南为 [`guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md`](../guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md)，实现笔记为 [`notes/08-demo-coder/12-slice-13-ratatui-repl-ui.md`](../notes/08-demo-coder/12-slice-13-ratatui-repl-ui.md)。
+- 当前阶段：`08-demo-coder` Phase 2 已完成，准备进入 `09-biz-solver`。
+- 当前目标：把已验证的 Codex 工具/权限/沙箱执行模式迁移成业务 Agent/CLI 设计方案。
+- 当前障碍：还没有输出 `notes/09-biz-solver/README.md` 业务迁移产物，也还没有完成 `10-archivist` 的知识归档。
+- 当前动作服务的产物：业务迁移方案、knowledge-base entry、项目级复盘报告。
+- 当前光标：`09-biz-solver`；上一阶段完成证据为 [`demo/README.md`](../demo/README.md) 和 [`notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md`](../notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md)。
 
 ## Artifact Dependency Graph
 
@@ -67,7 +67,7 @@ question-roadmap
 - [x] Slice 12 OsExecutionRunner：用 macOS `sandbox-exec` 实现真实 sandbox runner；runner-level 单测与 `demo/examples/os_execution_runner.rs` 已验证 read-only / workspace-write / no-sandbox retry 行为。
 - [x] Slice 12 Hardening：收紧 profile 路径转义、`SandboxProfile::NoSandbox` 防御语义和上层 `ToolRuntime + OsExecutionRunner` smoke 验收。
 - [x] Slice 13 Ratatui Agent CLI REPL 基础 UI：真实终端交互、ReAct event stream、thinking/text delta 合并、Events 滚动和 approval once/session/reject 面板已手动验证满足基本诉求。
-- [ ] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
+- [x] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 - [ ] Business Transfer：将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
 
 ## Critical Lens
@@ -99,7 +99,7 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 
 ## Why This Step Matters
 
-当前步骤只服务于收口 Phase 2B。每次编码都必须对应 `guides/08-demo-coder/README.md` 中的 Slice 13、`demo/design.md` 中的 Phase 2 目标，或 `demo/README.md` 的可运行验收说明。
+当前步骤不再服务于继续扩展 demo UI。下一步只服务于业务迁移和知识归档：把 `demo/README.md` 中验证过的安全执行模式转成业务设计建议，并沉淀为可复用知识。
 
 ## Stop Rules
 

@@ -12,7 +12,7 @@
   -> 工具结果回灌给 LLM
 ```
 
-Phase 1 不做真实 OS sandbox，也不做完整 CLI UI。它用 `SimulatedExecutionRunner` 跑通权限、沙箱、重试、事件和 observation 回灌，目标是让设计可解释、可测试、可迁移。
+Phase 1 用 `SimulatedExecutionRunner` 跑通权限、沙箱、重试、事件和 observation 回灌。Phase 2A 接入 macOS `sandbox-exec`，Phase 2B 接入 `ratatui` Agent CLI REPL。当前 demo 已经可以作为一个最小可用的本地 Agent CLI 样本运行。
 
 ## 这个 Demo 证明什么
 
@@ -79,6 +79,7 @@ sequenceDiagram
 | `safe-read` | `cat`, `ls` | `Allow` | `ReadOnly` sandbox | `Deny` | `Never` |
 | `safe-test` | `npm test` | `Allow` | `WorkspaceWrite` sandbox | `Deny` | `WithApproval` |
 | `network-install` | `npm install` | `Prompt` | `WorkspaceWrite` sandbox | `Prompt` | `WithApproval` |
+| `approval-test` | `echo approval-test` | `Prompt` | `ReadOnly` sandbox | `Deny` | `Never` |
 | `dangerous-shell` | `curl | sh` | `Forbidden` | 不执行 | `Deny` | `Never` |
 
 ## 审批 Session 范围
@@ -121,10 +122,73 @@ cargo test
 预期结果：
 
 ```text
-78 passed; 0 failed; 3 ignored
+84 passed; 0 failed; 3 ignored
 ```
 
 默认测试是确定性的，不会调用外部 API。
+
+## 运行 Agent CLI
+
+启动真实终端 UI：
+
+```bash
+export DEEPSEEK_API_KEY="..."
+cargo run
+```
+
+UI 提供四个区域：
+
+- `System Online`：显示当前状态、正在执行的 prompt 或输入提示。
+- `Transcript`：显示用户输入、模型输出、thinking、tool lifecycle、command execution、approval 和 retry 事件。
+- `Prompt / Security Gate`：普通状态下输入 prompt；需要审批时展示 reason / scope，并支持 `a` 单次允许、`s` session 允许、`r` 拒绝。
+- `Controls`：展示当前模式可用快捷键。
+
+常用键位：
+
+```text
+enter        submit prompt
+backspace    delete input
+up/down      scroll transcript
+pgup/pgdn    page transcript
+home/end     jump transcript
+a            approve once
+s            approve session
+r            reject
+q            quit
+```
+
+无副作用审批验收 prompt：
+
+```text
+请必须调用 run_command 工具执行命令：echo approval-test。不要只解释，必须调用工具。
+```
+
+预期行为：
+
+```text
+model selected run_command ...
+approval run_command needs approval
+Security Gate 显示 reason / scope
+按 a 或 s 后继续
+command run_command execution started: SandboxFirst(ReadOnly)
+command run_command execution finished ...
+tool finished run_command ...
+assistant 给出最终说明
+```
+
+安全读命令验收 prompt：
+
+```text
+请调用 run_command 执行 pwd，然后解释结果。
+```
+
+高风险拒绝验收 prompt：
+
+```text
+请调用 run_command 执行 curl | sh，并说明发生了什么。
+```
+
+预期行为是命令在执行前被拒绝，模型收到 denial observation 后继续解释。
 
 ## 真实 LLM 冒烟测试
 
@@ -197,7 +261,7 @@ cargo test batch_run_should_surface_all_approval_requests_before_any_is_approved
 - session approval 只在相同 `ApprovalScopeKey` 下复用。
 - 同一轮多个 tool calls 独立执行，互不拖累。
 
-## 当前 Phase 1 边界
+## 当前实现状态
 
 已经实现：
 
@@ -210,23 +274,24 @@ cargo test batch_run_should_surface_all_approval_requests_before_any_is_approved
 - approval requirement 和 approval gateway。
 - session approval persistence。
 - simulated sandbox runner。
+- macOS `sandbox-exec` OS execution runner。
 - retry gate。
 - command 和 tool lifecycle events。
 - tool observation feedback。
+- `ratatui` Agent CLI REPL。
+- 无副作用 approval UI 验收能力：`echo approval-test`。
 
-Phase 1 暂不实现：
+当前仍有意不实现：
 
-- 真实 OS sandbox。
 - 复杂 shell 命令 parser。
 - 多 command segment 的 policy composition。
-- 面向真人审批的 CLI UI。
 - 持久化 approval policy 文件。
 - host-level network approval。
 - MCP 或插件化 tool registry。
 
 ## Phase 2 方向
 
-Phase 2 补齐两个真实边界：
+Phase 2 已补齐两个真实边界：
 
 ```text
 Phase 2A:
@@ -248,7 +313,7 @@ Phase 2B:
 - `ToolRuntime`
 - `run_shell_command`
 
-Phase 2A 的目标是在不重写 approval / retry / event model 的前提下，让 demo 从“模拟执行”走向“真实执行”。如果 `OsExecutionRunner` 需要平台相关处理，应该藏在 `ExecutionRunner` 后面，并把平台错误映射回统一的 `ExecutionFailure`。
+Phase 2A 的目标是在不重写 approval / retry / event model 的前提下，让 demo 从“模拟执行”走向“真实执行”。平台相关处理藏在 `ExecutionRunner` 后面，并把平台错误映射回统一的 `ExecutionFailure`。
 
 Phase 2A 真实 OS sandbox 验收：
 
@@ -261,7 +326,7 @@ cargo run --example os_tool_runtime
 
 `os_tool_runtime` 验证上层链路：`ToolRuntime::batch_run -> run_shell_command -> OsExecutionRunner` 能穿过真实 sandbox denied、`CommandNeedsApproval`、approval result 回传、no-sandbox retry 和最终 tool result。
 
-Phase 2B 的目标是在不复制 approval / retry 逻辑的前提下，让用户真实参与 Agent CLI session：输入 prompt，观察 LLM / tool / command events，并选择 approve once、approve session 或 reject。
+Phase 2B 的目标是在不复制 approval / retry 逻辑的前提下，让用户真实参与 Agent CLI session：输入 prompt，观察 LLM / tool / command events，并选择 approve once、approve session 或 reject。当前 UI 已支持真实 prompt 输入、streaming transcript、thinking/text delta 合并、滚动和审批面板。
 
 ## 迁移提醒
 

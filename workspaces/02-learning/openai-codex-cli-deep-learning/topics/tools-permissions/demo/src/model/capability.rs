@@ -12,6 +12,8 @@ pub enum CapabilityKind {
     SafeTest,
     /// 需要网络或依赖写入，比如 `npm install`
     NetworkInstall,
+    /// 无副作用审批验收命令，比如 `echo approval-test`
+    ApprovalTest,
     /// 高风险或不可安全抽象的命令，比如 `curl ... | sh`, `rm -rf`
     DangerousShell,
 }

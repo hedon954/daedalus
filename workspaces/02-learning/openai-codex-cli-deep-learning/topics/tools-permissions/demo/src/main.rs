@@ -33,5 +33,5 @@ async fn main() -> anyhow::Result<()> {
 
     let agent = Arc::new(ReActAgent::new(Arc::new(llm), None, Arc::new(runtime)));
 
-    cli::event_loop::run_cli(agent, approval_tx)
+    cli::event_loop::run_cli(agent, approval_tx).await
 }

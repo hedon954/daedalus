@@ -1,4 +1,12 @@
-use std::{io, sync::Arc, time::Duration};
+use std::{
+    io,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread::{self, JoinHandle},
+    time::Duration,
+};
 
 use anyhow::Context;
 use futures_util::StreamExt;
@@ -59,38 +67,93 @@ impl Drop for TerminalGuard {
     }
 }
 
-pub fn run_cli(
+pub async fn run_cli(
     agent: Arc<ReActAgent>,
     approval_tx: mpsc::Sender<ToolApprovalResult>,
 ) -> anyhow::Result<()> {
     let mut state = CliState::new();
     let (ui_tx, ui_rx) = mpsc::channel(128);
+    let (key_tx, key_rx) = mpsc::channel(128);
 
     let _guard = TerminalGuard::enter()?;
+    let _input_guard = InputThreadGuard::spawn(key_tx);
 
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).context("failed to create terminal")?;
 
-    let result = run_event_loop(&mut terminal, &mut state, agent, approval_tx, ui_tx, ui_rx);
+    let result = run_event_loop(
+        &mut terminal,
+        &mut state,
+        agent,
+        approval_tx,
+        ui_tx,
+        ui_rx,
+        key_rx,
+    )
+    .await;
 
     terminal.show_cursor().context("failed to show cursor")?;
 
     result
 }
 
-fn run_event_loop(
+struct InputThreadGuard {
+    stop: Arc<AtomicBool>,
+    handle: Option<JoinHandle<()>>,
+}
+
+impl InputThreadGuard {
+    fn spawn(key_tx: mpsc::Sender<KeyEvent>) -> Self {
+        let stop = Arc::new(AtomicBool::new(false));
+        let stop_for_thread = Arc::clone(&stop);
+
+        let handle = thread::spawn(move || {
+            while !stop_for_thread.load(Ordering::Relaxed) {
+                let Ok(ready) = event::poll(Duration::from_millis(50)) else {
+                    continue;
+                };
+                if !ready {
+                    continue;
+                }
+
+                let Ok(Event::Key(key)) = event::read() else {
+                    continue;
+                };
+
+                if key_tx.blocking_send(key).is_err() {
+                    break;
+                }
+            }
+        });
+
+        Self {
+            stop,
+            handle: Some(handle),
+        }
+    }
+}
+
+impl Drop for InputThreadGuard {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            let _ = handle.join();
+        }
+    }
+}
+
+async fn run_event_loop(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     state: &mut CliState,
     agent: Arc<ReActAgent>,
     approval_tx: mpsc::Sender<ToolApprovalResult>,
     ui_tx: mpsc::Sender<UiEvent>,
     mut ui_rx: mpsc::Receiver<UiEvent>,
+    mut key_rx: mpsc::Receiver<KeyEvent>,
 ) -> anyhow::Result<()> {
     loop {
-        while let Ok(event) = ui_rx.try_recv() {
-            handle_ui_event(state, event);
-        }
+        drain_ui_events(state, &mut ui_rx);
 
         terminal
             .draw(|frame| view::draw(frame, frame.area(), state))
@@ -100,21 +163,31 @@ fn run_event_loop(
             break;
         }
 
-        if event::poll(Duration::from_millis(50)).context("failed to poll terminal event")?
-            && let Event::Key(key) = event::read().context("failed to read terminal event")?
-        {
-            let command = handle_key(state, key);
-            handle_command(
-                state,
-                command,
-                agent.clone(),
-                approval_tx.clone(),
-                ui_tx.clone(),
-            );
+        tokio::select! {
+            Some(event) = ui_rx.recv() => {
+                handle_ui_event(state, event);
+            }
+            Some(key) = key_rx.recv() => {
+                let command = handle_key(state, key);
+                handle_command(
+                    state,
+                    command,
+                    agent.clone(),
+                    approval_tx.clone(),
+                    ui_tx.clone(),
+                );
+            }
+            _ = tokio::time::sleep(Duration::from_millis(250)) => {}
         }
     }
 
     Ok(())
+}
+
+fn drain_ui_events(state: &mut CliState, ui_rx: &mut mpsc::Receiver<UiEvent>) {
+    while let Ok(event) = ui_rx.try_recv() {
+        handle_ui_event(state, event);
+    }
 }
 
 fn handle_key(state: &mut CliState, key: KeyEvent) -> UiCommand {
@@ -127,13 +200,29 @@ fn handle_key(state: &mut CliState, key: KeyEvent) -> UiCommand {
             state.scroll_log_down();
             return UiCommand::None;
         }
+        KeyCode::PageUp => {
+            state.scroll_log_page_up();
+            return UiCommand::None;
+        }
+        KeyCode::PageDown => {
+            state.scroll_log_page_down();
+            return UiCommand::None;
+        }
+        KeyCode::Home => {
+            state.scroll_log_home();
+            return UiCommand::None;
+        }
+        KeyCode::End => {
+            state.scroll_to_bottom();
+            return UiCommand::None;
+        }
         _ => {}
     }
 
     match state.mode {
-        super::app::UiMode::EditingPrompt => handle_prompt_key(state, key),
-        super::app::UiMode::RunningAgent => handle_running_key(state, key),
-        super::app::UiMode::PendingApproval => handle_approval_key(state, key),
+        UiMode::EditingPrompt => handle_prompt_key(state, key),
+        UiMode::RunningAgent => handle_running_key(state, key),
+        UiMode::PendingApproval => handle_approval_key(state, key),
     }
 }
 
@@ -189,7 +278,7 @@ fn handle_command(
         UiCommand::Quit => state.should_quit = true,
         UiCommand::SubmitPrompt(prompt) => {
             state.push_line(UiLine::User(prompt.clone()));
-            state.mode = UiMode::RunningAgent;
+            state.set_running(prompt.clone());
 
             tokio::spawn(async move {
                 match agent.run(prompt) {
@@ -217,9 +306,11 @@ fn handle_command(
             });
         }
         UiCommand::ApproveOnce(approval_id) => {
+            state.push_line(UiLine::Approval("approved once".to_string()));
             send_approval(state, approval_tx, approval_id, ApprovalPersistence::Once);
         }
         UiCommand::ApproveSession(approval_id) => {
+            state.push_line(UiLine::Approval("approved for this session".to_string()));
             send_approval(
                 state,
                 approval_tx,
@@ -232,6 +323,7 @@ fn handle_command(
                 approval_id,
                 decision: UserApprovalDecision::Rejected,
             });
+            state.push_line(UiLine::Approval("rejected".to_string()));
             state.pending_approval = None;
             state.mode = UiMode::RunningAgent;
         }
@@ -258,11 +350,11 @@ fn handle_ui_event(state: &mut CliState, event: UiEvent) {
         UiEvent::Agent(event) => apply_stream_event(state, event),
         UiEvent::AgentFailed(err) => {
             state.push_line(UiLine::Error(err));
-            state.mode = UiMode::EditingPrompt;
+            state.set_ready();
         }
         UiEvent::AgentFinished => {
-            state.push_line(UiLine::Model("[completed]".to_string()));
-            state.mode = UiMode::EditingPrompt;
+            state.push_line(UiLine::System("turn completed".to_string()));
+            state.set_ready();
         }
     }
 }
@@ -272,12 +364,15 @@ fn apply_stream_event(state: &mut CliState, event: StreamEvent) {
         StreamEvent::TextDelta(text) => state.append_model_delta(text),
         StreamEvent::ThinkingDelta(text) => state.append_thinking_delta(text),
         StreamEvent::ToolCallFinished(call) => {
-            state.push_line(UiLine::Tool(format!("{} {}", call.name, call.arguments)));
+            state.push_line(UiLine::Tool(format!(
+                "model selected {} {}",
+                call.name, call.arguments
+            )));
         }
         StreamEvent::ToolRunStarted {
             name, arguments, ..
         } => {
-            state.push_line(UiLine::Tool(format!("started {name}: {arguments}")));
+            state.push_line(UiLine::Tool(format!("started {name} {arguments}")));
         }
         StreamEvent::ToolRunFinished { name, output, .. } => {
             state.push_line(UiLine::Tool(format!("finished {name}: {output}")));
@@ -287,6 +382,7 @@ fn apply_stream_event(state: &mut CliState, event: StreamEvent) {
         }
         StreamEvent::CommandNeedsApproval {
             approval_id,
+            name,
             reason,
             scope,
             ..
@@ -296,7 +392,47 @@ fn apply_stream_event(state: &mut CliState, event: StreamEvent) {
                 reason,
                 scope_summary: format!("{scope:?}"),
             });
+            state.push_line(UiLine::Approval(format!("{name} needs approval")));
             state.mode = UiMode::PendingApproval;
+        }
+        StreamEvent::CommandExecutionStarted { name, attempt, .. } => {
+            state.push_line(UiLine::Command(format!(
+                "{name} execution started: {attempt:?}"
+            )));
+        }
+        StreamEvent::CommandExecutionFinished {
+            name,
+            attempt,
+            output,
+            ..
+        } => {
+            state.push_line(UiLine::Command(format!(
+                "{name} execution finished: {attempt:?}; output: {output}"
+            )));
+        }
+        StreamEvent::CommandExecutionFailed {
+            name,
+            attempt,
+            error,
+            ..
+        } => {
+            state.push_line(UiLine::Error(format!(
+                "{name} execution failed: {attempt:?}; error: {error}"
+            )));
+        }
+        StreamEvent::CommandRetryEvaluated { name, decision, .. } => {
+            state.push_line(UiLine::Command(format!(
+                "{name} retry decision: {decision:?}"
+            )));
+        }
+        StreamEvent::Started => {
+            state.push_line(UiLine::System("turn started".to_string()));
+        }
+        StreamEvent::Error(err) => {
+            state.push_line(UiLine::Error(err));
+        }
+        StreamEvent::Completed => {
+            state.push_line(UiLine::System("turn completed".to_string()));
         }
         other => {
             state.push_line(UiLine::Command(format!("{other:?}")));

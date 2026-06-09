@@ -527,6 +527,32 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn run_command_approval_test_should_request_approval_then_finish() {
+        let runtime = test_runtime();
+
+        let (result, events) = run_tool(
+            &runtime,
+            tool_call(
+                "run_command",
+                r#"{"command": "echo approval-test", "justification": "verify approval UI"}"#,
+            ),
+        )
+        .await;
+
+        assert!(matches!(result, ToolRuntimeResult::Finished { .. }));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::CommandNeedsApproval { name, .. } if name == "run_command"
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            StreamEvent::CommandExecutionFinished { name, .. } if name == "run_command"
+        )));
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_finished(&events, "call_test", "run_command");
+    }
+
+    #[tokio::test]
     async fn run_command_command_failure_should_fail_without_pinning_error_text() {
         let runtime = test_runtime();
 

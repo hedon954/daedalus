@@ -31,6 +31,7 @@
 - 2026-06-06 Slice 8 Event Protocol Hardening 已完成：事件类型包含 `CommandNeedsApproval`、`CommandExecutionStarted/Finished/Failed`、`CommandRetryEvaluated`；已从旧 `ApprovalController / ApprovalBroker` 重构为 `ApprovalGateway + PendingApproval`，由 `run_shell_command` 通过当前 run 的 `EventSender` 发送 `CommandNeedsApproval`，内部 `ToolApprovalResult` 通过 `approval_id + oneshot` 回流；send failure fail closed、pending cleanup、retry 成功路径 attempt trace、`CommandEventEmitter` 和 `run_execution_attempt` 均已闭合，`cargo test` 为 63 passed、3 ignored。下一步进入 Slice 9 multi-tool independent execution。
 - 2026-06-06 Slice 9 策略已定稿：同批 tool calls 互不影响；能并发就并发执行；每个 call 独立返回 `Finished / Failed / Denied`；不因为某个 call 失败或被拒而取消其他 call；最终按原始 index 稳定回灌 observations。
 - 2026-06-08 Slice 9 已实现并收口：`ToolRuntime::batch_run` 使用 `tokio::spawn` 并发执行同批 tool calls，并按原始 index 稳定返回 results；`ToolEventEmitter` 统一发出 `ToolRunStarted/Finished/Failed`；`react.rs` 只负责把 results 写成下一轮 LLM 的 `role=tool` observations。已补 runtime tool event tests、mixed batch tests 和 approval-blocked batch 并发验证，`cargo test` 为 65 passed、3 ignored。下一步进入 Slice 10 approval persistence，或先补 `demo/README.md` trace/runbook。
+- 2026-06-10 `08-demo-coder` Phase 2 已收口：`OsExecutionRunner` 接入 macOS `sandbox-exec`，`ratatui` Agent CLI REPL 接入真实 `ReActAgent`，支持 prompt、Codex-like transcript、thinking/text delta 合并、滚动、approval once/session/reject 和无副作用 `echo approval-test` 验收能力。TUI loop 已从同步键盘 poll 改为 keyboard channel + agent event channel 的 `tokio::select!`，修复“只有输入时才继续刷新 agent events”的问题。`cargo test` 为 84 passed、3 ignored。
 
 ## 已验证结论
 
@@ -46,14 +47,15 @@
 
 - 交互式 TUI 断点方案尚待用户在 Cursor 中打开 `source/codex/codex-rs` 后验证。
 - `06-code-reader` 已完成核心专题收敛：`auth/approval/sandbox` 已转化为 demo 的 approval、execution、retry 不变量。
-- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Slice 9 multi-tool independent execution 和 batch boundary 收口，下一步进入 Slice 10 approval persistence 或补 `demo/README.md`。
-- 尚未进入 `09-biz-solver` 和 `10-archivist`。
+- `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Phase 1/2，包括真实 OS sandbox runner 和真人 TUI approval UI。
+- `09-biz-solver` 已输出 `notes/09-biz-solver/README.md`，把安全本地命令执行链路迁移为业务 Agent/CLI 设计方案。
+- `10-archivist` 已新增 `knowledge-base/02-ai-engineering/local-agent-command-execution.md`，还需要通过 daedalus state/topic lifecycle 做最终关闭校验。
 
 ## 恢复上下文提示
 
-- 当前机器状态：`08-demo-coder` active。`04-debugger-guide`、`05-arch-analyzer`、`06-code-reader`、`07-demo-architecture` 已完成；`05-arch-analyzer` 已用 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
+- 当前机器状态：`08-demo-coder` 正在收口为 done，随后应进入 / 完成 `09-biz-solver` 与 `10-archivist`。`04-debugger-guide`、`05-arch-analyzer`、`06-code-reader`、`07-demo-architecture` 已完成；`05-arch-analyzer` 已用 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
 - 当前最重要的两份 notes：
   - `notes/codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
   - `notes/codex-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
 - 当前阶段入口：`guides/08-demo-coder/README.md`；demo 实现和阶段 notes/guides 以 `topics/tools-permissions` 下的 `demo/`、`notes/08-demo-coder/`、`guides/08-demo-coder/` 为准。
-- 当前导航：不是继续泛读 Codex 权限系统；`auth/approval/sandbox` 已收敛成 demo 不变量。当前按 `guides/08-demo-coder/README.md` 的 slice 地图编码；Slice 9 已完成，下一步进入 Slice 10 approval persistence 或补 `demo/README.md`。
+- 当前导航：不是继续泛读 Codex 权限系统，也不是继续扩展完整 Codex TUI；`auth/approval/sandbox` 已收敛成 demo 不变量，`08-demo-coder` Phase 2 已完成。下一步是最终状态流转、topic complete、项目级 evolution 回顾和 README 重写。

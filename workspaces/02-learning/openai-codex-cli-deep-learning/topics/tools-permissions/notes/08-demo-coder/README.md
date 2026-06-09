@@ -8,7 +8,7 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
-- Current slice: Slice 13 Phase 2B Ratatui Agent CLI REPL
+- Current slice: Slice 13 Phase 2B Ratatui Agent CLI REPL closeout
 - Current path: Phase 1 demo complete -> Phase 2A real macOS sandbox with `sandbox-exec` -> Phase 2B real terminal approval UI
 
 ## Topic Index
@@ -26,7 +26,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 | Slice 9 parallel tool runtime review | [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) | 已实现 / 已验证 | 记录当前 `ToolRuntime::batch_run + ToolEventEmitter + ReAct observation` 的职责边界和测试证据 |
 | Slice 10 approval session boundary | [`10-slice-10-approval-session-boundary.md`](10-slice-10-approval-session-boundary.md) | 已实现 / 已验证 | 决定 `ApprovalPersistence::Session` 绑定 `ApprovalGateway` 生命周期，CLI session 内跨 ReAct runs 复用 |
 | Slice 12 sandbox-exec Rust usage | [`11-slice-12-sandbox-exec-rust-usage.md`](11-slice-12-sandbox-exec-rust-usage.md) | 已实现 / 已验证 | 记录 `tokio::process::Command` 调用 `sandbox-exec`、`arg/args` 语义、profile DSL 翻译和 `ExecutionResult` 分类边界 |
-| Slice 13 ratatui REPL UI | [`12-slice-13-ratatui-repl-ui.md`](12-slice-13-ratatui-repl-ui.md) | 基础 UI 已手动验收 / 待补测试和 README | 记录 `CliState -> ratatui draw -> event_loop -> ReActAgent stream -> approval UI` 的边界和实现取舍 |
+| Slice 13 ratatui REPL UI | [`12-slice-13-ratatui-repl-ui.md`](12-slice-13-ratatui-repl-ui.md) | 已实现 / 已手动验收 | 记录 `CliState -> ratatui draw -> event_loop -> ReActAgent stream -> approval UI` 的边界和实现取舍 |
+| Slice 13 Codex-like CLI closeout | [`13-slice-13-codex-like-cli-closeout.md`](13-slice-13-codex-like-cli-closeout.md) | 已验证 / 已收口 | 记录 UI 重写、无副作用 approval-test capability、测试边界和 Phase 2B 验收方式 |
 
 ## Stage Exit Criteria
 
@@ -44,4 +45,4 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - [x] Slice 10 完成：`ApprovalGateway` 支持 session approval store，相同 scope 在同一 CLI session 内可跨 ReAct runs 复用，Once / Rejected / scope mismatch 不复用。
 - [x] Slice 11 完成：`demo/README.md` 能说明运行方式、验收测试、live LLM trace、Phase 1/Phase 2 边界和业务迁移前提。
 - [x] Slice 12 完成：`OsExecutionRunner` 使用 macOS `sandbox-exec` 接入真实 sandbox runner，并通过 runner examples 和 ToolRuntime smoke 验证。
-- [x] Slice 13 基础 UI 验收：`ratatui` REPL 已接入真实 `ReActAgent`、event log、delta 合并、滚动和 approval panel；剩余测试、README 和体验 hardening。
+- [x] Slice 13 完成：`ratatui` REPL 已接入真实 `ReActAgent`、Codex-like transcript、delta 合并、滚动、approval panel 和无副作用 approval-test 验收能力；`demo/README.md` 已同步 Phase 2B runbook。
