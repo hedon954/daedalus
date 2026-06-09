@@ -339,6 +339,8 @@ Phase 2 必须复用 Phase 1 的：
 
 行动指南：[`16-slice-13-ratatui-agent-cli-repl.md`](16-slice-13-ratatui-agent-cli-repl.md)。
 
+原理指南：[`17-ratatui-first-principles.md`](17-ratatui-first-principles.md) 快速介绍 `ratatui` 的使用方式，以及终端 UI 库的通用底层模型。
+
 验收：
 
 - 用户可以输入 prompt。

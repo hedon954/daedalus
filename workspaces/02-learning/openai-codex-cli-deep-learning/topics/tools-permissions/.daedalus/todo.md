@@ -16,18 +16,18 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：已经进入 Phase 2B，下一步实现真实 Agent CLI REPL，让用户在终端中输入 prompt、观察事件流，并处理 approve once / approve session / reject。
-- 为什么现在做它：Phase 1 已证明状态机正确，但 runner 仍是模拟规则表；如果目标是“可用 mini demo”，必须让 sandbox-first / no-sandbox-retry 接到真实 OS 执行。
-- 完成后解锁：demo 从“可验证库 + examples”升级为“可用 mini Agent CLI”，之后再进入业务迁移阶段。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`demo/README.md` 已补运行和验收说明；`OsExecutionRunner` 已接入 `/usr/bin/sandbox-exec`，覆盖 no-sandbox read、read-only read、read-only block write、workspace-write allow write、no-sandbox retry write、profile 路径转义、`SandboxFirst + NoSandbox` fail closed；`cargo test` 通过 78 个默认测试，3 个 live LLM 测试保持 ignored，并已手动跑通过真实 API smoke tests、`cargo run --example os_execution_runner` 和 `cargo run --example os_tool_runtime`。
-- 当前待解决：实现 Phase 2B Agent CLI REPL。建议先做 plain async REPL 验证 approval channel 和 agent run 边界，再接 `ratatui`；可选补 `ReActAgent + OsExecutionRunner` live smoke。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前问题：Slice 13 的 `ratatui` Agent CLI REPL 基础 UI 已手动验收，下一步是补测试、README 运行说明和 approval-test harmless capability 的最终取舍。
+- 为什么现在做它：Phase 2A 已接真实 `OsExecutionRunner`，Phase 2B 已证明真人可操作的 prompt / event stream / approval panel 可用；收口前需要把学习证据、测试和 runbook 补齐。
+- 完成后解锁：demo 可以作为“可用 mini Agent CLI”进入 `09-biz-solver`，把安全本地命令执行模式迁移到业务设计。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`demo/README.md` 已补 Phase 1 运行和验收说明；`OsExecutionRunner` 已接入 `/usr/bin/sandbox-exec`，覆盖 no-sandbox read、read-only read、read-only block write、workspace-write allow write、no-sandbox retry write、profile 路径转义、`SandboxFirst + NoSandbox` fail closed；`ratatui` REPL 已接入真实 `ReActAgent` 和 `OsExecutionRunner`，支持 prompt 输入、event log、thinking/text delta 合并、Events 滚动、approval once/session/reject 面板；用户已手动验证 UI 满足基本诉求。
+- 当前待解决：补 `handle_key` / `UiCommand` / delta 合并 / view 渲染的关键单测；补 `demo/README.md` Phase 2B 运行说明和手动验收 prompt；决定是否保留 harmless `echo approval-test` capability 用于无副作用 approval 验收。另记录一个后续 approval 语义缺口：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Phase 2A 已收口。下一处实现光标是 Phase 2B `ratatui` Agent CLI REPL，除非先补 `ReActAgent + OsExecutionRunner` live smoke。
+- Code frontier：Phase 2B 基础 UI 已跑通。下一处实现光标是 Slice 13 closeout：补测试、README Phase 2B runbook，以及无副作用 approval 验收 capability 的最终取舍。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
 - Current decision：`ApprovalPersistence::Session` 对齐 CLI session。一个进程初始化一个 `ApprovalGateway`，多个 ReAct runs 共享它；`ApprovalScopeKey` 不含 `session_id`，因为 session 边界由 gateway/store 生命周期承载。
-- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”“实现 Slice 10 session approval store”“补 demo README”“从零实现 OsExecutionRunner”“补 OsExecutionRunner hardening”或“进入 09 business transfer”；当前应进入 Phase 2B 或补 ReAct live smoke。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”“实现 Slice 10 session approval store”“补 Phase 1 demo README”“从零实现 OsExecutionRunner”“补 OsExecutionRunner hardening”“先做 plain stdout REPL”或“从零开始实现 ratatui 壳”；当前应收口 Slice 13 或准备进入 09 business transfer。
 
 ## Critical Checkpoint
 
@@ -62,7 +62,8 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
 - [x] Slice 12 OsExecutionRunner：用 macOS `sandbox-exec` 实现真实 sandbox runner；runner-level 单测与 `demo/examples/os_execution_runner.rs` 已验证 read-only / workspace-write / no-sandbox retry 行为。
 - [x] Slice 12 Hardening：收紧 profile 路径转义、`SandboxProfile::NoSandbox` 防御语义和上层 `ToolRuntime + OsExecutionRunner` smoke 验收。
-- [ ] Slice 13 Ratatui Agent CLI REPL：实现真实终端交互和 approval once/session/reject。
+- [x] Slice 13 Ratatui Agent CLI REPL 基础 UI：真实终端交互、ReAct event stream、thinking/text delta 合并、Events 滚动和 approval once/session/reject 面板已手动验证满足基本诉求。
+- [ ] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 
 ## 06 Code Reader Gaps
 

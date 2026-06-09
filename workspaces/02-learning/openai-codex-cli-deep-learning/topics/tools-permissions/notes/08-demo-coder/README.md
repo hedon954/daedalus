@@ -8,8 +8,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 
 - Final artifact: [`../../demo/README.md`](../../demo/README.md)
 - Current stage: `08-demo-coder`
-- Current slice: Slice 12 Phase 2A OsExecutionRunner
-- Current path: Phase 1 demo complete -> Phase 2A real macOS sandbox with `sandbox-exec`
+- Current slice: Slice 13 Phase 2B Ratatui Agent CLI REPL
+- Current path: Phase 1 demo complete -> Phase 2A real macOS sandbox with `sandbox-exec` -> Phase 2B real terminal approval UI
 
 ## Topic Index
 
@@ -25,7 +25,8 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 | Slice 9 multi-tool independent policy | [`08-slice-9-multi-tool-independent-policy.md`](08-slice-9-multi-tool-independent-policy.md) | 已实现 / 已验证 | 决定同批 tool calls 互不影响、可并发执行、按 index 稳定回灌 observation，不做 batch-level hard stop |
 | Slice 9 parallel tool runtime review | [`09-slice-9-parallel-run-tools-review.md`](09-slice-9-parallel-run-tools-review.md) | 已实现 / 已验证 | 记录当前 `ToolRuntime::batch_run + ToolEventEmitter + ReAct observation` 的职责边界和测试证据 |
 | Slice 10 approval session boundary | [`10-slice-10-approval-session-boundary.md`](10-slice-10-approval-session-boundary.md) | 已实现 / 已验证 | 决定 `ApprovalPersistence::Session` 绑定 `ApprovalGateway` 生命周期，CLI session 内跨 ReAct runs 复用 |
-| Slice 12 sandbox-exec Rust usage | [`11-slice-12-sandbox-exec-rust-usage.md`](11-slice-12-sandbox-exec-rust-usage.md) | 进行中 | 记录 `tokio::process::Command` 调用 `sandbox-exec`、`arg/args` 语义、profile DSL 翻译和 `ExecutionResult` 分类边界 |
+| Slice 12 sandbox-exec Rust usage | [`11-slice-12-sandbox-exec-rust-usage.md`](11-slice-12-sandbox-exec-rust-usage.md) | 已实现 / 已验证 | 记录 `tokio::process::Command` 调用 `sandbox-exec`、`arg/args` 语义、profile DSL 翻译和 `ExecutionResult` 分类边界 |
+| Slice 13 ratatui REPL UI | [`12-slice-13-ratatui-repl-ui.md`](12-slice-13-ratatui-repl-ui.md) | 基础 UI 已手动验收 / 待补测试和 README | 记录 `CliState -> ratatui draw -> event_loop -> ReActAgent stream -> approval UI` 的边界和实现取舍 |
 
 ## Stage Exit Criteria
 
@@ -42,3 +43,5 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 - [x] Slice 9 完成：同批 tool calls 可并发执行，mixed success / failure / denial 都能独立回灌 observation，terminal tool events 由 runtime 透出，最终 message 顺序按原始 index 稳定。
 - [x] Slice 10 完成：`ApprovalGateway` 支持 session approval store，相同 scope 在同一 CLI session 内可跨 ReAct runs 复用，Once / Rejected / scope mismatch 不复用。
 - [x] Slice 11 完成：`demo/README.md` 能说明运行方式、验收测试、live LLM trace、Phase 1/Phase 2 边界和业务迁移前提。
+- [x] Slice 12 完成：`OsExecutionRunner` 使用 macOS `sandbox-exec` 接入真实 sandbox runner，并通过 runner examples 和 ToolRuntime smoke 验证。
+- [x] Slice 13 基础 UI 验收：`ratatui` REPL 已接入真实 `ReActAgent`、event log、delta 合并、滚动和 approval panel；剩余测试、README 和体验 hardening。

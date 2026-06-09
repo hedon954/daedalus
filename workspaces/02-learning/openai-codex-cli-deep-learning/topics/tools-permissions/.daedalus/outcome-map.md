@@ -26,10 +26,10 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 ## Current Position
 
 - 当前阶段：`08-demo-coder` Phase 2。
-- 当前目标：把 Phase 1 demo 从“可解释模型”推进成“可用 mini demo”。
-- 当前障碍：真实 OS sandbox runner 已完成；真人可操作的 Agent CLI REPL 还未实现。
-- 当前动作服务的产物：Phase 2B Agent CLI REPL，包括 prompt 输入、事件展示、approval 交互和 session approval 复用验证。
-- 当前光标：Phase 2B `ratatui` Agent CLI REPL；本地草稿为 [`guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md`](../guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md)。
+- 当前目标：收口 Phase 2B，把已跑通的 `ratatui` Agent CLI REPL 固化为可测试、可运行、可讲解的 demo 产物。
+- 当前障碍：基础 UI 已手动验收，但还缺关键单测、README Phase 2B runbook 和无副作用 approval 验收 capability 的最终取舍。
+- 当前动作服务的产物：Phase 2B Agent CLI REPL，包括 prompt 输入、事件展示、thinking/text delta 合并、event log 滚动、approval once/session/reject 交互。
+- 当前光标：Slice 13 closeout；实现指南为 [`guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md`](../guides/08-demo-coder/16-slice-13-ratatui-agent-cli-repl.md)，实现笔记为 [`notes/08-demo-coder/12-slice-13-ratatui-repl-ui.md`](../notes/08-demo-coder/12-slice-13-ratatui-repl-ui.md)。
 
 ## Artifact Dependency Graph
 
@@ -66,7 +66,8 @@ question-roadmap
 - [x] Slice 11 Demo README And Runbook：补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移说明。
 - [x] Slice 12 OsExecutionRunner：用 macOS `sandbox-exec` 实现真实 sandbox runner；runner-level 单测与 `demo/examples/os_execution_runner.rs` 已验证 read-only / workspace-write / no-sandbox retry 行为。
 - [x] Slice 12 Hardening：收紧 profile 路径转义、`SandboxProfile::NoSandbox` 防御语义和上层 `ToolRuntime + OsExecutionRunner` smoke 验收。
-- [ ] Slice 13 Ratatui Agent CLI REPL：实现真实终端交互、事件展示和 approve once/session/reject。
+- [x] Slice 13 Ratatui Agent CLI REPL 基础 UI：真实终端交互、ReAct event stream、thinking/text delta 合并、Events 滚动和 approval once/session/reject 面板已手动验证满足基本诉求。
+- [ ] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 - [ ] Business Transfer：将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
 
 ## Critical Lens
@@ -98,11 +99,11 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 
 ## Why This Step Matters
 
-当前步骤只服务于实现 Phase 1 demo。每次编码都必须对应 `guides/08-demo-coder/README.md` 中的 slice 和 `demo/design.md` 中的验收测试。
+当前步骤只服务于收口 Phase 2B。每次编码都必须对应 `guides/08-demo-coder/README.md` 中的 Slice 13、`demo/design.md` 中的 Phase 2 目标，或 `demo/README.md` 的可运行验收说明。
 
 ## Stop Rules
 
 - 不继续扩展 Windows sandbox 细节，除非它直接改变 demo 的跨平台抽象。
 - 不继续扩展 MCP elicitation 细节，除非它直接改变 approval request 的最小接口。
-- 不继续扩展完整 TUI UI 细节，当前 demo 只需要 CLI 层面的授权交互。
+- 不继续扩展复杂 TUI 主题、鼠标支持、历史持久化或多 pane 高级交互；当前 demo 只需要可输入、可观察、可审批、可回看的最小 CLI 层授权交互。
 - 不把“多段命令更危险”的工程直觉写成源码事实；必须沿用源码里的概念区分，例如 command segment 和 complex parsing fallback。

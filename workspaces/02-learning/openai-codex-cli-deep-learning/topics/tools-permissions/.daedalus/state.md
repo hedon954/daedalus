@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`08-demo-coder`
 - 状态：`active`
-- 下一步：进入 `08-demo-coder` Phase 2B：设计并实现真实 Agent CLI REPL，承接 prompt、事件展示和 approve once/session/reject。
+- 下一步：收口 `08-demo-coder` Slice 13：为已手动验收的 ratatui Agent CLI REPL 补关键测试、Phase 2B README/runbook 和无副作用 approval 验收能力。
 
 ## 枚举约束
 
