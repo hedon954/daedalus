@@ -8,7 +8,7 @@ fn repo_fixture() -> TempDir {
     let temp = TempDir::new().expect("temp dir");
     let repo = temp.path();
     fs::create_dir_all(repo.join("system/templates")).expect("templates dir");
-    fs::create_dir_all(repo.join("workspaces/02-learning")).expect("workspaces dir");
+    fs::create_dir_all(repo.join("workspaces/projects")).expect("workspaces dir");
     fs::write(repo.join("CLAUDE.md"), "# Test Daedalus Project\n").expect("root claude");
 
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -125,9 +125,7 @@ fn command_accepts_daedalus_subdirectory() {
         ])
         .assert()
         .success()
-        .stdout(predicates::str::contains(
-            "workspaces/02-learning/from-subdir",
-        ));
+        .stdout(predicates::str::contains("workspaces/projects/from-subdir"));
 }
 
 #[test]
@@ -148,7 +146,7 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/my-learning-task");
+    let task_dir = repo.path().join("workspaces/projects/my-learning-task");
     let topic_dir = active_topic_dir(&task_dir);
     assert!(task_dir.join("CLAUDE.md").exists());
     assert!(!task_dir.join(".daedalus/CLAUDE.md").exists());
@@ -180,15 +178,36 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(state_md.contains("[`.daedalus/state.toml`](state.toml)"));
     assert!(state_md.contains("Active Topic：`main`"));
     assert!(state_md.contains("生命周期：`active`"));
-    assert!(state_md.contains("Workspace Bucket：`02-learning`"));
+    assert!(state_md.contains("Workspace Bucket：`projects`"));
     assert!(state_md.contains("topics/main"));
     let state_toml = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state.toml");
     assert!(state_toml.contains("Project state 只描述"));
     assert!(state_toml.contains("task.lifecycle 只能是"));
     assert!(state_toml.contains("lifecycle = \"active\""));
-    assert!(state_toml.contains("workspace_bucket = \"02-learning\""));
+    assert!(state_toml.contains("workspace_bucket = \"projects\""));
     assert!(state_toml.contains("active_topic = \"main\""));
     assert!(state_toml.contains("transition.action 只能是"));
+    assert!(
+        repo.path()
+            .join("workspaces/.daedalus/current.toml")
+            .exists()
+    );
+    assert!(
+        repo.path()
+            .join("workspaces/.daedalus/project-index.toml")
+            .exists()
+    );
+    assert!(repo.path().join("workspaces/current-project").exists());
+    assert!(repo.path().join("workspaces/current-topic").exists());
+    assert!(!repo.path().join("workspaces/02-learning").exists());
+    assert!(!repo.path().join("workspaces/03-completed").exists());
+    assert!(!repo.path().join("workspaces/04-abandoned").exists());
+    assert!(repo.path().join(".ignore").exists());
+    assert!(repo.path().join(".cursorignore").exists());
+    assert!(repo.path().join(".claude/settings.json").exists());
+    let claude_settings =
+        fs::read_to_string(repo.path().join(".claude/settings.json")).expect("claude settings");
+    assert!(claude_settings.contains("Read(./workspaces/projects/**/.archive/**)"));
     let task_card =
         fs::read_to_string(topic_dir.join(".daedalus/task-card.md")).expect("task-card.md");
     assert!(task_card.contains("# 专题学习任务卡"));
@@ -239,7 +258,7 @@ fn ide_sync_rust_analyzer_updates_topic_demo_manifest() {
   "editor.formatOnSave": true,
   "rust-analyzer.linkedProjects": [
     "crates/Cargo.toml",
-    "workspaces/02-learning/ide-demo/demo/Cargo.toml"
+    "workspaces/projects/ide-demo/demo/Cargo.toml"
   ]
 }
 "#,
@@ -248,7 +267,7 @@ fn ide_sync_rust_analyzer_updates_topic_demo_manifest() {
 
     let demo_manifest = repo
         .path()
-        .join("workspaces/02-learning/ide-demo/topics/tools-permissions/demo/Cargo.toml");
+        .join("workspaces/projects/ide-demo/topics/tools-permissions/demo/Cargo.toml");
     fs::write(
         &demo_manifest,
         "[package]\nname = \"ide-demo\"\nversion = \"0.1.0\"\n",
@@ -265,18 +284,17 @@ fn ide_sync_rust_analyzer_updates_topic_demo_manifest() {
             "ok: rust-analyzer linkedProjects synced",
         ))
         .stdout(predicates::str::contains(
-            "workspaces/02-learning/ide-demo/topics/tools-permissions/demo/Cargo.toml",
+            "workspaces/projects/ide-demo/topics/tools-permissions/demo/Cargo.toml",
         ));
 
     let settings = fs::read_to_string(settings_dir.join("settings.json")).expect("synced settings");
     assert!(settings.contains("\"editor.formatOnSave\": true"));
     assert!(settings.contains("\"crates/Cargo.toml\""));
     assert!(
-        settings.contains(
-            "\"workspaces/02-learning/ide-demo/topics/tools-permissions/demo/Cargo.toml\""
-        )
+        settings
+            .contains("\"workspaces/projects/ide-demo/topics/tools-permissions/demo/Cargo.toml\"")
     );
-    assert!(!settings.contains("\"workspaces/02-learning/ide-demo/demo/Cargo.toml\""));
+    assert!(!settings.contains("\"workspaces/projects/ide-demo/demo/Cargo.toml\""));
 }
 
 #[test]
@@ -297,7 +315,7 @@ fn review_start_creates_topic_review_without_reopening_learning_state() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/review-topic");
+    let task_dir = repo.path().join("workspaces/projects/review-topic");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -368,7 +386,7 @@ fn review_session_complete_requires_user_answers_before_review_completion() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/review-session");
+    let task_dir = repo.path().join("workspaces/projects/review-session");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -499,7 +517,7 @@ fn knowledge_extract_promote_export_and_validate() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/knowledge-flow");
+    let task_dir = repo.path().join("workspaces/projects/knowledge-flow");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -637,7 +655,7 @@ fn enter_preserves_state_toml_comments() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/comments");
+    let task_dir = repo.path().join("workspaces/projects/comments");
     let state_path = active_topic_dir(&task_dir).join(".daedalus/state.toml");
     let mut state = fs::read_to_string(&state_path).expect("state");
     state.push_str("\n# custom operator note\n");
@@ -682,7 +700,7 @@ fn complete_rejects_missing_artifact_without_force() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/missing-artifact");
+    let task_dir = repo.path().join("workspaces/projects/missing-artifact");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -731,7 +749,7 @@ fn complete_rejects_pending_stage() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/pending-complete");
+    let task_dir = repo.path().join("workspaces/projects/pending-complete");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -765,9 +783,7 @@ fn resume_blocked_stage_keeps_single_active_stage() {
         .assert()
         .success();
 
-    let task_dir = repo
-        .path()
-        .join("workspaces/02-learning/resume-single-active");
+    let task_dir = repo.path().join("workspaces/projects/resume-single-active");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -854,7 +870,7 @@ fn rollback_reopens_target_stage_and_resets_later_stages() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/rollback-stage");
+    let task_dir = repo.path().join("workspaces/projects/rollback-stage");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -972,7 +988,7 @@ fn rollback_rejects_unreached_pending_stage() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/rollback-pending");
+    let task_dir = repo.path().join("workspaces/projects/rollback-pending");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1008,7 +1024,7 @@ fn complete_updates_next_action_to_next_stage() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/next-action");
+    let task_dir = repo.path().join("workspaces/projects/next-action");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1053,7 +1069,7 @@ fn force_requires_reason_and_approval_source() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/force");
+    let task_dir = repo.path().join("workspaces/projects/force");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1125,9 +1141,7 @@ fn final_stage_completion_requires_active_final_stage() {
         .assert()
         .success();
 
-    let task_dir = repo
-        .path()
-        .join("workspaces/02-learning/final-stage-pending");
+    let task_dir = repo.path().join("workspaces/projects/final-stage-pending");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1165,7 +1179,7 @@ fn final_stage_completion_completes_active_topic_stage_only() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/final-stage");
+    let task_dir = repo.path().join("workspaces/projects/final-stage");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1200,12 +1214,7 @@ fn final_stage_completion_completes_active_topic_stage_only() {
         .stdout(predicates::str::contains("topic_dir:"));
 
     assert!(task_dir.exists());
-    assert!(
-        !repo
-            .path()
-            .join("workspaces/03-completed/final-stage")
-            .exists()
-    );
+    assert!(task_dir.starts_with(repo.path().join("workspaces/projects")));
     let topic_state = fs::read_to_string(active_topic_dir(&task_dir).join(".daedalus/state.toml"))
         .expect("topic state");
     assert!(topic_state.contains("current_phase = \"10-archivist\""));
@@ -1215,7 +1224,7 @@ fn final_stage_completion_completes_active_topic_stage_only() {
 }
 
 #[test]
-fn task_complete_moves_task_and_releases_wip() {
+fn task_complete_marks_project_idle_and_keeps_stable_path() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -1232,7 +1241,7 @@ fn task_complete_moves_task_and_releases_wip() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/close-me");
+    let task_dir = repo.path().join("workspaces/projects/close-me");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1276,32 +1285,24 @@ fn task_complete_moves_task_and_releases_wip() {
         .assert()
         .success()
         .stdout(predicates::str::contains("ok: task completed"))
-        .stdout(predicates::str::contains("lifecycle: completed"))
-        .stdout(predicates::str::contains(
-            "workspaces/03-completed/close-me",
-        ));
+        .stdout(predicates::str::contains("lifecycle: idle"))
+        .stdout(predicates::str::contains("moved: false"));
 
-    assert!(!task_dir.exists());
-    assert!(
-        repo.path()
-            .join("workspaces/03-completed/close-me")
-            .exists()
-    );
-    let moved_state = fs::read_to_string(
-        repo.path()
-            .join("workspaces/03-completed/close-me/.daedalus/state.toml"),
-    )
-    .expect("moved state");
-    assert!(moved_state.contains("lifecycle = \"completed\""));
-    assert!(moved_state.contains("workspace_bucket = \"03-completed\""));
-    assert!(moved_state.contains("active_topic = \"\""));
-    assert!(moved_state.contains("slug = \"main\""));
-    assert!(moved_state.contains("lifecycle = \"abandoned\""));
-    let decision_log = fs::read_to_string(
-        repo.path()
-            .join("workspaces/03-completed/close-me/.daedalus/decision-log.md"),
-    )
-    .expect("decision log");
+    assert!(task_dir.exists());
+    let state = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state");
+    assert!(state.contains("lifecycle = \"idle\""));
+    assert!(state.contains("workspace_bucket = \"projects\""));
+    assert!(state.contains("active_topic = \"\""));
+    assert!(state.contains("slug = \"main\""));
+    assert!(state.contains("lifecycle = \"abandoned\""));
+    let current =
+        fs::read_to_string(repo.path().join("workspaces/.daedalus/current.toml")).expect("current");
+    assert!(current.contains("current_project = \"projects/close-me\""));
+    assert!(current.contains("current_topic = \"\""));
+    assert!(repo.path().join("workspaces/current-project").exists());
+    assert!(!repo.path().join("workspaces/current-topic").exists());
+    let decision_log =
+        fs::read_to_string(task_dir.join(".daedalus/decision-log.md")).expect("decision log");
     assert!(decision_log.contains("决策：完成学习任务"));
     assert!(decision_log.contains("Dry run is archived and ready to close."));
     Command::cargo_bin("daedalus")
@@ -1321,7 +1322,7 @@ fn task_complete_moves_task_and_releases_wip() {
 }
 
 #[test]
-fn task_abandon_moves_task_and_records_reason() {
+fn task_abandon_marks_project_abandoned_and_clears_current() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -1338,7 +1339,7 @@ fn task_abandon_moves_task_and_records_reason() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/abandon-me");
+    let task_dir = repo.path().join("workspaces/projects/abandon-me");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1352,33 +1353,31 @@ fn task_abandon_moves_task_and_records_reason() {
         .assert()
         .success()
         .stdout(predicates::str::contains("ok: task abandoned"))
-        .stdout(predicates::str::contains(
-            "workspaces/04-abandoned/abandon-me",
-        ));
+        .stdout(predicates::str::contains("moved: false"));
 
-    let moved_state = fs::read_to_string(
-        repo.path()
-            .join("workspaces/04-abandoned/abandon-me/.daedalus/state.toml"),
-    )
-    .expect("moved state");
-    assert!(moved_state.contains("action = \"abandon\""));
-    assert!(moved_state.contains("lifecycle = \"abandoned\""));
-    assert!(moved_state.contains("workspace_bucket = \"04-abandoned\""));
-    assert!(moved_state.contains("closed_at = "));
-    assert!(moved_state.contains("close_reason = "));
-    assert!(moved_state.contains("Dry run scope changed"));
-    assert!(!moved_state.contains("status = \"active\""));
-    let decision_log = fs::read_to_string(
-        repo.path()
-            .join("workspaces/04-abandoned/abandon-me/.daedalus/decision-log.md"),
-    )
-    .expect("decision log");
+    assert!(task_dir.exists());
+    let state = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state");
+    assert!(state.contains("action = \"abandon\""));
+    assert!(state.contains("lifecycle = \"abandoned\""));
+    assert!(state.contains("workspace_bucket = \"projects\""));
+    assert!(state.contains("closed_at = "));
+    assert!(state.contains("close_reason = "));
+    assert!(state.contains("Dry run scope changed"));
+    assert!(!state.contains("status = \"active\""));
+    let current =
+        fs::read_to_string(repo.path().join("workspaces/.daedalus/current.toml")).expect("current");
+    assert!(current.contains("current_project = \"\""));
+    assert!(current.contains("current_topic = \"\""));
+    assert!(!repo.path().join("workspaces/current-project").exists());
+    assert!(!repo.path().join("workspaces/current-topic").exists());
+    let decision_log =
+        fs::read_to_string(task_dir.join(".daedalus/decision-log.md")).expect("decision log");
     assert!(decision_log.contains("决策：放弃学习任务"));
     assert!(decision_log.contains("Dry run scope changed"));
 }
 
 #[test]
-fn task_move_refuses_to_overwrite_destination() {
+fn task_complete_rejects_project_with_unfinished_active_topic() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -1395,9 +1394,7 @@ fn task_move_refuses_to_overwrite_destination() {
         .assert()
         .success();
 
-    fs::create_dir_all(repo.path().join("workspaces/03-completed/collision"))
-        .expect("completed collision dir");
-    let task_dir = repo.path().join("workspaces/02-learning/collision");
+    let task_dir = repo.path().join("workspaces/projects/collision");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1410,15 +1407,13 @@ fn task_move_refuses_to_overwrite_destination() {
         ])
         .assert()
         .failure()
-        .stderr(predicates::str::contains(
-            "task move destination already exists",
-        ));
+        .stderr(predicates::str::contains("project has unfinished topics"));
 
     assert!(task_dir.exists());
     let state = fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("state");
     assert!(state.contains("lifecycle = \"active\""));
-    assert!(state.contains("workspace_bucket = \"02-learning\""));
-    assert!(!state.contains("lifecycle = \"completed\""));
+    assert!(state.contains("workspace_bucket = \"projects\""));
+    assert!(!state.contains("lifecycle = \"idle\""));
 }
 
 #[test]
@@ -1439,9 +1434,7 @@ fn validate_reports_lifecycle_location_mismatch() {
         .assert()
         .success();
 
-    let task_dir = repo
-        .path()
-        .join("workspaces/02-learning/lifecycle-mismatch");
+    let task_dir = repo.path().join("workspaces/projects/lifecycle-mismatch");
     let state_path = task_dir.join(".daedalus/state.toml");
     let state = fs::read_to_string(&state_path).expect("state");
     fs::write(
@@ -1457,7 +1450,9 @@ fn validate_reports_lifecycle_location_mismatch() {
         .assert()
         .failure()
         .stderr(predicates::str::contains("workspace validation failed"))
-        .stderr(predicates::str::contains("task lifecycle `completed`"));
+        .stderr(predicates::str::contains(
+            "legacy task lifecycle `completed`",
+        ));
 }
 
 #[test]
@@ -1478,7 +1473,7 @@ fn validate_reports_missing_required_file() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/validate");
+    let task_dir = repo.path().join("workspaces/projects/validate");
     fs::remove_file(active_topic_dir(&task_dir).join(".daedalus/todo.md")).expect("remove todo");
 
     Command::cargo_bin("daedalus")
@@ -1508,7 +1503,7 @@ fn topic_new_and_activate_manage_project_active_topic() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/topic-flow");
+    let task_dir = repo.path().join("workspaces/projects/topic-flow");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1585,7 +1580,7 @@ fn topic_complete_rejects_unfinished_topic() {
         .assert()
         .success();
 
-    let task_dir = repo.path().join("workspaces/02-learning/unfinished-topic");
+    let task_dir = repo.path().join("workspaces/projects/unfinished-topic");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1611,7 +1606,7 @@ fn topic_complete_rejects_unfinished_topic() {
 #[test]
 fn migrate_repo_learning_multi_topic_moves_legacy_workspace() {
     let repo = repo_fixture();
-    let task_dir = repo.path().join("workspaces/02-learning/legacy-task");
+    let task_dir = repo.path().join("workspaces/projects/legacy-task");
     fs::create_dir_all(task_dir.join(".daedalus")).expect("daedalus dir");
     fs::create_dir_all(task_dir.join("notes/06-code-reader")).expect("notes dir");
     fs::create_dir_all(task_dir.join("guides/06-code-reader")).expect("guides dir");

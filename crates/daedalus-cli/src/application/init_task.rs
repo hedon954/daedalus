@@ -39,10 +39,9 @@ pub struct InitTaskOutput {
 /// 该 use case 会复制 project 模板、创建初始 topic，并立即分别渲染 project/topic
 /// `state.md`。
 pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
-    let learning_root = workspace_fs::learning_root(&options.repo_root);
-    workspace_fs::ensure_dir(&learning_root)?;
+    workspace_fs::ensure_stable_workspace_layout(&options.repo_root)?;
 
-    let active = workspace_fs::active_tasks(&learning_root)?;
+    let active = workspace_fs::active_projects(&options.repo_root)?;
     if !active.is_empty() && !options.allow_existing_active {
         return Err(DaedalusError::TaskAlreadyActive(active[0].clone()));
     }
@@ -50,7 +49,10 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
         return Err(DaedalusError::ForceRequiresApproval);
     }
 
-    let task_dir = unique_task_dir(&learning_root, &options.name);
+    let task_dir = unique_task_dir(
+        &workspace_fs::projects_root(&options.repo_root),
+        &options.name,
+    );
     workspace_fs::ensure_dir(&task_dir)?;
     workspace_fs::ensure_dir(&task_dir.join("source"))?;
     workspace_fs::ensure_dir(&task_dir.join("shared"))?;
@@ -97,6 +99,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
     )?;
     let state_md = render_state(&task_dir)?.path;
     let topic_state_md = render_state(&topic_dir)?.path;
+    workspace_fs::sync_current_workspace(&options.repo_root, Some(&task_dir), Some(&topic_dir))?;
 
     Ok(InitTaskOutput {
         task_dir,

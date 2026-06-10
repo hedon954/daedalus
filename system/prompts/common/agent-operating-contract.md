@@ -8,9 +8,9 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 
 - Use Chinese for project-facing learning artifacts unless the user asks otherwise.
 - Treat filesystem artifacts as durable memory. Do not let chat become the only learning record.
-- Keep `workspaces/02-learning` WIP strict: at most one active learning project, and at most one active topic inside that project.
-- Treat `.daedalus/state.toml` as the lifecycle source of truth. Workspace buckets are projections and must match state.
-- Treat `workspaces/01-backlog` as pre-learning candidate space: one Markdown file per future study idea, no `.daedalus` lifecycle state, no active-learning artifacts, and no promotion without gatekeeper.
+- Keep WIP strict: `workspaces/projects` may contain many stable projects, but `workspaces/.daedalus/current.toml` may point to at most one active project and one active topic.
+- Treat `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` and `current-topic` are symlink projections for humans and agents.
+- Treat `workspaces/backlog` as pre-learning candidate space: one Markdown file per future study idea, no `.daedalus` lifecycle state, no active-learning artifacts, and no promotion without gatekeeper.
 - Use `system/prompts/common/backlog-capture.md` when the user only wants to save a future study idea; use `system/prompts/common/gatekeeper.md` only when deciding whether it should enter active learning.
 - Preserve goals, decisions, open questions, todo state, verified conclusions, risks, and next actions. Do not turn summaries into chat logs.
 - Ground implementation progress in current code, tests, runtime output, and git diff before trusting markdown maps.

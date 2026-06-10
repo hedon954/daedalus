@@ -31,42 +31,24 @@ impl CloseTaskAction {
         }
     }
 
-    fn destination_root(self, repo_root: &std::path::Path) -> PathBuf {
-        match self {
-            Self::Complete => workspace_fs::completed_root(repo_root),
-            Self::Abandon => workspace_fs::abandoned_root(repo_root),
-        }
-    }
-
     fn lifecycle(self) -> TaskLifecycle {
         match self {
-            Self::Complete => TaskLifecycle::Completed,
+            Self::Complete => TaskLifecycle::Idle,
             Self::Abandon => TaskLifecycle::Abandoned,
         }
     }
 
     fn bucket(self) -> WorkspaceBucket {
-        match self {
-            Self::Complete => WorkspaceBucket::Completed,
-            Self::Abandon => WorkspaceBucket::Abandoned,
-        }
+        WorkspaceBucket::Projects
     }
 
     fn next_message(self) -> &'static str {
         match self {
             Self::Complete => {
-                "active WIP slot released; start a new project with daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>"
+                "project is idle; start a new topic with daedalus topic new <topic-slug> --title <topic-title>"
             }
-            Self::Abandon => {
-                "active WIP slot released; review the abandoned task before starting a replacement"
-            }
+            Self::Abandon => "project is abandoned and removed from current learning focus",
         }
-    }
-}
-
-impl CloseTaskOptions {
-    fn destination_root(&self) -> PathBuf {
-        self.action.destination_root(&self.repo_root)
     }
 }
 
@@ -112,7 +94,7 @@ pub struct CloseTaskOutput {
     pub next: String,
 }
 
-/// 关闭学习任务并移动到 completed 或 abandoned bucket。
+/// 关闭学习任务，不再移动 project 目录。
 pub fn close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
     options.apply()
 }
@@ -125,10 +107,6 @@ impl StateTransition for CloseTaskOptions {
         let task_dir = canonical_task_dir(&self.task_dir)?;
         let doc = state_toml::load_state_doc(&state_toml::state_path(&task_dir))?;
         ensure_active_learning_task(&doc, &task_dir)?;
-        let destination = planned_destination(&task_dir, &self.destination_root())?;
-        if destination.exists() {
-            return Err(DaedalusError::TaskMoveDestinationExists(destination));
-        }
         if self.action == CloseTaskAction::Complete {
             validate_project_topics_closed(&doc)?;
         }
@@ -175,8 +153,6 @@ fn commit_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
     let state_path = state_toml::state_path(&task_dir);
     let mut doc = state_toml::load_state_doc(&state_path)?;
     let closed_at = clock::now_local_timestamp();
-    let destination_root = options.destination_root();
-    let planned_to_task_dir = planned_destination(&task_dir, &destination_root)?;
 
     if options.complete_final_stage {
         complete_final_stage(&mut doc, reason, &options.actor, closed_at.clone())?;
@@ -190,6 +166,7 @@ fn commit_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
     state_toml::set_workspace_bucket(&mut doc, bucket);
     state_toml::set_task_close_info(&mut doc, &closed_at, reason);
     state_toml::set_next_action(&mut doc, &next);
+    state_toml::set_active_topic(&mut doc, "");
     state_toml::append_transition(
         &mut doc,
         Transition {
@@ -202,26 +179,22 @@ fn commit_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
         },
     );
     state_toml::save_state_doc(&state_path, &doc)?;
-    append_close_decision(
-        &task_dir,
-        &planned_to_task_dir,
-        options.action,
-        lifecycle,
-        &closed_at,
-        reason,
-    )?;
-    let _ = render_state(&task_dir)?;
-
-    let to_task_dir = workspace_fs::move_task(&task_dir, &destination_root)?;
-    let state_md = render_state(&to_task_dir)?.path;
-    let decision_log = to_task_dir.join(".daedalus").join("decision-log.md");
+    append_close_decision(&task_dir, options.action, lifecycle, &closed_at, reason)?;
+    let state_md = render_state(&task_dir)?.path;
+    let decision_log = task_dir.join(".daedalus").join("decision-log.md");
+    let current_project = if options.action == CloseTaskAction::Complete {
+        Some(task_dir.as_path())
+    } else {
+        None
+    };
+    workspace_fs::sync_current_workspace(&options.repo_root, current_project, None)?;
 
     Ok(CloseTaskOutput {
         action: options.action.as_str().to_owned(),
         lifecycle: lifecycle.as_str().to_owned(),
-        moved: true,
-        from_task_dir: task_dir,
-        to_task_dir,
+        moved: false,
+        from_task_dir: task_dir.clone(),
+        to_task_dir: task_dir,
         state_md,
         decision_log,
         next,
@@ -257,17 +230,8 @@ fn canonical_task_dir(task_dir: &std::path::Path) -> Result<PathBuf> {
     })
 }
 
-fn planned_destination(task_dir: &Path, destination_root: &Path) -> Result<PathBuf> {
-    let task_name = task_dir
-        .file_name()
-        .map(ToOwned::to_owned)
-        .ok_or(DaedalusError::NoActiveWorkspace)?;
-    Ok(destination_root.join(task_name))
-}
-
 fn append_close_decision(
     task_dir: &Path,
-    to_task_dir: &Path,
     action: CloseTaskAction,
     lifecycle: TaskLifecycle,
     timestamp: &str,
@@ -279,9 +243,9 @@ fn append_close_decision(
         CloseTaskAction::Abandon => "放弃学习任务",
     };
     let entry = format!(
-        "\n## {timestamp}\n\n- 决策：{decision}，将 lifecycle 设为 `{}`。\n- 原因：{reason}\n- 影响：任务从 active WIP 释放，并移动到 [`{}`](..)。\n",
+        "\n## {timestamp}\n\n- 决策：{decision}，将 lifecycle 设为 `{}`。\n- 原因：{reason}\n- 影响：释放 active topic，project 路径保持稳定：[`{}`](..)。\n",
         lifecycle.as_str(),
-        to_task_dir.display(),
+        task_dir.display(),
     );
     let mut file = OpenOptions::new()
         .append(true)
@@ -303,17 +267,17 @@ fn ensure_active_learning_task(
     task_dir: &std::path::Path,
 ) -> Result<()> {
     let lifecycle = state_toml::task_lifecycle(doc)?;
-    if lifecycle != TaskLifecycle::Active {
+    if !matches!(lifecycle, TaskLifecycle::Active | TaskLifecycle::Idle) {
         return Err(DaedalusError::InvalidTaskLifecycleTransition(format!(
-            "expected active task, got {}",
+            "expected active or idle project, got {}",
             lifecycle.as_str()
         )));
     }
     let state_bucket = state_toml::workspace_bucket(doc)?;
     let actual_bucket = workspace_fs::bucket_from_task_dir(task_dir)?;
-    if state_bucket != WorkspaceBucket::Learning || actual_bucket != WorkspaceBucket::Learning {
+    if state_bucket != WorkspaceBucket::Projects || actual_bucket != WorkspaceBucket::Projects {
         return Err(DaedalusError::TaskLifecycleLocationMismatch(format!(
-            "expected active task in 02-learning, state={}, actual={}",
+            "expected active task in workspaces/projects, state={}, actual={}",
             state_bucket.as_str(),
             actual_bucket.as_str()
         )));

@@ -660,12 +660,15 @@ fn status_color(status: &str) -> Color {
 
 fn bucket_count_line(tasks: &[TuiTaskSummary]) -> Line<'_> {
     let mut spans = Vec::new();
-    for bucket in ["02-learning", "03-completed", "04-abandoned"] {
-        let count = tasks.iter().filter(|task| task.bucket == bucket).count();
+    for lifecycle in ["active", "idle", "abandoned"] {
+        let count = tasks
+            .iter()
+            .filter(|task| task.lifecycle == lifecycle)
+            .count();
         spans.push(Span::styled(
-            format!(" {bucket} "),
+            format!(" {lifecycle} "),
             Style::default()
-                .fg(bucket_accent(bucket))
+                .fg(status_color(lifecycle))
                 .add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::styled(format!("{count}  "), muted()));
@@ -675,6 +678,7 @@ fn bucket_count_line(tasks: &[TuiTaskSummary]) -> Line<'_> {
 
 fn bucket_label(bucket: &str) -> &'static str {
     match bucket {
+        "projects" => "learning projects",
         "02-learning" => "learning cockpit",
         "03-completed" => "archive vault",
         "04-abandoned" => "recovery bay",
@@ -684,6 +688,7 @@ fn bucket_label(bucket: &str) -> &'static str {
 
 fn bucket_header_title(bucket: &str) -> &'static str {
     match bucket {
+        "projects" => " System Online ",
         "02-learning" => " System Online ",
         "03-completed" => " Knowledge Archived ",
         "04-abandoned" => " Recovery Review ",
@@ -693,6 +698,7 @@ fn bucket_header_title(bucket: &str) -> &'static str {
 
 fn bucket_current_title(bucket: &str) -> &'static str {
     match bucket {
+        "projects" => " Current Project ",
         "02-learning" => " Current Vector ",
         "03-completed" => " Closure Snapshot ",
         "04-abandoned" => " Stop Point ",
@@ -702,6 +708,7 @@ fn bucket_current_title(bucket: &str) -> &'static str {
 
 fn bucket_progress_title(bucket: &str) -> &'static str {
     match bucket {
+        "projects" => " Topic Progress ",
         "02-learning" => " Stage Progress ",
         "03-completed" => " Completion Trace ",
         "04-abandoned" => " Progress Before Stop ",
@@ -711,6 +718,7 @@ fn bucket_progress_title(bucket: &str) -> &'static str {
 
 fn bucket_missing_empty(bucket: &str) -> &'static str {
     match bucket {
+        "projects" => "All required artifacts are present.",
         "02-learning" => "All required artifacts are present.",
         "03-completed" => "Archive is structurally complete.",
         "04-abandoned" => "No obvious recovery gaps.",
@@ -720,6 +728,7 @@ fn bucket_missing_empty(bucket: &str) -> &'static str {
 
 fn bucket_transition_title(bucket: &str) -> &'static str {
     match bucket {
+        "projects" => " Recent Transitions ",
         "02-learning" => " Recent Transitions ",
         "03-completed" => " Closure Trail ",
         "04-abandoned" => " Abandon Trail ",
@@ -761,6 +770,7 @@ fn bucket_todo_accent(bucket: &str) -> Color {
 
 fn bucket_accent(bucket: &str) -> Color {
     match bucket {
+        "projects" => LEARNING,
         "02-learning" => LEARNING,
         "03-completed" => COMPLETED,
         "04-abandoned" => ABANDONED,

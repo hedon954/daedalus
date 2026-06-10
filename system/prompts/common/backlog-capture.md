@@ -28,7 +28,7 @@ Backlog 是 pre-learning candidate inbox，不是学习现场。
 
 ## Placement
 
-- 与当前 active project 无关的候选方向，写入 `workspaces/01-backlog/<slug>.md`。
+- 与当前 active project 无关的候选方向，写入 `workspaces/backlog/<slug>.md`。
 - 一个 candidate 一个 Markdown 文件。
 - 默认使用 `system/templates/backlog/item.md`。
 - 只有和当前 repo/source 直接相关的后续方向，才写入该 project 的 `topic-board.md` parking lot。

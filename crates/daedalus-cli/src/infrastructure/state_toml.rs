@@ -210,6 +210,20 @@ pub fn set_project_topic_lifecycle(
     Err(DaedalusError::TopicNotFound(slug.to_owned()))
 }
 
+/// 设置 project topic 的相对路径。
+pub fn set_project_topic_path(doc: &mut DocumentMut, slug: &str, path: &str) -> Result<()> {
+    let Some(array) = doc.get_mut("topics").and_then(Item::as_array_of_tables_mut) else {
+        return Err(DaedalusError::TopicNotFound(slug.to_owned()));
+    };
+    for topic in array.iter_mut() {
+        if topic["slug"].as_str() == Some(slug) {
+            topic["path"] = value(path);
+            return Ok(());
+        }
+    }
+    Err(DaedalusError::TopicNotFound(slug.to_owned()))
+}
+
 /// 将除目标 topic 外的 active topic 标记为 blocked。
 pub fn block_other_active_topics(doc: &mut DocumentMut, slug: &str) {
     if let Some(array) = doc.get_mut("topics").and_then(Item::as_array_of_tables_mut) {

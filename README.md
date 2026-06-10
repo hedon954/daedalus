@@ -160,12 +160,15 @@ daedalus-tui <project-dir>
 
 ```text
 workspaces/
-  01-backlog/              候选学习任务，不承载 active learning state
-  02-learning/             进行中的 learning project，WIP = 1
-  03-completed/            已闭环 project
-  04-abandoned/            已放弃 project
+  current-project -> projects/<project>
+  current-topic -> projects/<project>/topics/<topic>
+  .daedalus/
+    current.toml           当前学习现场的机器真相
+    project-index.toml     project 索引
+  backlog/                 候选学习任务，不承载 active learning state
+  projects/                稳定 project 路径；状态变化不移动目录
 
-workspaces/02-learning/<project-name>/
+workspaces/projects/<project-name>/
   CLAUDE.md
   .daedalus/
     state.toml             project lifecycle、active topic、topic list
@@ -197,7 +200,7 @@ workspaces/02-learning/<project-name>/
       demo/
 ```
 
-`state.toml` 是唯一事实源，`state.md` 是派生摘要，不手动编辑。
+Project/topic 的 `.daedalus/state.toml` 和 `workspaces/.daedalus/current.toml` 是事实源；`state.md` 与 `current-project/current-topic` 是派生视图，不手动编辑。
 
 ## Review And Knowledge System
 
@@ -225,7 +228,7 @@ flowchart LR
 第一个完整闭环样本是：
 
 ```text
-workspaces/02-learning/openai-codex-cli-deep-learning
+workspaces/projects/openai-codex-cli-deep-learning
 topic: tools-permissions
 ```
 
@@ -242,8 +245,8 @@ topic: tools-permissions
 验证：
 
 ```bash
-cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2
-daedalus validate workspaces/02-learning/openai-codex-cli-deep-learning
+cargo test --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2
+daedalus validate workspaces/projects/openai-codex-cli-deep-learning
 ```
 
 最近结果：
@@ -270,7 +273,7 @@ make build
 
 ```bash
 system/bin/audit-daedalus-agent-instructions .
-daedalus validate workspaces/02-learning/openai-codex-cli-deep-learning --all-topics --reviews --knowledge
+daedalus validate workspaces/projects/openai-codex-cli-deep-learning --all-topics --reviews --knowledge
 ```
 
 ## Repository Layout
@@ -287,7 +290,7 @@ system/
   bin/                   本地脚本
   prompts/               reusable learning prompts
   templates/             project/topic/review/knowledge templates
-workspaces/              backlog / active / completed / abandoned learning workspaces
+workspaces/              backlog / stable projects / current symlinks
 ```
 
 ## Status

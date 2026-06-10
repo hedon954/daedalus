@@ -123,10 +123,7 @@ fn is_topic_demo_manifest(repo_root: &Path, path: &Path) -> bool {
         components.as_slice(),
         [workspaces, bucket, _project, topics, _topic, demo, cargo]
             if workspaces == "workspaces"
-                && matches!(
-                    bucket.as_str(),
-                    "02-learning" | "03-completed" | "04-abandoned"
-                )
+                && bucket == "projects"
                 && topics == "topics"
                 && demo == "demo"
                 && cargo == "Cargo.toml"

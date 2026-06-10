@@ -1,9 +1,12 @@
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use crate::application::render::render_state;
 use crate::application::validate_workspace::validate_topic_workspace;
 use crate::domain::transition::Transition;
-use crate::domain::{DaedalusError, Result, TopicLifecycle, TopicSnapshot};
+use crate::domain::{
+    DaedalusError, Result, TaskLifecycle, TopicLifecycle, TopicSnapshot, WorkspaceBucket,
+};
 use crate::infrastructure::{clock, state_toml, template_fs, workspace_fs};
 
 /// 新建 topic 参数。
@@ -29,6 +32,7 @@ pub struct TopicOutput {
 /// 激活 topic 参数。
 #[derive(Debug, Clone)]
 pub struct ActivateTopicOptions {
+    pub repo_root: PathBuf,
     pub project_dir: PathBuf,
     pub slug: String,
     pub actor: String,
@@ -37,6 +41,7 @@ pub struct ActivateTopicOptions {
 /// 关闭 topic 参数。
 #[derive(Debug, Clone)]
 pub struct CloseTopicOptions {
+    pub repo_root: PathBuf,
     pub project_dir: PathBuf,
     pub slug: String,
     pub lifecycle: TopicLifecycle,
@@ -110,6 +115,7 @@ pub fn new_topic(options: NewTopicOptions) -> Result<TopicOutput> {
     state_toml::save_state_doc(&state_path, &project_doc)?;
     let _ = render_state(&project_dir)?;
     let state_md = render_state(&topic_dir)?.path;
+    workspace_fs::rebuild_project_index(&options.repo_root)?;
 
     Ok(TopicOutput {
         project_dir,
@@ -135,6 +141,8 @@ pub fn activate_topic(options: ActivateTopicOptions) -> Result<TopicOutput> {
         &options.slug,
         TopicLifecycle::Active,
     )?;
+    state_toml::set_task_lifecycle(&mut project_doc, TaskLifecycle::Active);
+    state_toml::set_workspace_bucket(&mut project_doc, WorkspaceBucket::Projects);
     state_toml::set_active_topic(&mut project_doc, &options.slug);
     state_toml::append_transition(
         &mut project_doc,
@@ -156,6 +164,7 @@ pub fn activate_topic(options: ActivateTopicOptions) -> Result<TopicOutput> {
 
     let _ = render_state(&project_dir)?;
     let state_md = render_state(&topic_dir)?.path;
+    workspace_fs::sync_current_workspace(&options.repo_root, Some(&project_dir), Some(&topic_dir))?;
     Ok(TopicOutput {
         project_dir,
         topic_dir,
@@ -173,6 +182,7 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
     }
     let project_dir = options.project_dir;
     let topic_dir = workspace_fs::topic_dir_by_slug(&project_dir, &options.slug)?;
+    let mut output_topic_dir = topic_dir.clone();
     if options.lifecycle == TopicLifecycle::Completed {
         validate_topic_completion(&topic_dir, &options.slug)?;
     }
@@ -220,11 +230,56 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
         },
     );
     state_toml::save_state_doc(&topic_state_path, &topic_doc)?;
+    let mut state_md = render_state(&topic_dir)?.path;
+
+    if options.lifecycle == TopicLifecycle::Abandoned {
+        output_topic_dir = archive_topic_dir(&project_dir, &options.slug)?;
+        if output_topic_dir.exists() {
+            return Err(DaedalusError::TaskMoveDestinationExists(output_topic_dir));
+        }
+        if let Some(parent) = output_topic_dir.parent() {
+            workspace_fs::ensure_dir(parent)?;
+        }
+        fs::rename(&topic_dir, &output_topic_dir).map_err(|source| DaedalusError::Io {
+            path: output_topic_dir.clone(),
+            source,
+        })?;
+        let relative = output_topic_dir
+            .strip_prefix(&project_dir)
+            .unwrap_or(&output_topic_dir)
+            .to_string_lossy()
+            .to_string();
+        state_toml::set_project_topic_path(&mut project_doc, &options.slug, &relative)?;
+        state_toml::save_state_doc(&project_state_path, &project_doc)?;
+        state_md = output_topic_dir.join(".daedalus").join("state.md");
+    }
+
+    if state_toml::active_topic_count(&project_doc) == 0 {
+        state_toml::set_task_lifecycle(&mut project_doc, TaskLifecycle::Idle);
+        state_toml::set_workspace_bucket(&mut project_doc, WorkspaceBucket::Projects);
+        state_toml::set_next_action(
+            &mut project_doc,
+            "当前没有 active topic；可以复盘 project，或用 `daedalus topic new` 启动新专题。",
+        );
+        state_toml::save_state_doc(&project_state_path, &project_doc)?;
+    }
+
     let _ = render_state(&project_dir)?;
-    let state_md = render_state(&topic_dir)?.path;
+    let current_topic = if state_toml::active_topic(&project_doc).is_some() {
+        state_toml::active_topic(&project_doc)
+            .and_then(|slug| state_toml::topic_path(&project_doc, &slug))
+            .map(|path| project_dir.join(path))
+    } else {
+        None
+    };
+    workspace_fs::sync_current_workspace(
+        &options.repo_root,
+        Some(&project_dir),
+        current_topic.as_deref(),
+    )?;
     Ok(TopicOutput {
         project_dir,
-        topic_dir,
+        topic_dir: output_topic_dir,
         slug: options.slug,
         action: "topic-close".to_owned(),
         state_md,
@@ -274,4 +329,8 @@ fn sanitize_slug(value: &str) -> String {
     } else {
         sanitized.to_owned()
     }
+}
+
+fn archive_topic_dir(project_dir: &Path, slug: &str) -> Result<PathBuf> {
+    Ok(project_dir.join(".archive").join("topics").join(slug))
 }

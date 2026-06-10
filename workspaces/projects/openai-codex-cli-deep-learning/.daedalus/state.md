@@ -5,10 +5,10 @@
 ## 当前状态
 
 - Project：`openai-codex-cli-deep-learning`
-- 生命周期：`active`
-- Workspace Bucket：`02-learning`
+- 生命周期：`idle`
+- Workspace Bucket：`projects`
 - Active Topic：`none`
-- 下一步：tools-permissions topic 已完成；下一步产出 docs/evolution 回顾报告，并按最新 daedalus 状态重写项目 README。
+- 下一步：当前没有 active topic；可以复盘 project，或用 `daedalus topic new` 启动新专题。
 
 ## Topics
 

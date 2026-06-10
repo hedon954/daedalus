@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./workspaces/projects/**/.archive/**)",
+      "Edit(./workspaces/projects/**/.archive/**)",
+      "Write(./workspaces/projects/**/.archive/**)"
+    ]
+  }
+}

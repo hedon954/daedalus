@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::{state_toml, workspace_fs};
 
-const WORKSPACE_BUCKETS: [&str; 3] = ["02-learning", "03-completed", "04-abandoned"];
+const WORKSPACE_BUCKETS: [&str; 1] = ["projects"];
 
 /// TUI 当前页面。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -980,7 +980,7 @@ mod tests {
             active_topic_title: "Tools Permissions".to_owned(),
             topic_dir: None,
             lifecycle: "active".to_owned(),
-            workspace_bucket: "02-learning".to_owned(),
+            workspace_bucket: "projects".to_owned(),
             current_phase: "08-demo-coder".to_owned(),
             current_status: "active".to_owned(),
             next_action: "Goal: keep learning navigable\nVerify: cargo test".to_owned(),

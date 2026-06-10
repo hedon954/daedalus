@@ -3,11 +3,13 @@ use std::path::PathBuf;
 /// 学习任务生命周期状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskLifecycle {
-    /// 正在 active learning 区域中推进。
+    /// 至少一个专题正在推进。
     Active,
-    /// 已完成并归档到 completed 区域。
+    /// 没有 active topic，但项目仍是正式学习对象。
+    Idle,
+    /// Legacy completed state；新稳定工作区用 `idle` 表达项目空闲。
     Completed,
-    /// 已放弃并归档到 abandoned 区域。
+    /// 项目不进入默认学习视图。
     Abandoned,
 }
 
@@ -16,6 +18,7 @@ impl TaskLifecycle {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Active => "active",
+            Self::Idle => "idle",
             Self::Completed => "completed",
             Self::Abandoned => "abandoned",
         }
@@ -25,18 +28,19 @@ impl TaskLifecycle {
     pub fn parse(value: &str) -> Option<Self> {
         match value {
             "active" => Some(Self::Active),
+            "idle" => Some(Self::Idle),
             "completed" => Some(Self::Completed),
             "abandoned" => Some(Self::Abandoned),
             _ => None,
         }
     }
 
-    /// 返回该生命周期应该落入的 workspace bucket。
+    /// 返回该生命周期对应的稳定 workspace bucket。
     pub fn expected_bucket(self) -> WorkspaceBucket {
         match self {
-            Self::Active => WorkspaceBucket::Learning,
-            Self::Completed => WorkspaceBucket::Completed,
-            Self::Abandoned => WorkspaceBucket::Abandoned,
+            Self::Active | Self::Idle | Self::Completed | Self::Abandoned => {
+                WorkspaceBucket::Projects
+            }
         }
     }
 }
@@ -44,11 +48,14 @@ impl TaskLifecycle {
 /// 学习任务所在 workspace bucket。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkspaceBucket {
+    /// 稳定 project bucket。
+    Projects,
+    /// Legacy active learning bucket。
     /// active learning bucket。
     Learning,
-    /// completed bucket。
+    /// Legacy completed bucket。
     Completed,
-    /// abandoned bucket。
+    /// Legacy abandoned bucket。
     Abandoned,
 }
 
@@ -56,6 +63,7 @@ impl WorkspaceBucket {
     /// 返回写入 `state.toml` 的稳定字符串。
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::Projects => "projects",
             Self::Learning => "02-learning",
             Self::Completed => "03-completed",
             Self::Abandoned => "04-abandoned",
@@ -65,6 +73,7 @@ impl WorkspaceBucket {
     /// 从 `state.toml` 字符串解析 workspace bucket。
     pub fn parse(value: &str) -> Option<Self> {
         match value {
+            "projects" => Some(Self::Projects),
             "02-learning" => Some(Self::Learning),
             "03-completed" => Some(Self::Completed),
             "04-abandoned" => Some(Self::Abandoned),

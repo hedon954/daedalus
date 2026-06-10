@@ -4,8 +4,8 @@
 # 专题进度写在 `topics/<slug>/.daedalus/state.toml`。
 #
 # 枚举约束：
-# - task.lifecycle 只能是：active、completed、abandoned。
-# - task.workspace_bucket 只能是：02-learning、03-completed、04-abandoned。
+# - task.lifecycle 只能是：active、idle、abandoned。
+# - task.workspace_bucket 固定为：projects。
 # - project.active_topic 必须指向 `[[topics]]` 中存在的 topic slug。
 # - topics.lifecycle 只能是：planned、active、blocked、completed、abandoned、skipped。
 # - transition.action 只能是：init、topic-new、topic-activate、topic-complete、topic-abandon、migrate、task-complete、abandon。
@@ -16,7 +16,7 @@ name = "{{TASK_NAME}}"
 kind = "repo-learning"
 created_at = "{{CREATED_AT}}"
 lifecycle = "active"
-workspace_bucket = "02-learning"
+workspace_bucket = "projects"
 next_action = "激活初始专题 `{{TOPIC_SLUG}}`，澄清专题目标，并填写 topic 的 `.daedalus/task-card.md`。"
 
 [project]

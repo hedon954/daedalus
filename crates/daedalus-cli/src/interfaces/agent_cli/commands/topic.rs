@@ -97,6 +97,7 @@ impl CmdExecutor for TopicActivateArgs {
     async fn execute(self, ctx: AgentCliContext) -> Result<()> {
         let project_dir = workspace_fs::default_project_dir(self.project_dir)?;
         let output = activate_topic(ActivateTopicOptions {
+            repo_root: ctx.repo_root,
             project_dir,
             slug: self.slug,
             actor: "daedalus-cli".to_owned(),
@@ -124,6 +125,7 @@ impl TopicCloseArgs {
     ) -> Result<()> {
         let project_dir = workspace_fs::default_project_dir(self.project_dir)?;
         let output = close_topic(CloseTopicOptions {
+            repo_root: ctx.repo_root,
             project_dir,
             slug: self.slug,
             lifecycle,

@@ -17,7 +17,8 @@ Repo learning is a long-running, filesystem-first coaching process. The user lea
 
 Non-negotiables:
 
-- Keep `workspaces/02-learning` WIP = 1 project and at most one active topic per project.
+- Keep stable projects under `workspaces/projects`; active context is projected through `workspaces/.daedalus/current.toml`, `workspaces/current-project`, and `workspaces/current-topic`.
+- Keep at most one active learning project and one active topic at a time.
 - Prefer workspace artifacts over chat memory.
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.

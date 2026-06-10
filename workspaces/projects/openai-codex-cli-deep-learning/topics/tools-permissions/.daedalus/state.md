@@ -49,12 +49,12 @@
 - `2026-06-09 00:33:29` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `rollback`：用户决定暂不进入 09-biz-solver，继续在 08-demo-coder 中推进 Phase 2：先规划 OsExecutionRunner 与 ratatui Agent REPL，再从真实 sandbox runner 开始。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `complete`：Phase 2 mini demo 已完成：OsExecutionRunner 接入 sandbox-exec，ratatui Agent CLI REPL 支持持续 streaming、approval 面板和无副作用 approval-test 验收；demo README 已同步。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `enter`：进入业务迁移：将 Codex 工具/权限/沙箱链路转化为自有 Agent/CLI 的安全本地命令执行方案。
-- `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `complete`：`notes/09-biz-solver/README.md` 已输出业务迁移方案，覆盖现实压力、第一性原理、迁移设计、取舍和验收标准。
+- `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `complete`：notes/09-biz-solver/README.md 已输出业务迁移方案，覆盖现实压力、第一性原理、迁移设计、取舍和验收标准。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-archivist` 执行 `enter`：进入知识归档：将已验证的本地 Agent 命令执行安全模式沉淀到 knowledge-base。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-archivist` 执行 `complete`：knowledge-base/02-ai-engineering/local-agent-command-execution.md 已归档可复用模式，artifact-index 与 long-context 已更新。
 - `2026-06-10 03:27:52` 由 `daedalus-cli` 对 `topic` 执行 `topic-complete`：Codex tools-permissions topic 已完成：源码阅读、mini demo Phase 1/2、业务迁移和知识归档均已闭环。
 
 ## 下一步 CLI 建议
 
-- `daedalus state render --topic-dir /Users/hedon/mycode/ai/daedalus/workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions`
+- `daedalus state render --topic-dir workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions`
 - 完成阶段前先运行 `daedalus validate`。

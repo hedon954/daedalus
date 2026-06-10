@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::application::knowledge::validate_project_knowledge;
 use crate::application::review::validate_all_reviews;
-use crate::domain::{DaedalusError, Result};
+use crate::domain::{DaedalusError, Result, TaskLifecycle, WorkspaceBucket};
 use crate::infrastructure::{state_toml, workspace_fs};
 
 /// workspace 校验结果。
@@ -77,41 +77,26 @@ pub fn validate_workspace(
         ));
     }
 
-    match (
-        state_toml::task_lifecycle(&doc),
-        state_toml::workspace_bucket(&doc),
-        workspace_fs::bucket_from_task_dir(task_dir),
-    ) {
-        (Ok(lifecycle), Ok(state_bucket), Ok(actual_bucket)) => {
-            let expected_bucket = lifecycle.expected_bucket();
-            if state_bucket != expected_bucket {
-                issues.push(format!(
-                    "task lifecycle `{}` expects workspace_bucket `{}`, got `{}`",
-                    lifecycle.as_str(),
-                    expected_bucket.as_str(),
-                    state_bucket.as_str()
-                ));
-            }
-            if actual_bucket != expected_bucket {
-                issues.push(format!(
-                    "task lifecycle `{}` expects directory bucket `{}`, got `{}`",
-                    lifecycle.as_str(),
-                    expected_bucket.as_str(),
-                    actual_bucket.as_str()
-                ));
-            }
+    match state_toml::task_lifecycle(&doc) {
+        Ok(TaskLifecycle::Completed) => {
+            issues.push("legacy task lifecycle `completed`; use `idle`".to_owned())
         }
-        (lifecycle, state_bucket, actual_bucket) => {
-            if let Err(error) = lifecycle {
-                issues.push(format!("invalid task lifecycle: {error}"));
-            }
-            if let Err(error) = state_bucket {
-                issues.push(format!("invalid workspace_bucket: {error}"));
-            }
-            if let Err(error) = actual_bucket {
-                issues.push(format!("invalid task directory bucket: {error}"));
-            }
-        }
+        Err(error) => issues.push(format!("invalid task lifecycle: {error}")),
+        _ => {}
+    }
+    match state_toml::workspace_bucket(&doc) {
+        Ok(WorkspaceBucket::Projects) => {}
+        Ok(bucket) => issues.push(format!(
+            "workspace_bucket should be `projects`, got `{}`",
+            bucket.as_str()
+        )),
+        Err(error) => issues.push(format!("invalid workspace_bucket: {error}")),
+    }
+    if !task_dir
+        .components()
+        .any(|component| component.as_os_str() == "projects")
+    {
+        issues.push("project should live under workspaces/projects".to_owned());
     }
 
     let state_md = state_toml::state_md_path(task_dir);
@@ -138,6 +123,9 @@ pub fn validate_workspace(
 
     let topic_targets: Vec<_> = if all_topics {
         topics
+            .into_iter()
+            .filter(|topic| topic.lifecycle != "abandoned")
+            .collect()
     } else {
         topics
             .into_iter()
@@ -162,12 +150,14 @@ pub fn validate_workspace(
     }
 
     if let Some(repo_root) = repo_root {
-        let tasks = workspace_fs::active_tasks(&workspace_fs::learning_root(repo_root))?;
-        if tasks.len() > 1 {
-            issues.push(
-                "WIP violation: more than one learning task exists in workspaces/02-learning"
-                    .to_owned(),
-            );
+        issues.extend(validate_current_projection(
+            repo_root,
+            task_dir,
+            active_topic.as_deref(),
+        )?);
+        let active_projects = workspace_fs::active_projects(repo_root)?;
+        if active_projects.len() > 1 {
+            issues.push("WIP violation: more than one active project exists".to_owned());
         }
     }
 
@@ -175,6 +165,46 @@ pub fn validate_workspace(
         task_dir: task_dir.to_path_buf(),
         issues,
     })
+}
+
+fn validate_current_projection(
+    repo_root: &Path,
+    task_dir: &Path,
+    active_topic: Option<&str>,
+) -> Result<Vec<String>> {
+    let mut issues = Vec::new();
+    let current_project = workspace_fs::current_project_dir(repo_root)?;
+    if let Some(current_project) = current_project
+        && same_path(&current_project, task_dir)?
+    {
+        let link = workspace_fs::workspaces_root(repo_root).join("current-project");
+        if !link.exists() {
+            issues.push("current-project symlink is missing".to_owned());
+        }
+    }
+    let current_topic = workspace_fs::current_topic_dir(repo_root)?;
+    match (active_topic, current_topic) {
+        (Some(_), None) => {
+            issues.push("active_topic exists but current-topic is missing".to_owned())
+        }
+        (None, Some(_)) => {
+            issues.push("current-topic exists but project has no active_topic".to_owned())
+        }
+        _ => {}
+    }
+    Ok(issues)
+}
+
+fn same_path(left: &Path, right: &Path) -> Result<bool> {
+    let left = left.canonicalize().map_err(|source| DaedalusError::Io {
+        path: left.to_path_buf(),
+        source,
+    })?;
+    let right = right.canonicalize().map_err(|source| DaedalusError::Io {
+        path: right.to_path_buf(),
+        source,
+    })?;
+    Ok(left == right)
 }
 
 /// 校验 topic workspace。
