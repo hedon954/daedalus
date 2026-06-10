@@ -119,6 +119,24 @@ run_event_loop:
 
 这个边界比同步 `crossterm::event::poll` 主循环更可靠：agent event 到达时能唤醒 UI loop，thinking/text/tool/approval/command events 会自然连续吐出，不需要按键“泵”事件。
 
+### 6. Transcript 自动跟随必须按视觉行计算
+
+事件进入 UI state 之后，还要保证用户真的能看见尾部。`ratatui::Paragraph::scroll` 使用的是渲染后的视觉行，而不是 `Vec<UiLine>` 的逻辑事件数。
+
+如果用 `state.lines.len() - 1` 作为 tail scroll，长 assistant 文本一换行，最终的 `turn completed` 可能已经在面板下方，但 scroll offset 仍然不够。表现就是：事件其实已经到达，Header 也回到 ready，但 Transcript 底部没有展示完整，直到用户再输入一个字符触发新的状态变化。
+
+当前做法：
+
+```text
+UiLine
+  -> render_line
+  -> estimate terminal visual width
+  -> wrapped visual row count
+  -> max visual scroll
+```
+
+当 `CliState` 仍处于跟随尾部状态时，Transcript 使用最大视觉 scroll；用户手动上滚时则只做边界 clamp，不强行拉回底部。
+
 ## Verification
 
 确定性测试：
@@ -130,7 +148,7 @@ cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning
 结果：
 
 ```text
-84 passed; 0 failed; 3 ignored
+86 passed; 0 failed; 3 ignored
 ```
 
 真实 TUI 启动验证：
@@ -145,6 +163,7 @@ cargo run --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/
 - 初始 ready 页面正常绘制。
 - `q` 能退出并恢复终端。
 - Agent event / keyboard event 已分离，streaming 事件不再依赖键盘输入触发刷新。
+- Transcript tail scroll 已改为按视觉行计算，长文本换行后也能自动露出最终 `turn completed`。
 
 ## Manual Acceptance Prompts
 

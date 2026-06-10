@@ -123,7 +123,7 @@ Up   -> scroll_log_up
 Down -> scroll_log_down
 ```
 
-这还不是最终形态；后续可以补 PageUp / PageDown、自动跟随底部和用户手动滚动之间的区别。
+后续 closeout 已补自动跟随底部和用户手动滚动之间的区别：默认跟随尾部时按 `ratatui` 渲染后的视觉行计算 scroll，避免长文本换行后遮住最终事件；用户手动滚动时只做边界 clamp。
 
 ### 5. Approval UI 验收以 harmless prompt capability 验证
 

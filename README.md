@@ -249,7 +249,7 @@ daedalus validate workspaces/02-learning/openai-codex-cli-deep-learning
 最近结果：
 
 ```text
-84 passed; 0 failed; 3 ignored
+86 passed; 0 failed; 3 ignored
 ok: workspace valid
 ```
 

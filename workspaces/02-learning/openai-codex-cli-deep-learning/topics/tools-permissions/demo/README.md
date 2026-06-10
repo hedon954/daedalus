@@ -122,7 +122,7 @@ cargo test
 预期结果：
 
 ```text
-84 passed; 0 failed; 3 ignored
+86 passed; 0 failed; 3 ignored
 ```
 
 默认测试是确定性的，不会调用外部 API。
@@ -139,7 +139,7 @@ cargo run
 UI 提供四个区域：
 
 - `System Online`：显示当前状态、正在执行的 prompt 或输入提示。
-- `Transcript`：显示用户输入、模型输出、thinking、tool lifecycle、command execution、approval 和 retry 事件。
+- `Transcript`：显示用户输入、模型输出、thinking、tool lifecycle、command execution、approval 和 retry 事件；默认跟随视觉底部，长文本换行后也能看到最终 `turn completed`。
 - `Prompt / Security Gate`：普通状态下输入 prompt；需要审批时展示 reason / scope，并支持 `a` 单次允许、`s` session 允许、`r` 拒绝。
 - `Controls`：展示当前模式可用快捷键。
 

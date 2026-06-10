@@ -38,7 +38,7 @@ cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning
 结果：
 
 ```text
-84 passed; 0 failed; 3 ignored
+86 passed; 0 failed; 3 ignored
 ```
 
 TUI 验证：
@@ -47,4 +47,4 @@ TUI 验证：
 cargo run --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
 ```
 
-已验证 TUI 能启动、绘制 ready 页面、通过 `q` 正常退出；事件驱动 loop 已改为 agent event / keyboard event 双 channel，避免 streaming 事件依赖键盘输入触发刷新。
+已验证 TUI 能启动、绘制 ready 页面、通过 `q` 正常退出；事件驱动 loop 已改为 agent event / keyboard event 双 channel，避免 streaming 事件依赖键盘输入触发刷新。Transcript tail scroll 已改为按视觉行计算，避免长 assistant 文本换行后遮住最终 `turn completed`。

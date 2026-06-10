@@ -19,7 +19,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - 当前问题：`08-demo-coder` 已完成，下一步需要把 demo 中验证过的安全本地命令执行模式迁移到业务设计，并做知识归档。
 - 为什么现在做它：Phase 1/2 demo 已覆盖 capability、approval、sandbox-first execution、retry、event stream、multi-tool batch、session approval、真实 OS sandbox 和真人 TUI approval；继续打磨 UI 已经不服务当前 topic 的核心目标。
 - 完成后解锁：当前 tools-permissions topic 可以完成并作为第一个 repo-learning 闭环样本，进入项目级复盘。
-- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`OsExecutionRunner` 已接入 `/usr/bin/sandbox-exec`；`ratatui` REPL 已接入真实 `ReActAgent` 和 `OsExecutionRunner`，支持 prompt 输入、Codex-like transcript、thinking/text delta 合并、滚动、approval once/session/reject 面板；`echo approval-test` 提供无副作用 approval 验收入口；`demo/README.md` 已同步 Phase 2B runbook。
+- 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`OsExecutionRunner` 已接入 `/usr/bin/sandbox-exec`；`ratatui` REPL 已接入真实 `ReActAgent` 和 `OsExecutionRunner`，支持 prompt 输入、Codex-like transcript、thinking/text delta 合并、按视觉行自动滚动到底部、approval once/session/reject 面板；`echo approval-test` 提供无副作用 approval 验收入口；`demo/README.md` 已同步 Phase 2B runbook。
 - 当前待解决：进入 `09-biz-solver`，输出业务迁移方案；随后进入 `10-archivist`，补 `.daedalus/artifact-index.md`、`.daedalus/long-context.md` 和 knowledge export。另记录一个后续 engineering gap：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
@@ -62,7 +62,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - [x] Slice 11 README / Runbook：补齐运行说明、验收命令和 Phase 2 说明。
 - [x] Slice 12 OsExecutionRunner：用 macOS `sandbox-exec` 实现真实 sandbox runner；runner-level 单测与 `demo/examples/os_execution_runner.rs` 已验证 read-only / workspace-write / no-sandbox retry 行为。
 - [x] Slice 12 Hardening：收紧 profile 路径转义、`SandboxProfile::NoSandbox` 防御语义和上层 `ToolRuntime + OsExecutionRunner` smoke 验收。
-- [x] Slice 13 Ratatui Agent CLI REPL 基础 UI：真实终端交互、ReAct event stream、thinking/text delta 合并、Events 滚动和 approval once/session/reject 面板已手动验证满足基本诉求。
+- [x] Slice 13 Ratatui Agent CLI REPL 基础 UI：真实终端交互、ReAct event stream、thinking/text delta 合并、Events 按视觉行滚动到底部和 approval once/session/reject 面板已手动验证满足基本诉求。
 - [x] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 
 ## 06 Code Reader Gaps

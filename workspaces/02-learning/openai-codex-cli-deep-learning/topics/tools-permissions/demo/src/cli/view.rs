@@ -89,11 +89,24 @@ fn draw_header(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
 
 fn draw_transcript(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
     let line_count = state.lines.len();
+    let lines = transcript_lines(state);
+    let scroll = transcript_scroll_offset(state, &lines, area);
     let title = format!(
         "Transcript  {line_count} events  line {}",
-        state.log_scroll + 1
+        scroll.saturating_add(1)
     );
-    let lines = if state.lines.is_empty() {
+
+    let widget = Paragraph::new(Text::from(lines))
+        .block(panel(title).border_style(Style::default().fg(CYAN)))
+        .style(Style::default().bg(PANEL))
+        .wrap(Wrap { trim: false })
+        .scroll((scroll, 0));
+
+    frame.render_widget(widget, area);
+}
+
+fn transcript_lines(state: &CliState) -> Vec<Line<'static>> {
+    if state.lines.is_empty() {
         vec![
             Line::from(""),
             Line::from(vec![Span::styled(
@@ -107,15 +120,49 @@ fn draw_transcript(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
         ]
     } else {
         state.lines.iter().flat_map(render_line).collect()
-    };
+    }
+}
 
-    let widget = Paragraph::new(Text::from(lines))
-        .block(panel(title).border_style(Style::default().fg(CYAN)))
-        .style(Style::default().bg(PANEL))
-        .wrap(Wrap { trim: false })
-        .scroll((state.log_scroll, 0));
+fn transcript_scroll_offset(state: &CliState, lines: &[Line<'_>], area: Rect) -> u16 {
+    let max_scroll = max_visual_scroll(lines, area);
+    if follows_tail(state) {
+        max_scroll
+    } else {
+        state.log_scroll.min(max_scroll)
+    }
+}
 
-    frame.render_widget(widget, area);
+fn follows_tail(state: &CliState) -> bool {
+    let last_logical_line = state.lines.len().saturating_sub(1) as u16;
+    state.log_scroll == last_logical_line
+}
+
+fn max_visual_scroll(lines: &[Line<'_>], area: Rect) -> u16 {
+    let content_width = area.width.saturating_sub(4).max(1) as usize;
+    let content_height = area.height.saturating_sub(2).max(1) as usize;
+    let visual_rows = lines
+        .iter()
+        .map(|line| wrapped_row_count(line, content_width))
+        .sum::<usize>();
+    visual_rows.saturating_sub(content_height) as u16
+}
+
+fn wrapped_row_count(line: &Line<'_>, content_width: usize) -> usize {
+    let width = visual_width(line);
+    width.max(1).div_ceil(content_width)
+}
+
+fn visual_width(line: &Line<'_>) -> usize {
+    line.spans
+        .iter()
+        .map(|span| terminal_width(span.content.as_ref()))
+        .sum()
+}
+
+fn terminal_width(text: &str) -> usize {
+    text.chars()
+        .map(|ch| if ch.is_ascii() { 1 } else { 2 })
+        .sum()
 }
 
 fn draw_prompt_or_approval(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
@@ -299,4 +346,39 @@ fn truncate(text: &str, max_chars: usize) -> String {
         .collect::<String>();
     output.push_str("...");
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::layout::Rect;
+
+    use super::{transcript_lines, transcript_scroll_offset};
+    use crate::cli::app::{CliState, UiLine};
+
+    #[test]
+    fn tail_scroll_uses_visual_rows_not_logical_event_count() {
+        let mut state = CliState::new();
+        state.push_line(UiLine::Model(
+            "this is a very long assistant response that must wrap across several terminal rows"
+                .to_string(),
+        ));
+        state.push_line(UiLine::System("turn completed".to_string()));
+
+        let lines = transcript_lines(&state);
+        let scroll = transcript_scroll_offset(&state, &lines, Rect::new(0, 0, 24, 5));
+
+        assert!(scroll > state.lines.len() as u16);
+    }
+
+    #[test]
+    fn manual_scroll_is_clamped_to_visual_scroll_bounds() {
+        let mut state = CliState::new();
+        state.push_line(UiLine::Model("short".to_string()));
+        state.log_scroll = 100;
+
+        let lines = transcript_lines(&state);
+        let scroll = transcript_scroll_offset(&state, &lines, Rect::new(0, 0, 80, 20));
+
+        assert_eq!(scroll, 0);
+    }
 }
