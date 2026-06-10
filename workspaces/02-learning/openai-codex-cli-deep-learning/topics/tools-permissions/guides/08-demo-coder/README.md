@@ -36,8 +36,8 @@ Phase 2 只替换“执行真实性”和“人机交互真实性”，不重写
 
 - [`demo/design.md`](../../demo/design.md)：07 阶段定稿的设计蓝图。
 - [`notes/06-code-reader/README.md`](../../notes/06-code-reader/README.md)：auth / approval / sandbox 的源码证据入口。
-- [`notes/06-code-reader/01-runtime-request-assembly.md`](../../notes/06-code-reader/01-runtime-request-assembly.md)：`CommandRequest` 字段来源依据。
-- [`notes/06-code-reader/02-orchestrator-retry.md`](../../notes/06-code-reader/02-orchestrator-retry.md)：sandbox denied 后 retry 状态机依据。
+- [`notes/06-code-reader/03-runtime-request-assembly.md`](../../notes/06-code-reader/03-runtime-request-assembly.md)：`CommandRequest` 字段来源依据。
+- [`notes/06-code-reader/04-orchestrator-retry.md`](../../notes/06-code-reader/04-orchestrator-retry.md)：sandbox denied 后 retry 状态机依据。
 
 ## Build Slices
 

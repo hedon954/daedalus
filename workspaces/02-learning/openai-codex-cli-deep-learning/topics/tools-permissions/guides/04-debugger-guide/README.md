@@ -158,10 +158,10 @@ source/codex/codex-rs/.vscode/launch.json
 
 ## 用户记录要求
 
-运行每条命令后，在 `notes/03-runbook.md` 记录：
+运行每条命令后，在 `notes/04-debugger-guide/README.md` 记录：
 
 - 实际命令。
 - 是否成功。
 - 关键输出或错误。
 - 你对调用链的新理解。
-- 与 `notes/02-question-roadmap.md` 中假设相符或冲突的地方。
+- 与 `notes/03-socratic-coach/README.md` 中假设相符或冲突的地方。

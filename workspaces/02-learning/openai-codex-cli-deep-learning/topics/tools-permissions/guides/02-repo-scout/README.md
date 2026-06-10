@@ -21,5 +21,5 @@
 
 ## 需要用户确认
 
-- 接受上述运行风险后，才能把选择结论写入 `notes/01-repo-selection.md` 并完成本阶段。
+- 接受上述运行风险后，才能把选择结论写入 `notes/02-repo-scout/README.md` 并完成本阶段。
 - 源码拉取建议固定 commit，而不是直接跟随 `main`。

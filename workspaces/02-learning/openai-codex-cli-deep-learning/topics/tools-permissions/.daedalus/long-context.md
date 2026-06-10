@@ -16,15 +16,15 @@
 ## 决策
 
 - 学习对象固定为 `openai/codex`，源码通过 `source/pull_source.sh` 拉取到 `source/codex`，固定 commit `ebe75bb683b3c237aad9f039ab17b187048aa499`。
-- 架构总览不再拆散成多篇阶段性 notes；最终架构笔记集中在 `notes/codex-agent-loop-architecture.md`。
+- 架构总览集中在 `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md`，阶段入口为 `notes/05-arch-analyzer/README.md`。
 - 复杂全局图优先使用 Excalidraw，局部调用链和控制流使用 Typora 兼容 Mermaid。
-- `notes/codex-context-and-compaction.md` 是 `06-code-reader` 的第一个核心专题笔记，保留用户原始回答、Agent 校准、源码验证路径和验证状态。
+- `notes/06-code-reader/01-context-and-compaction.md` 是 `06-code-reader` 的第一个核心专题笔记，保留用户原始回答、Agent 校准、源码验证路径和验证状态。
 - 2026-05-11 回退到 `06-code-reader`：后续源码阅读必须按“生产问题 -> naive 失败 -> 源码应对 -> 保护的不变量 -> trade-off -> 可迁移模式”推进。
 - 2026-05-16 重构 repo learning 协议：后续学习以 `.daedalus/outcome-map.md` 为终点地图，`06-code-reader` 只补阻塞 `demo/design.md` 的源码缺口；当前 auth/approval/sandbox 只保留 Decision 合成、Runtime request assembly、Orchestrator retry 三个缺口。
-- 2026-05-16 增量迁移 active 阶段为文件夹入口：`guides/06-code-reader/README.md` 与 `notes/06-code-reader/README.md` 是后续 code-reader 导航入口；旧 `guides/06-code-reader-guide.md` 和 `notes/code-reading.md` 保留为 legacy 产物。
+- 2026-05-16 增量迁移 active 阶段为文件夹入口：`guides/06-code-reader/README.md` 与 `notes/06-code-reader/README.md` 是后续 code-reader 导航入口；后续已把早期 code-reader 根目录产物收拢到该阶段目录。
 - 2026-05-16 `06-code-reader` 的 auth/approval/sandbox 三个 demo 缺口已补齐：Decision 合成、Runtime request assembly、Orchestrator retry。下一步进入 `07-demo-architecture`，定稿 `demo/design.md`。
 - 2026-05-16 `07-demo-architecture` 已将 demo 收敛为两阶段方案：Phase 1 使用 `SimulatedExecutionRunner` 跑通安全执行闭环，Phase 2 在同一 `ExecutionRunner` 接口下接入 `OsExecutionRunner`；已制定 AT-01 到 AT-14 验收测试和 `guides/08-demo-coder/README.md` 编码子地图。
-- 2026-05-16 沉淀设计学习方法：`notes/design-method-from-source-to-demo.md`，总结从 Reality Problem 到 Build Slices 的源码学习转可迁移设计流程。
+- 2026-05-16 沉淀设计学习方法：`notes/07-demo-architecture/01-design-method-from-source-to-demo.md`，总结从 Reality Problem 到 Build Slices 的源码学习转可迁移设计流程。
 - 2026-05-16 用户确认继续后，状态推进到 `08-demo-coder`。随后 Agent 曾错误地代写 Slice 0/1 demo 代码，用户指出 08 应该一步步带用户实现；已回滚代写代码，并需要补强 repo-learning 指令中的实现练习门禁。
 - 2026-05-16 用户亲手完成 `08-demo-coder` Slice 0：创建 `demo/Cargo.toml`、`demo/src/lib.rs`、`demo/src/main.rs`、`demo/Makefile` 和 `Cargo.lock`；Agent 验证 `cargo test` 通过 1 个占位测试，`cargo run` 输出 `Hello, world!`。
 - 2026-06-02 Slice 7 `RetryPolicy` hardening 已完成：`decide_retry` 已消费 capability-level `RetryPolicy`，并和 `ApprovalPolicy` / `NetworkPolicy` 组合判断；`cargo test` 为 61 passed、3 ignored。下一步进入 Slice 8 Event Protocol Hardening。
@@ -53,9 +53,9 @@
 
 ## 恢复上下文提示
 
-- 当前机器状态：`08-demo-coder` 正在收口为 done，随后应进入 / 完成 `09-biz-solver` 与 `10-archivist`。`04-debugger-guide`、`05-arch-analyzer`、`06-code-reader`、`07-demo-architecture` 已完成；`05-arch-analyzer` 已用 `notes/codex-agent-loop-architecture.md` 作为等价架构产物完成。
+- 当前机器状态：`08-demo-coder`、`09-biz-solver` 与 `10-archivist` 均已有完成产物；当前收口重点是确保 guides / notes 按 stage 目录恢复一致。`04-debugger-guide`、`05-arch-analyzer`、`06-code-reader`、`07-demo-architecture` 已完成；`05-arch-analyzer` 已用 `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md` 作为架构专题产物。
 - 当前最重要的两份 notes：
-  - `notes/codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
-  - `notes/codex-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
+  - `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
+  - `notes/06-code-reader/01-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
 - 当前阶段入口：`guides/08-demo-coder/README.md`；demo 实现和阶段 notes/guides 以 `topics/tools-permissions` 下的 `demo/`、`notes/08-demo-coder/`、`guides/08-demo-coder/` 为准。
 - 当前导航：不是继续泛读 Codex 权限系统，也不是继续扩展完整 Codex TUI；`auth/approval/sandbox` 已收敛成 demo 不变量，`08-demo-coder` Phase 2 已完成。下一步是最终状态流转、topic complete、项目级 evolution 回顾和 README 重写。

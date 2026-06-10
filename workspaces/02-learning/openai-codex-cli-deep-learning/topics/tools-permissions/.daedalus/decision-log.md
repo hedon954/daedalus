@@ -11,7 +11,7 @@
 ## 2026-05-10 13:15:00
 
 - 决策：将任务状态推进到 `06-code-reader` active。
-- 原因：`04-debugger-guide` 已有 `notes/runbook.md` 和用户运行证据；`05-arch-analyzer` 已有 `notes/codex-agent-loop-architecture.md` 作为等价架构产物。
+- 原因：`04-debugger-guide` 已有 `notes/04-debugger-guide/README.md` 和用户运行证据；`05-arch-analyzer` 已有 `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md` 作为架构专题产物。
 - 影响：下一步聚焦核心代码深读；当前已完成上下文管理 / compact 专题，待选择继续深读 `auth/approval/sandbox` 或开始提炼 mini demo 不变量。
 
 ## 2026-05-11 23:44:20

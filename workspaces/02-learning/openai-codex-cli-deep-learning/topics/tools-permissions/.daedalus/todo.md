@@ -12,13 +12,13 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Current Path
 
-当前位于 `08-demo-coder` Phase 2 closeout。阶段入口是 [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md)，实现产物入口是 [`demo/README.md`](../demo/README.md)。Phase 2A 真实 OS sandbox 与 Phase 2B `ratatui` Agent CLI REPL 已完成，下一步可以进入 `09-biz-solver` 和 `10-archivist`。
+当前位于 topic closeout 后的 artifact consolidation。阶段入口已经迁移为 `guides/<stage-id>/README.md` 和 `notes/<stage-id>/README.md`；本轮目标是把早期散落在根目录的 guides / notes 收拢到对应 stage 目录，并同步 state、artifact index、todo、outcome-map 和阶段 README。
 
 ## Now
 
-- 当前问题：`08-demo-coder` 已完成，下一步需要把 demo 中验证过的安全本地命令执行模式迁移到业务设计，并做知识归档。
-- 为什么现在做它：Phase 1/2 demo 已覆盖 capability、approval、sandbox-first execution、retry、event stream、multi-tool batch、session approval、真实 OS sandbox 和真人 TUI approval；继续打磨 UI 已经不服务当前 topic 的核心目标。
-- 完成后解锁：当前 tools-permissions topic 可以完成并作为第一个 repo-learning 闭环样本，进入项目级复盘。
+- 当前问题：早期学习产物仍有一部分保留在 `guides/*.md`、`notes/*.md` 根目录，恢复上下文时不如阶段目录直观。
+- 为什么现在做它：Phase 1/2 demo、business transfer 和 knowledge export 已形成闭环；最终关闭前需要让学习地图和文件结构一致。
+- 完成后解锁：当前 tools-permissions topic 的归档质量更稳定，后续复习、知识萃取或开启新 topic 时不再被旧路径误导。
 - 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests 和同进程短期 messages memory；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`run_command` 已对复杂 shell syntax fail closed；`OsExecutionRunner` 已接入 `/usr/bin/sandbox-exec` 并增加 execution timeout；`ratatui` REPL 已接入真实 `ReActAgent` 和 `OsExecutionRunner`，支持 prompt 输入、Codex-like transcript、thinking/text delta 合并、assistant/thinking Markdown 渲染、GFM table 终端兜底、按视觉行自动滚动到底部、approval once/session/reject 面板；UI 已从大框仪表盘重写为 transcript-first 风格；`echo approval-test` 提供无副作用 approval 验收入口；`demo/README.md` 已同步 Phase 2B runbook。
 - 当前待解决：进入 `09-biz-solver`，输出业务迁移方案；随后进入 `10-archivist`，补 `.daedalus/artifact-index.md`、`.daedalus/long-context.md` 和 knowledge export。另记录一个后续 engineering gap：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
@@ -83,10 +83,10 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 ## Done
 
 - [x] 完成 `04-debugger-guide`：用户已执行最小 runbook，`codex-exec` 测试通过。
-- [x] 完成 `05-arch-analyzer`：形成 `notes/05-codex-agent-loop-architecture.md`，覆盖 agent loop、工具、权限、沙箱和事件回流。
-- [x] 完成上下文管理专题：形成 `notes/06-codex-context-and-compaction.md`，覆盖 history、prompt view、rollout、tool result 回灌和 compact。
+- [x] 完成 `05-arch-analyzer`：形成 `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md`，覆盖 agent loop、工具、权限、沙箱和事件回流。
+- [x] 完成上下文管理专题：形成 `notes/06-code-reader/01-context-and-compaction.md`，覆盖 history、prompt view、rollout、tool result 回灌和 compact。
 - [x] 回滚 Agent 代学式 code-reading 记录，并把规则改成用户先形成假设、Agent 再校准。
-- [x] 重塑 `notes/07-code-reading.md`，把 auth/approval/sandbox 阅读整理成生产问题、源码证据、不变量、代价和迁移模式。
+- [x] 重塑 `notes/06-code-reader/02-auth-approval-sandbox.md`，把 auth/approval/sandbox 阅读整理成生产问题、源码证据、不变量、代价和迁移模式。
 - [x] 新增 [`outcome-map.md`](outcome-map.md)，明确当前只补 3 个 demo 缺口。
 - [x] 新增 [`demo/design.md`](../demo/design.md) 草案，用源码阅读逐步填字段。
 - [x] 补齐 Decision 合成缺口：用户已复述 `Forbidden` 聚合、`Decision::Allow != bypass_sandbox`，并抽象出 demo 的 `approval_requirement_for_command` 输入/输出。

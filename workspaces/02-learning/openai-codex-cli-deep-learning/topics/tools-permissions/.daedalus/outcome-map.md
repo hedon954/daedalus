@@ -13,23 +13,23 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 | 产物 | 用途 | 状态 |
 | --- | --- | --- |
 | [`.daedalus/task-card.md`](task-card.md) | 学习目标与验收标准 | 已验证 |
-| [`notes/02-question-roadmap.md`](../notes/02-question-roadmap.md) | 递进问题路线图 | 已验证 |
-| [`notes/03-runbook.md`](../notes/03-runbook.md) | 本地运行与调试证据 | 已验证 |
-| [`notes/04-architecture.md`](../notes/04-architecture.md) | 架构入口，指向 Codex agent loop 架构笔记 | 已验证 |
+| [`notes/03-socratic-coach/README.md`](../notes/03-socratic-coach/README.md) | 递进问题路线图 | 已验证 |
+| [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 本地运行与调试证据 | 已验证 |
+| [`notes/05-arch-analyzer/README.md`](../notes/05-arch-analyzer/README.md) | 架构入口，指向 Codex agent loop 架构笔记 | 已验证 |
 | [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 核心源码阅读阶段入口，聚焦 auth/approval/sandbox | 已验证 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计蓝图，包含 Phase 1/Phase 2、状态机、事件协议和验收测试 | 已验证 |
 | [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md) | 08 阶段编码子地图，按 slice 推进 Phase 1/2 demo | 已验证 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 已验证 |
-| [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 将权限/沙箱模式迁移到业务问题 | 待填 |
-| knowledge-base entry | 已验证知识归档 | 待填 |
+| [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 将权限/沙箱模式迁移到业务问题 | 已验证 |
+| [`knowledge-base entry`](../../../../../../knowledge-base/02-ai-engineering/local-agent-command-execution.md) | 已验证知识归档 | 已验证 |
 
 ## Current Position
 
-- 当前阶段：`08-demo-coder` Phase 2 已完成，准备进入 `09-biz-solver`。
-- 当前目标：把已验证的 Codex 工具/权限/沙箱执行模式迁移成业务 Agent/CLI 设计方案。
-- 当前障碍：还没有输出 `notes/09-biz-solver/README.md` 业务迁移产物，也还没有完成 `10-archivist` 的知识归档。
-- 当前动作服务的产物：业务迁移方案、knowledge-base entry、项目级复盘报告。
-- 当前光标：`09-biz-solver`；上一阶段完成证据为 [`demo/README.md`](../demo/README.md) 和 [`notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md`](../notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md)。
+- 当前阶段：topic closeout 后的 artifact consolidation。
+- 当前目标：把早期散落在 `guides/*.md` 和 `notes/*.md` 的产物收拢到对应 stage 目录。
+- 当前障碍：目录迁移后需要确保 state、artifact index、todo、outcome-map 和阶段 README 链接一致。
+- 当前动作服务的产物：可恢复的 learning map、阶段目录入口、最终归档质量。
+- 当前光标：目录整理完成后，回到 topic 级复盘或下一个学习 topic。
 
 ## Artifact Dependency Graph
 

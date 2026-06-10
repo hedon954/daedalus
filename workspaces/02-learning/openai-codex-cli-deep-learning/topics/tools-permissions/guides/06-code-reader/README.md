@@ -2,19 +2,19 @@
 
 本目录是 `06-code-reader` 的 Agent-side 阅读入口。它保存待用户回答、待源码验证的阅读地图；不把 Agent 预读伪装成用户已掌握的 notes。
 
-## Current Focus
+## Stage Status
 
 - Final artifact: [`demo/design.md`](../../demo/design.md)
-- Current gap: Runtime request assembly
-- Current question: shell / unified exec 如何组装 `CommandRequest` 的上下文字段。
-- After this: 可以定稿 demo 的 `CommandRequest` 字段边界。
+- Current gap: none
+- Current status: `06-code-reader` 已完成；本目录保留阶段阅读地图和历史 guide。
+- After this: 相关源码结论已进入 `demo/design.md` 和后续 `08-demo-coder` 实现。
 
 ## Topic Guides
 
 | Topic | File | Status |
 | --- | --- | --- |
-| auth / approval / sandbox legacy guide | [`../06-code-reader-guide.md`](../06-code-reader-guide.md) | legacy |
-| Runtime request assembly | [`01-runtime-request-assembly.md`](01-runtime-request-assembly.md) | active |
+| auth / approval / sandbox guide | [`02-auth-approval-sandbox.md`](02-auth-approval-sandbox.md) | migrated |
+| Runtime request assembly | [`01-runtime-request-assembly.md`](01-runtime-request-assembly.md) | completed |
 
 ## Stop Rules
 

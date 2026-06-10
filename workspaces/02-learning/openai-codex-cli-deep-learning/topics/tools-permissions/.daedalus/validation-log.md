@@ -47,10 +47,10 @@
 ## 2026-05-10 13:15:00
 
 - 阶段：`05-arch-analyzer` / `06-code-reader`
-- 有效引导：用户先提出自己对 agent loop、工具权限、上下文压缩和 rollout 恢复的理解，Agent 再用源码校准，并将结论沉淀到 `notes/codex-agent-loop-architecture.md` 和 `notes/codex-context-and-compaction.md`。
+- 有效引导：用户先提出自己对 agent loop、工具权限、上下文压缩和 rollout 恢复的理解，Agent 再用源码校准，并将结论沉淀到 `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md` 和 `notes/06-code-reader/01-context-and-compaction.md`。
 - 用户亲自完成的实践：用户阅读源码片段，梳理 `run_pre_sampling_compact`、mid-turn compact、compact prompt、`ToolOutput::to_response_item`、`drain_in_flight`、`reconstruct_history_from_rollout` 等机制，并提出 future 顺序保证问题。
 - Agent 代替用户过多的地方：进入上下文管理专题时，Agent 曾先直接生成总结，违背“先现实约束、再问题、再源码验证”的教练原则；已把“问题 -> 用户回答 -> Agent 校准 -> 验证路径 -> 验证状态”写入公共 prompt 和 repo-learning skill。
-- Prompt/template/CLI/docs 改进建议：阶段产物命名与 state 模板不完全一致，例如架构产物实际为 `notes/codex-agent-loop-architecture.md`，而 state 模板期望 `notes/architecture.md`；后续可考虑允许 artifact-index 中声明等价产物。
+- Prompt/template/CLI/docs 改进建议：阶段产物命名与 state 模板不完全一致；后续已统一为阶段目录入口，例如 `notes/05-arch-analyzer/README.md`。
 - 是否足以进入下一步：当前足以保持在 `06-code-reader`，继续选择一个专题深读，或开始提炼 mini demo 不变量。
 
 ## 2026-05-16
@@ -67,7 +67,7 @@
 - 阶段：`06-code-reader`
 - 有效引导：用户指出 `guides/` 和 `notes/` 不应每阶段挤在一个 markdown 文件中；本次将 active 阶段增量迁移为 `guides/06-code-reader/README.md` 与 `notes/06-code-reader/README.md`。
 - 用户亲自完成的实践：用户提出阶段内部也需要可导航的信息架构，避免单文件越来越长。
-- Agent 代替用户过多的地方：历史上 Agent 容易把多个专题堆入 `notes/code-reading.md`，降低恢复和定位质量。
+- Agent 代替用户过多的地方：历史上 Agent 容易把多个专题堆入 `notes/06-code-reader/02-auth-approval-sandbox.md`，降低恢复和定位质量。
 - Prompt/template/CLI/docs 改进建议：后续新任务应使用 `guides/<stage-id>/README.md` 和 `notes/<stage-id>/README.md` 作为阶段入口，专题拆到同目录文件。
 - 是否足以进入下一步：足以继续 Runtime request assembly；后续新内容应写入 `guides/06-code-reader/` 和 `notes/06-code-reader/`。
 

@@ -28,6 +28,7 @@ README 只做索引；具体专题写入单独文件，避免把 demo 实现过�
 | Slice 12 sandbox-exec Rust usage | [`11-slice-12-sandbox-exec-rust-usage.md`](11-slice-12-sandbox-exec-rust-usage.md) | 已实现 / 已验证 | 记录 `tokio::process::Command` 调用 `sandbox-exec`、`arg/args` 语义、profile DSL 翻译和 `ExecutionResult` 分类边界 |
 | Slice 13 ratatui REPL UI | [`12-slice-13-ratatui-repl-ui.md`](12-slice-13-ratatui-repl-ui.md) | 已实现 / 已手动验收 | 记录 `CliState -> ratatui draw -> event_loop -> ReActAgent stream -> approval UI` 的边界和实现取舍 |
 | Slice 13 Codex-like CLI closeout | [`13-slice-13-codex-like-cli-closeout.md`](13-slice-13-codex-like-cli-closeout.md) | 已验证 / 已收口 | 记录 UI 重写、无副作用 approval-test capability、测试边界和 Phase 2B 验收方式 |
+| Assert / Result / Denied boundary | [`14-assert-result-denied-boundary.md`](14-assert-result-denied-boundary.md) | 已记录 | 沉淀 demo 实现中内部不变量、可恢复错误和安全拒绝的判断边界 |
 
 ## Stage Exit Criteria
 

@@ -227,7 +227,7 @@ Phase 2 保证 demo 最终能走向可用。
 Phase 2 只替换 runner，不重写 approval / retry / event 协议。
 ```
 
-补充：`assert`、`Result` 和安全拒绝的边界判断单独沉淀在 [09-assert-result-denied-boundary.md](09-assert-result-denied-boundary.md)。
+补充：`assert`、`Result` 和安全拒绝的边界判断单独沉淀在 [`../08-demo-coder/14-assert-result-denied-boundary.md`](../08-demo-coder/14-assert-result-denied-boundary.md)。
 
 ## 复用提问清单
 

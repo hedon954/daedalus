@@ -2,7 +2,7 @@
 
 本文件是 `05-arch-analyzer` 阶段的标准入口文件。最终架构分析内容集中维护在：
 
-- [`05-codex-agent-loop-architecture.md`](05-codex-agent-loop-architecture.md)
+- [`01-codex-agent-loop-architecture.md`](01-codex-agent-loop-architecture.md)
 
 该笔记覆盖：
 

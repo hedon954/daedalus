@@ -31,4 +31,4 @@
 
 ## 推荐下一步
 
-用户先回答或改写这 3 个问题。Agent 再把回答整理进 `notes/02-question-roadmap.md`，并生成下一阶段 runbook。
+用户先回答或改写这 3 个问题。Agent 再把回答整理进 `notes/03-socratic-coach/README.md`，并生成下一阶段 runbook。
