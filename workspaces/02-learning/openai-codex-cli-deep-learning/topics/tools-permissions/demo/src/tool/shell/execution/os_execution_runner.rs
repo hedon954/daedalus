@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use tokio::process::Command;
+use tokio::{process::Command, time::Duration};
 
 use crate::{
     model::{
@@ -21,6 +21,8 @@ pub enum SandboxBackend {
     /// MacOS 自带的 sandbox-exec
     MacosSandboxExec,
 }
+
+const COMMAND_TIMEOUT: Duration = Duration::from_secs(8);
 
 #[async_trait]
 impl ExecutionRunner for OsExecutionRunner {
@@ -64,7 +66,7 @@ async fn run_without_sandbox(request: &CommandRequest) -> std::io::Result<std::p
     let mut command = Command::new(program);
     command.args(&request.argv[1..]);
     command.current_dir(&request.cwd);
-    command.output().await
+    run_command_with_timeout(command).await
 }
 
 async fn run_with_sandbox_exec(
@@ -93,7 +95,21 @@ async fn run_with_sandbox_exec(
     command.arg(program);
     command.args(&request.argv[1..]);
     command.current_dir(&request.cwd);
-    command.output().await
+    run_command_with_timeout(command).await
+}
+
+async fn run_command_with_timeout(mut command: Command) -> std::io::Result<std::process::Output> {
+    command.kill_on_drop(true);
+    match tokio::time::timeout(COMMAND_TIMEOUT, command.output()).await {
+        Ok(output) => output,
+        Err(_) => Err(std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            format!(
+                "command timed out after {} seconds",
+                COMMAND_TIMEOUT.as_secs()
+            ),
+        )),
+    }
 }
 
 fn map_output(

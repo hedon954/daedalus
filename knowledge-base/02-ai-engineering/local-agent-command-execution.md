@@ -80,4 +80,4 @@ model intent
 - Demo: `demo/README.md`
 - Business transfer: `notes/09-biz-solver/README.md`
 - Closeout note: `notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md`
-- Verification: `cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2` -> `86 passed; 0 failed; 3 ignored`
+- Verification: `cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2` -> `90 passed; 0 failed; 3 ignored`

@@ -1,23 +1,29 @@
+use std::borrow::Cow;
+
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, Padding, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, Padding, Paragraph, Wrap},
 };
 
 use crate::cli::app::{CliState, UiLine, UiMode};
 
-const BG: Color = Color::Rgb(18, 18, 18);
-const PANEL: Color = Color::Rgb(28, 28, 28);
-const MUTED: Color = Color::Rgb(145, 145, 145);
-const TEXT: Color = Color::Rgb(218, 218, 218);
-const BLUE: Color = Color::Rgb(95, 175, 255);
-const GREEN: Color = Color::Rgb(95, 215, 135);
-const YELLOW: Color = Color::Rgb(255, 190, 95);
-const RED: Color = Color::Rgb(255, 105, 105);
-const MAGENTA: Color = Color::Rgb(190, 135, 255);
-const CYAN: Color = Color::Rgb(95, 215, 215);
+const BG: Color = Color::Rgb(12, 13, 14);
+const SURFACE: Color = Color::Rgb(18, 19, 21);
+const SURFACE_HOT: Color = Color::Rgb(24, 25, 28);
+const LINE: Color = Color::Rgb(60, 64, 70);
+const MUTED: Color = Color::Rgb(126, 132, 142);
+const SUBTLE: Color = Color::Rgb(166, 171, 181);
+const TEXT: Color = Color::Rgb(226, 229, 234);
+const BLUE: Color = Color::Rgb(96, 165, 250);
+const GREEN: Color = Color::Rgb(74, 222, 128);
+const YELLOW: Color = Color::Rgb(251, 191, 36);
+const ORANGE: Color = Color::Rgb(251, 146, 60);
+const RED: Color = Color::Rgb(248, 113, 113);
+const MAGENTA: Color = Color::Rgb(192, 132, 252);
+const CYAN: Color = Color::Rgb(45, 212, 191);
 
 pub fn draw(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
     let root = Block::default().style(Style::default().bg(BG));
@@ -27,10 +33,10 @@ pub fn draw(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Length(4),
+            Constraint::Length(3),
             Constraint::Min(10),
             Constraint::Length(input_height(state)),
-            Constraint::Length(3),
+            Constraint::Length(2),
         ])
         .split(area);
 
@@ -42,8 +48,9 @@ pub fn draw(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
 
 fn input_height(state: &CliState) -> u16 {
     match state.mode {
-        UiMode::PendingApproval => 8,
-        _ => 5,
+        UiMode::PendingApproval => 7,
+        UiMode::RunningAgent => 3,
+        UiMode::EditingPrompt => 4,
     }
 }
 
@@ -54,35 +61,37 @@ fn draw_header(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
         UiMode::PendingApproval => YELLOW,
     };
 
-    let mut lines = vec![Line::from(vec![
-        Span::styled(
-            "Codex Mini",
-            Style::default().fg(BLUE).add_modifier(Modifier::BOLD),
-        ),
-        Span::raw("  "),
-        Span::styled("agent cli", Style::default().fg(MUTED)),
-        Span::raw("  "),
-        Span::styled(
-            format!("[{}]", state.status_text()),
-            Style::default()
-                .fg(status_color)
-                .add_modifier(Modifier::BOLD),
-        ),
-    ])];
-
     let prompt = state
         .active_prompt
         .as_deref()
-        .map(|prompt| truncate(prompt, 88))
+        .map(|prompt| truncate(prompt, area.width.saturating_sub(28).max(18) as usize))
         .unwrap_or_else(|| state.input_hint().to_string());
-    lines.push(Line::from(vec![
-        Span::styled("focus ", Style::default().fg(MUTED)),
-        Span::styled(prompt, Style::default().fg(TEXT)),
-    ]));
+
+    let lines = vec![
+        Line::from(vec![
+            Span::styled(
+                "Codex Mini",
+                Style::default().fg(TEXT).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("  local agent", Style::default().fg(MUTED)),
+            Span::raw("  "),
+            pill(state.status_text(), status_color),
+            Span::styled("  workspace tools", Style::default().fg(MUTED)),
+        ]),
+        Line::from(vec![
+            Span::styled("focus ", Style::default().fg(MUTED)),
+            Span::styled(prompt, Style::default().fg(SUBTLE)),
+        ]),
+    ];
 
     let widget = Paragraph::new(Text::from(lines))
-        .block(panel("System Online").border_style(Style::default().fg(BLUE)))
-        .style(Style::default().fg(TEXT).bg(PANEL));
+        .block(
+            Block::default()
+                .borders(Borders::BOTTOM)
+                .border_style(Style::default().fg(LINE))
+                .padding(Padding::horizontal(1)),
+        )
+        .style(Style::default().fg(TEXT).bg(BG));
 
     frame.render_widget(widget, area);
 }
@@ -91,14 +100,27 @@ fn draw_transcript(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
     let line_count = state.lines.len();
     let lines = transcript_lines(state);
     let scroll = transcript_scroll_offset(state, &lines, area);
-    let title = format!(
-        "Transcript  {line_count} events  line {}",
-        scroll.saturating_add(1)
-    );
+    let title = Line::from(vec![
+        Span::styled(
+            " transcript",
+            Style::default().fg(CYAN).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(format!("  {line_count} events"), Style::default().fg(MUTED)),
+        Span::styled(
+            format!("  row {}", scroll.saturating_add(1)),
+            Style::default().fg(MUTED),
+        ),
+    ]);
 
     let widget = Paragraph::new(Text::from(lines))
-        .block(panel(title).border_style(Style::default().fg(CYAN)))
-        .style(Style::default().bg(PANEL))
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::LEFT)
+                .border_style(Style::default().fg(CYAN))
+                .padding(Padding::horizontal(1)),
+        )
+        .style(Style::default().fg(TEXT).bg(BG))
         .wrap(Wrap { trim: false })
         .scroll((scroll, 0));
 
@@ -109,14 +131,24 @@ fn transcript_lines(state: &CliState) -> Vec<Line<'static>> {
     if state.lines.is_empty() {
         vec![
             Line::from(""),
-            Line::from(vec![Span::styled(
-                "Ask a question, request a calculation, or ask me to run a safe local command.",
-                Style::default().fg(MUTED),
-            )]),
-            Line::from(vec![Span::styled(
-                "Example: 请调用 run_command 执行 pwd，然后解释结果。",
-                Style::default().fg(MUTED),
-            )]),
+            Line::from(vec![
+                Span::styled(
+                    "  Ready.",
+                    Style::default().fg(TEXT).add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    " Ask a question, calculate with tools, or request a safe local command.",
+                    Style::default().fg(MUTED),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("  Try  ", Style::default().fg(MUTED)),
+                Span::styled(
+                    "请调用 run_command 执行 pwd，然后解释结果。",
+                    Style::default().fg(SUBTLE),
+                ),
+            ]),
         ]
     } else {
         state.lines.iter().flat_map(render_line).collect()
@@ -138,8 +170,8 @@ fn follows_tail(state: &CliState) -> bool {
 }
 
 fn max_visual_scroll(lines: &[Line<'_>], area: Rect) -> u16 {
-    let content_width = area.width.saturating_sub(4).max(1) as usize;
-    let content_height = area.height.saturating_sub(2).max(1) as usize;
+    let content_width = area.width.saturating_sub(3).max(1) as usize;
+    let content_height = area.height.max(1) as usize;
     let visual_rows = lines
         .iter()
         .map(|line| wrapped_row_count(line, content_width))
@@ -174,18 +206,21 @@ fn draw_prompt_or_approval(frame: &mut Frame<'_>, area: Rect, state: &CliState) 
 
 fn draw_prompt(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
     let text = match state.mode {
-        UiMode::RunningAgent => Text::from(vec![
-            Line::from(vec![Span::styled(
-                "Agent is running. New prompt input is paused until this turn finishes.",
+        UiMode::RunningAgent => Text::from(Line::from(vec![
+            Span::styled(
+                "  running",
+                Style::default().fg(BLUE).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                "  streaming model and tool events...",
                 Style::default().fg(MUTED),
-            )]),
-            Line::from(vec![Span::styled(
-                "Use Up/Down or PageUp/PageDown to inspect the transcript.",
-                Style::default().fg(MUTED),
-            )]),
-        ]),
+            ),
+        ])),
         _ => Text::from(vec![Line::from(vec![
-            Span::styled("> ", Style::default().fg(BLUE).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "> ",
+                Style::default().fg(GREEN).add_modifier(Modifier::BOLD),
+            ),
             Span::styled(state.input.as_str(), Style::default().fg(TEXT)),
             Span::styled(
                 " ",
@@ -195,8 +230,16 @@ fn draw_prompt(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
     };
 
     let widget = Paragraph::new(text)
-        .block(panel("Prompt").border_style(Style::default().fg(BLUE)))
-        .style(Style::default().bg(PANEL))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(match state.mode {
+                    UiMode::RunningAgent => BLUE,
+                    _ => GREEN,
+                }))
+                .padding(Padding::horizontal(1)),
+        )
+        .style(Style::default().fg(TEXT).bg(SURFACE))
         .wrap(Wrap { trim: false });
 
     frame.render_widget(widget, area);
@@ -207,7 +250,7 @@ fn draw_approval(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
         Some(pending) => Text::from(vec![
             Line::from(vec![
                 Span::styled(
-                    "Approval required",
+                    "  Approval required",
                     Style::default().fg(YELLOW).add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(
@@ -215,13 +258,12 @@ fn draw_approval(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
                     Style::default().fg(MUTED),
                 ),
             ]),
-            Line::from(""),
             Line::from(vec![
-                Span::styled("reason  ", Style::default().fg(MUTED)),
+                Span::styled("  reason  ", Style::default().fg(MUTED)),
                 Span::styled(pending.reason.as_str(), Style::default().fg(TEXT)),
             ]),
             Line::from(vec![
-                Span::styled("scope   ", Style::default().fg(MUTED)),
+                Span::styled("  scope   ", Style::default().fg(MUTED)),
                 Span::styled(pending.scope_summary.as_str(), Style::default().fg(TEXT)),
             ]),
             Line::from(""),
@@ -240,9 +282,15 @@ fn draw_approval(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
         )])),
     };
 
+    frame.render_widget(Clear, area);
     let widget = Paragraph::new(text)
-        .block(panel("Security Gate").border_style(Style::default().fg(YELLOW)))
-        .style(Style::default().bg(PANEL))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(YELLOW))
+                .padding(Padding::horizontal(1)),
+        )
+        .style(Style::default().bg(SURFACE_HOT))
         .wrap(Wrap { trim: false });
 
     frame.render_widget(widget, area);
@@ -284,54 +332,236 @@ fn draw_footer(frame: &mut Frame<'_>, area: Rect, state: &CliState) {
 
     let widget = Paragraph::new(Line::from(keys))
         .alignment(Alignment::Center)
-        .block(panel("Controls").border_style(Style::default().fg(MUTED)))
-        .style(Style::default().fg(TEXT).bg(PANEL));
+        .style(Style::default().fg(MUTED).bg(BG));
 
     frame.render_widget(widget, area);
 }
 
 fn render_line(line: &UiLine) -> Vec<Line<'static>> {
-    let (label, color, body) = match line {
-        UiLine::System(text) => ("system", BLUE, text.as_str()),
-        UiLine::User(text) => ("you", GREEN, text.as_str()),
-        UiLine::Thinking(text) => ("thinking", MAGENTA, text.as_str()),
-        UiLine::Model(text) => ("assistant", TEXT, text.as_str()),
-        UiLine::Tool(text) => ("tool", CYAN, text.as_str()),
-        UiLine::Command(text) => ("command", YELLOW, text.as_str()),
-        UiLine::Approval(text) => ("approval", YELLOW, text.as_str()),
-        UiLine::Error(text) => ("error", RED, text.as_str()),
-    };
-
-    vec![
-        Line::from(vec![
-            Span::styled(
-                format!("{label:<9}"),
-                Style::default().fg(color).add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(body.to_string(), Style::default().fg(TEXT)),
-        ]),
-        Line::from(""),
-    ]
+    match line {
+        UiLine::System(text) => compact_event("system", BLUE, text),
+        UiLine::User(text) => conversation_block("you", GREEN, text, false),
+        UiLine::Thinking(text) => markdown_block("thinking", MAGENTA, text),
+        UiLine::Model(text) => markdown_block("assistant", TEXT, text),
+        UiLine::Tool(text) => compact_event("tool", CYAN, text),
+        UiLine::Command(text) => compact_event("command", ORANGE, text),
+        UiLine::Approval(text) => compact_event("approval", YELLOW, text),
+        UiLine::Error(text) => compact_event("error", RED, text),
+    }
 }
 
-fn panel<T>(title: T) -> Block<'static>
-where
-    T: Into<String>,
-{
-    Block::default()
-        .title(title.into())
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .padding(Padding::horizontal(1))
-        .style(Style::default().bg(PANEL))
+fn conversation_block(
+    label: &'static str,
+    color: Color,
+    body: &str,
+    show_rule: bool,
+) -> Vec<Line<'static>> {
+    let mut lines = Vec::new();
+    if show_rule {
+        lines.push(Line::from(vec![Span::styled(
+            "─".repeat(12),
+            Style::default().fg(LINE),
+        )]));
+    }
+    lines.push(Line::from(vec![Span::styled(
+        format!(" {label}"),
+        Style::default().fg(color).add_modifier(Modifier::BOLD),
+    )]));
+    for text_line in body.lines() {
+        lines.push(Line::from(vec![
+            Span::styled("   ", Style::default().fg(MUTED)),
+            Span::styled(text_line.to_string(), Style::default().fg(TEXT)),
+        ]));
+    }
+    lines.push(Line::from(""));
+    lines
+}
+
+fn markdown_block(label: &'static str, color: Color, body: &str) -> Vec<Line<'static>> {
+    let mut lines = vec![Line::from(vec![Span::styled(
+        format!(" {label}"),
+        Style::default().fg(color).add_modifier(Modifier::BOLD),
+    )])];
+
+    for line in markdown_content_lines(body) {
+        let mut spans = vec![Span::styled("   ", Style::default().fg(MUTED))];
+        spans.extend(line.spans);
+        lines.push(Line {
+            style: line.style,
+            alignment: line.alignment,
+            spans,
+        });
+    }
+
+    lines.push(Line::from(""));
+    lines
+}
+
+fn markdown_content_lines(input: &str) -> Vec<Line<'static>> {
+    let lines = input.lines().collect::<Vec<_>>();
+    let mut output = Vec::<Line<'static>>::new();
+    let mut markdown_buffer = Vec::<&str>::new();
+    let mut index = 0;
+
+    while index < lines.len() {
+        if index + 1 < lines.len()
+            && parse_table_row(lines[index]).is_some()
+            && is_table_separator(lines[index + 1])
+        {
+            flush_markdown_buffer(&mut markdown_buffer, &mut output);
+
+            let mut rows = vec![parse_table_row(lines[index]).expect("checked table header")];
+            index += 2;
+
+            while index < lines.len() {
+                let Some(row) = parse_table_row(lines[index]) else {
+                    break;
+                };
+                rows.push(row);
+                index += 1;
+            }
+
+            output.extend(format_table_rows(rows).into_iter().enumerate().map(
+                |(row_index, row)| {
+                    let style = if row_index == 0 {
+                        Style::default().fg(TEXT).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(SUBTLE)
+                    };
+                    Line::from(Span::styled(row, style))
+                },
+            ));
+            continue;
+        }
+
+        markdown_buffer.push(lines[index]);
+        index += 1;
+    }
+
+    flush_markdown_buffer(&mut markdown_buffer, &mut output);
+    output
+}
+
+fn flush_markdown_buffer<'a>(buffer: &mut Vec<&'a str>, output: &mut Vec<Line<'static>>) {
+    if buffer.is_empty() {
+        return;
+    }
+
+    let markdown = buffer.join("\n");
+    output.extend(
+        tui_markdown::from_str(&markdown)
+            .lines
+            .into_iter()
+            .map(owned_line),
+    );
+    buffer.clear();
+}
+
+fn owned_line(line: Line<'_>) -> Line<'static> {
+    Line {
+        style: line.style,
+        alignment: line.alignment,
+        spans: line.spans.into_iter().map(owned_span).collect(),
+    }
+}
+
+fn owned_span(span: Span<'_>) -> Span<'static> {
+    Span {
+        style: span.style,
+        content: Cow::Owned(span.content.into_owned()),
+    }
+}
+
+fn parse_table_row(line: &str) -> Option<Vec<String>> {
+    let trimmed = line.trim();
+    if !trimmed.starts_with('|') || !trimmed.ends_with('|') {
+        return None;
+    }
+
+    let cells = trimmed
+        .trim_matches('|')
+        .split('|')
+        .map(|cell| cell.trim().to_string())
+        .collect::<Vec<_>>();
+
+    if cells.len() < 2 || cells.iter().all(String::is_empty) {
+        return None;
+    }
+
+    Some(cells)
+}
+
+fn is_table_separator(line: &str) -> bool {
+    parse_table_row(line).is_some_and(|cells| {
+        cells.iter().all(|cell| {
+            let marker = cell.trim();
+            marker.len() >= 3 && marker.chars().all(|ch| matches!(ch, '-' | ':' | ' '))
+        })
+    })
+}
+
+fn format_table_rows(rows: Vec<Vec<String>>) -> Vec<String> {
+    let column_count = rows.iter().map(Vec::len).max().unwrap_or(0);
+    let widths = (0..column_count)
+        .map(|column| {
+            rows.iter()
+                .filter_map(|row| row.get(column))
+                .map(|cell| terminal_width(cell))
+                .max()
+                .unwrap_or(0)
+        })
+        .collect::<Vec<_>>();
+
+    rows.into_iter()
+        .map(|row| {
+            (0..column_count)
+                .map(|column| {
+                    let cell = row.get(column).map(String::as_str).unwrap_or("");
+                    let padding = widths[column].saturating_sub(terminal_width(cell));
+                    format!("{cell}{}", " ".repeat(padding))
+                })
+                .collect::<Vec<_>>()
+                .join("  ")
+                .trim_end()
+                .to_string()
+        })
+        .collect()
+}
+
+fn compact_event(label: &'static str, color: Color, body: &str) -> Vec<Line<'static>> {
+    let mut lines = Vec::new();
+    for (index, text_line) in body.lines().enumerate() {
+        let marker = if index == 0 { label } else { "" };
+        lines.push(Line::from(vec![
+            Span::styled("   ", Style::default().fg(MUTED)),
+            Span::styled(
+                format!("{marker:<9}"),
+                Style::default().fg(color).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(text_line.to_string(), Style::default().fg(SUBTLE)),
+        ]));
+    }
+    lines.push(Line::from(""));
+    lines
 }
 
 fn key(text: &'static str) -> Span<'static> {
     Span::styled(
         text,
         Style::default()
-            .fg(BLUE)
-            .add_modifier(Modifier::BOLD | Modifier::REVERSED),
+            .fg(BG)
+            .bg(BLUE)
+            .add_modifier(Modifier::BOLD),
+    )
+}
+
+fn pill(text: &'static str, color: Color) -> Span<'static> {
+    Span::styled(
+        format!(" {text} "),
+        Style::default()
+            .fg(BG)
+            .bg(color)
+            .add_modifier(Modifier::BOLD),
     )
 }
 
@@ -380,5 +610,52 @@ mod tests {
         let scroll = transcript_scroll_offset(&state, &lines, Rect::new(0, 0, 80, 20));
 
         assert_eq!(scroll, 0);
+    }
+
+    #[test]
+    fn assistant_output_renders_markdown_instead_of_raw_markers() {
+        let mut state = CliState::new();
+        state.push_line(UiLine::Model(
+            "Result:\n\n- **final answer**: `10018`".to_string(),
+        ));
+
+        let rendered = transcript_lines(&state)
+            .into_iter()
+            .flat_map(|line| line.spans.into_iter())
+            .map(|span| span.content.into_owned())
+            .collect::<Vec<_>>()
+            .join("");
+
+        assert!(rendered.contains("final answer"));
+        assert!(rendered.contains("10018"));
+        assert!(!rendered.contains("**"));
+        assert!(!rendered.contains('`'));
+    }
+
+    #[test]
+    fn assistant_output_preserves_markdown_table_rows() {
+        let mut state = CliState::new();
+        state.push_line(UiLine::Model(
+            "计算结果如下：\n\n| 步骤 | 表达式 | 结果 |\n|---|---|---|\n| 1 | 6000 + 2000 | 8000 |\n| 2 | 2141 - 123 | 2018 |"
+                .to_string(),
+        ));
+
+        let rows = transcript_lines(&state)
+            .into_iter()
+            .map(|line| {
+                line.spans
+                    .into_iter()
+                    .map(|span| span.content.into_owned())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>();
+
+        assert!(
+            rows.iter()
+                .any(|row| row.contains("步骤") && row.contains("表达式"))
+        );
+        assert!(rows.iter().any(|row| row.contains("6000 + 2000")));
+        assert!(rows.iter().any(|row| row.contains("2141 - 123")));
+        assert!(!rows.iter().any(|row| row.contains("---")));
     }
 }

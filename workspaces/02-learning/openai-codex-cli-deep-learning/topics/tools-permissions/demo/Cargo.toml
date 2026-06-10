@@ -30,3 +30,4 @@ schemars = "1.2.1"
 dashmap = "6.2.1"
 uuid = { version = "1.23.2", features = ["v4"] }
 ratatui = "0.30.1"
+tui-markdown = { version = "0.3.7", default-features = false }

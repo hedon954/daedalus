@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use futures_util::{StreamExt, stream};
 use serde_json::{Value, json};
-use tokio::sync::mpsc;
+use tokio::sync::{Mutex, mpsc};
 
 use crate::{
     agent::{
@@ -22,9 +22,12 @@ pub struct ReActAgent {
     llm: Arc<dyn Llm + Send + Sync>,
     max_turns: u8,
     tool_runtime: Arc<ToolRuntime>,
+    memory: Arc<Mutex<Vec<Value>>>,
+    max_memory_messages: usize,
 }
 
 const DEFAULT_MAX_TURNS: u8 = 32;
+const DEFAULT_MAX_MEMORY_MESSAGES: usize = 24;
 
 impl ReActAgent {
     /// 创建一个 ReAct agent。
@@ -37,6 +40,8 @@ impl ReActAgent {
             llm,
             max_turns: max_turns.unwrap_or(DEFAULT_MAX_TURNS),
             tool_runtime,
+            memory: Arc::new(Mutex::new(Vec::new())),
+            max_memory_messages: DEFAULT_MAX_MEMORY_MESSAGES,
         }
     }
 
@@ -50,11 +55,22 @@ impl ReActAgent {
 
         let llm = self.llm.clone();
         let tool_runtime = self.tool_runtime.clone();
+        let memory = self.memory.clone();
+        let max_memory_messages = self.max_memory_messages;
         let (tx, rx) = mpsc::channel(64);
         let max_turns = self.max_turns;
 
         tokio::spawn(async move {
-            if let Err(err) = run_agent_loop(llm, prompt, max_turns, tx.clone(), tool_runtime).await
+            if let Err(err) = run_agent_loop(
+                llm,
+                prompt,
+                max_turns,
+                tx.clone(),
+                tool_runtime,
+                memory,
+                max_memory_messages,
+            )
+            .await
             {
                 let _ = tx.send(Err(err)).await;
             }
@@ -74,11 +90,18 @@ async fn run_agent_loop(
     max_turns: u8,
     tx: EventSender,
     tool_runtime: Arc<ToolRuntime>,
+    memory: Arc<Mutex<Vec<Value>>>,
+    max_memory_messages: usize,
 ) -> anyhow::Result<()> {
-    let mut messages = vec![
-        json!({"role": "system", "content": ""}),
-        json!({"role": "user", "content": prompt}),
-    ];
+    let user_message = json!({"role": "user", "content": prompt});
+    let mut messages = {
+        let memory = memory.lock().await;
+        let mut messages = Vec::with_capacity(memory.len() + 2);
+        messages.push(json!({"role": "system", "content": ""}));
+        messages.extend(memory.iter().cloned());
+        messages.push(user_message.clone());
+        messages
+    };
 
     let mut run_turns = 0;
 
@@ -120,6 +143,11 @@ async fn run_agent_loop(
         }
 
         if pending_tool_calls.is_empty() {
+            messages.push(json!({
+                "role": "assistant",
+                "content": ai_content,
+                "reasoning_content": reasoning_content,
+            }));
             break;
         }
 
@@ -148,7 +176,27 @@ async fn run_agent_loop(
         // TODO: 加入结构化 logger，记录每轮 LLM start/end、tool choice 和 observation。
     }
 
+    remember_messages(memory, &messages, max_memory_messages).await;
+
     emit(&tx, StreamEvent::Completed).await
+}
+
+async fn remember_messages(
+    memory: Arc<Mutex<Vec<Value>>>,
+    messages: &[Value],
+    max_memory_messages: usize,
+) {
+    let mut remembered = messages
+        .iter()
+        .filter(|message| message.get("role").and_then(Value::as_str) != Some("system"))
+        .cloned()
+        .collect::<Vec<_>>();
+
+    if remembered.len() > max_memory_messages {
+        remembered = remembered.split_off(remembered.len() - max_memory_messages);
+    }
+
+    *memory.lock().await = remembered;
 }
 
 async fn run_tools(
@@ -438,6 +486,36 @@ mod tests {
         assert!(matches!(events[2], StreamEvent::Completed));
         assert_eq!(events.len(), 3);
         assert_eq!(llm.requests().len(), 1);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn react_agent_should_keep_short_term_messages_between_runs() -> anyhow::Result<()> {
+        let llm = FakeLlm::new(vec![
+            vec![
+                StreamEvent::TextDelta("first answer".to_string()),
+                StreamEvent::Completed,
+            ],
+            vec![
+                StreamEvent::TextDelta("second answer".to_string()),
+                StreamEvent::Completed,
+            ],
+        ]);
+        let agent = test_agent(llm.clone(), Some(3));
+
+        collect_events(&agent, "first prompt").await?;
+        collect_events(&agent, "second prompt").await?;
+
+        let requests = llm.requests();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1][0]["role"], "system");
+        assert_eq!(requests[1][1]["role"], "user");
+        assert_eq!(requests[1][1]["content"], "first prompt");
+        assert_eq!(requests[1][2]["role"], "assistant");
+        assert_eq!(requests[1][2]["content"], "first answer");
+        assert_eq!(requests[1][3]["role"], "user");
+        assert_eq!(requests[1][3]["content"], "second prompt");
 
         Ok(())
     }

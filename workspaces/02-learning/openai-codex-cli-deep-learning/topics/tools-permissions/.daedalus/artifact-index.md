@@ -38,7 +38,7 @@ cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning
 结果：
 
 ```text
-86 passed; 0 failed; 3 ignored
+90 passed; 0 failed; 3 ignored
 ```
 
 TUI 验证：

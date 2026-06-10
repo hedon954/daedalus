@@ -2,7 +2,9 @@ use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     agent::{react::EventSender, stream_event::ToolCallFinished},
-    model::{approval::ApprovalPolicy, command_request::CommandRequest},
+    model::{
+        approval::ApprovalPolicy, capability::CapabilityKind, command_request::CommandRequest,
+    },
     tool::{
         event_emitter::ToolEventEmitter,
         function::run_pure_function,
@@ -249,6 +251,15 @@ impl ToolRuntime {
             )
         };
 
+        if contains_shell_control_syntax(&run_command_args.command)
+            && matched_capability.capability.kind != CapabilityKind::DangerousShell
+        {
+            anyhow::bail!(
+                "complex shell syntax is not supported by this demo run_command: {}",
+                run_command_args.command
+            );
+        }
+
         Ok((
             CommandRequest {
                 raw_command: run_command_args.command,
@@ -263,6 +274,14 @@ impl ToolRuntime {
             matched_capability,
         ))
     }
+}
+
+fn contains_shell_control_syntax(command: &str) -> bool {
+    [
+        "\n", "&&", "||", ";", "|", "<<", ">>", ">", "<", "`", "$(", ")",
+    ]
+    .iter()
+    .any(|token| command.contains(token))
 }
 
 impl From<RunCommandResult> for ToolRuntimeResult {
@@ -588,6 +607,29 @@ mod tests {
         .await;
 
         assert!(matches!(result, ToolRuntimeResult::Denied { .. }));
+        assert_tool_started(&events, "call_test", "run_command");
+        assert_tool_failed(&events, "call_test", "run_command");
+    }
+
+    #[tokio::test]
+    async fn run_command_complex_shell_syntax_should_fail_before_execution() {
+        let runtime = test_runtime();
+
+        let (result, events) = run_tool(
+            &runtime,
+            tool_call(
+                "run_command",
+                r#"{"command": "cat > /tmp/calc.py << 'EOF'\nprint(1)\nEOF\npython /tmp/calc.py", "justification": "write and run script"}"#,
+            ),
+        )
+        .await;
+
+        assert!(matches!(result, ToolRuntimeResult::Failed { .. }));
+        assert!(
+            !events
+                .iter()
+                .any(|event| matches!(event, StreamEvent::CommandExecutionStarted { .. }))
+        );
         assert_tool_started(&events, "call_test", "run_command");
         assert_tool_failed(&events, "call_test", "run_command");
     }

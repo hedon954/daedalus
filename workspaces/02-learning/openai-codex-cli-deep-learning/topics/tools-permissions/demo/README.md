@@ -122,7 +122,7 @@ cargo test
 预期结果：
 
 ```text
-86 passed; 0 failed; 3 ignored
+90 passed; 0 failed; 3 ignored
 ```
 
 默认测试是确定性的，不会调用外部 API。
@@ -136,12 +136,16 @@ export DEEPSEEK_API_KEY="..."
 cargo run
 ```
 
-UI 提供四个区域：
+UI 提供四个区域，但视觉上更接近现代 coding-agent CLI 的 transcript-first 形态：
 
-- `System Online`：显示当前状态、正在执行的 prompt 或输入提示。
-- `Transcript`：显示用户输入、模型输出、thinking、tool lifecycle、command execution、approval 和 retry 事件；默认跟随视觉底部，长文本换行后也能看到最终 `turn completed`。
-- `Prompt / Security Gate`：普通状态下输入 prompt；需要审批时展示 reason / scope，并支持 `a` 单次允许、`s` session 允许、`r` 拒绝。
-- `Controls`：展示当前模式可用快捷键。
+- 顶部状态行：显示 ready / running / approval 状态和当前 focus。
+- Transcript：以聊天流方式显示 user、assistant、thinking、tool、command、approval 和 error；assistant / thinking 内容支持 Markdown 渲染，并对 GFM table 做终端可读兜底；默认跟随视觉底部，长文本换行后也能看到最终 `turn completed`。
+- Prompt / Security Gate：普通状态下输入 prompt；需要审批时展示 reason / scope，并支持 `a` 单次允许、`s` session 允许、`r` 拒绝。
+- 底部快捷键：展示当前模式可用操作。
+
+同一次 CLI 进程内会保留短期 messages memory。连续输入多个 prompt 时，后续 ReAct run 会带上最近对话消息；退出进程后该短期记忆丢弃，不写入磁盘。
+
+`run_command` 只支持当前 demo 明确建模的简单命令。包含 heredoc、重定向、管道、命令串联等 shell 控制语法的命令会 fail closed，不会因为前缀是 `cat` / `ls` 就被当成 safe-read 执行。真实 OS runner 也带有执行超时，避免子进程异常等待导致 TUI 永远停在 running。
 
 常用键位：
 
