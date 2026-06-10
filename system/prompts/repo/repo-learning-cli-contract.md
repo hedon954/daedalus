@@ -67,13 +67,13 @@ daedalus review validate <review-id>
 
 Review is attached to a topic or project. It must not reopen or mutate completed learning lifecycle by accident.
 
-## Knowledge Commands
+## Knowledge CLI Foundation
 
 ```text
-daedalus knowledge extract --topic <topic-slug>
-daedalus knowledge promote --topic <topic-slug> --to shared
-daedalus knowledge export --to knowledge-base
 daedalus knowledge validate
+daedalus knowledge index
+daedalus knowledge link-check
+daedalus knowledge template
 ```
 
-Knowledge promotion requires verified evidence, trade-offs, transfer boundaries, and source references.
+Knowledge extraction, inspection, gap analysis, promotion, and reorganization are skill workflows, not deterministic CLI commands. The CLI only provides stable structure, templates, indexes, link checks, and validation.

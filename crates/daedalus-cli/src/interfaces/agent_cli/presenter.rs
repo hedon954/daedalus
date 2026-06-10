@@ -378,7 +378,6 @@ pub fn print_knowledge(output: &KnowledgeOutput, format: OutputFormat) {
         OutputFormat::Text => {
             println!("ok: knowledge operation completed");
             println!("action: {}", output.action);
-            println!("project_dir: {}", output.project_dir.display());
             println!("path: {}", output.path.display());
             println!("next: {}", output.next);
         }
@@ -387,7 +386,6 @@ pub fn print_knowledge(output: &KnowledgeOutput, format: OutputFormat) {
             json!({
                 "ok": true,
                 "action": output.action,
-                "project_dir": output.project_dir,
                 "path": output.path,
                 "next": output.next
             })
@@ -400,7 +398,7 @@ pub fn print_knowledge_list(output: &KnowledgeListOutput, format: OutputFormat) 
     match format {
         OutputFormat::Text => {
             println!("ok: knowledge items");
-            println!("project_dir: {}", output.project_dir.display());
+            println!("root: {}", output.root.display());
             for item in &output.items {
                 println!(
                     "knowledge: {} | {} | {} | {}",
@@ -412,7 +410,7 @@ pub fn print_knowledge_list(output: &KnowledgeListOutput, format: OutputFormat) 
             "{}",
             json!({
                 "ok": true,
-                "project_dir": output.project_dir,
+                "root": output.root,
                 "items": output.items.iter().map(|item| {
                     json!({
                         "level": &item.level,
@@ -431,14 +429,15 @@ pub fn print_knowledge_validation(output: &KnowledgeValidationOutput, format: Ou
     match format {
         OutputFormat::Text => {
             println!("ok: knowledge valid");
-            println!("project_dir: {}", output.project_dir.display());
+            println!("action: {}", output.action);
+            println!("root: {}", output.root.display());
         }
         OutputFormat::Json => println!(
             "{}",
             json!({
                 "ok": true,
-                "action": "knowledge-validate",
-                "project_dir": output.project_dir
+                "action": output.action,
+                "root": output.root
             })
         ),
     }

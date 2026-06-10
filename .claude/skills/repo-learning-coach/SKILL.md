@@ -65,14 +65,15 @@ Do not write topic stage progress into project root. Do not treat project root `
 
 Load only the prompt(s) needed for the current action:
 
-- CLI lifecycle, render, validate, review, knowledge commands: `system/prompts/repo/repo-learning-cli-contract.md`
+- CLI lifecycle, render, validate, review, and deterministic knowledge checks: `system/prompts/repo/repo-learning-cli-contract.md`
+- Knowledge extraction, inspection, gap analysis, promotion, and reorganization: prefer dedicated daedalus knowledge skills when available.
 - Resume or "where are we": `system/prompts/common/resume.md`
 - Checkpoint, cursor sync, pre-commit sync, post-commit orientation: `system/prompts/common/checkpoint-lifecycle.md`
 - First-principles explanation or deep mechanism guide: `system/prompts/common/first-principles.md`
 - Critical lens and trade-off analysis: `system/prompts/common/critical-lens.md`
 - Review plan/session: `system/prompts/common/review-guidance.md`
 - Knowledge-system extraction or promotion: `system/prompts/common/knowledge-system-extraction.md`
-- Knowledge export: `system/prompts/common/export-knowledge.md`
+- Knowledge archival: `system/prompts/common/archive-knowledge.md`
 - Stage work: load the matching stage prompt from the stage index below.
 
 ## Learning Navigation

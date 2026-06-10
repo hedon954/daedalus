@@ -8,7 +8,7 @@ pub mod close_task;
 pub mod ide;
 /// 初始化学习任务 workspace。
 pub mod init_task;
-/// 知识体系萃取与晋升。
+/// 知识库结构、模板、索引和校验底座。
 pub mod knowledge;
 /// workspace 迁移 use cases。
 pub mod migrate;

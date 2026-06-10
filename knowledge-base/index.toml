@@ -1,0 +1,44 @@
+schema_version = 1
+generated_at = "2026-06-11 01:05:45"
+
+[[entries]]
+kind = "cases"
+title = "Codex Tools Permissions Demo Case"
+path = "cases/codex-tools-permissions-demo.md"
+status = "stable"
+
+[[entries]]
+kind = "drills"
+title = "Local Agent Command Execution Review Drill"
+path = "drills/local-agent-command-execution-review.md"
+status = "stable"
+
+[[entries]]
+kind = "patterns"
+title = "Local Agent Command Execution Safety Pattern"
+path = "patterns/local-agent-command-execution.md"
+status = "stable"
+
+[[entries]]
+kind = "problems"
+title = "如何让 Agent 安全执行本地命令"
+path = "problems/safe-local-command-execution.md"
+status = "stable"
+
+[[entries]]
+kind = "skills"
+title = "设计本地 Agent 命令执行 Runtime"
+path = "skills/design-local-agent-command-runtime.md"
+status = "stable"
+
+[[entries]]
+kind = "source-maps"
+title = "OpenAI Codex Tools / Permissions Source Map"
+path = "source-maps/openai-codex-tools-permissions.md"
+status = "stable"
+
+[[entries]]
+kind = "trees"
+title = "Local Agent Safety Skill Tree"
+path = "trees/local-agent-safety.md"
+status = "candidate"

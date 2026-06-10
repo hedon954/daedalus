@@ -5,7 +5,7 @@ phase: repo.phase4-closing
 ---
 
 @system/prompts/common/summarize.md
-@system/prompts/common/export-knowledge.md
+@system/prompts/common/archive-knowledge.md
 @system/prompts/common/knowledge-system-extraction.md
 @system/prompts/common/compress-context.md
 @system/prompts/common/critical-lens.md
@@ -41,7 +41,7 @@ phase: repo.phase4-closing
 2. 汇总产物清单和位置。
 3. 区分已验证结论、未解决问题和后续建议。
 4. 使用 `Knowledge System Extraction` 从业务目标、现实制约、naive 失败、核心不变量、实现机制、trade-off、局限 / failure mode、最佳实践对比和迁移模式中萃取候选知识体系。
-5. 使用 `Export Verified Knowledge` 判断可迁移知识的归档位置。
+5. 使用 `Archive Verified Knowledge` 判断可迁移知识的归档位置。
 6. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
 7. 给出 closing report。
 
@@ -72,7 +72,7 @@ CLI 操作必须遵守：
 
 ## Repo-Specific Constraints
 
-- 不要把未验证假设导出为知识库结论。
+- 不要把未验证假设归档为知识库结论。
 - 不要把 repo 的局部最优方案写成通用最佳实践；必须保留它成立的约束、局限和迁移边界。
 - 归档必须能帮助下一次学习恢复上下文。
 - 如果任务放弃，也要记录放弃原因和已获得价值。

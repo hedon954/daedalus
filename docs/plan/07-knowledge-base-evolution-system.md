@@ -1,7 +1,7 @@
 # 知识库自进化体系方案
 
 > 日期：2026-06-10
-> 状态：拟定
+> 状态：已实现
 
 ## 背景
 
@@ -151,6 +151,8 @@ system/templates/knowledge/index.md
 
 知识自进化需要强推理、批判、归纳和重组能力。如果全部封装进 `daedalus` CLI，就等于要求 daedalus 自己实现一个高质量 agent，这会让项目过早背上过重的智能负担。
 
+这里要把边界划清：`extract`、`inspect`、`gaps`、`promote`、`reorganize` 不是普通命令能力，而是认知工作流。它们应该优先作为 coding agent 的 skill 存在，由现有 agent 承担阅读、判断、归纳、提案和追问；`daedalus` 只提供文件协议、模板、索引和校验。
+
 因此采用 skill-first 方案：
 
 ```text
@@ -160,7 +162,7 @@ Markdown 文件负责持久化
 软链接负责多 agent 复用
 ```
 
-认知型能力优先做成 skills：
+认知型能力优先做成 skills，而不是做成高智能 CLI 子命令：
 
 ```text
 .claude/skills/daedalus-knowledge-extract/SKILL.md
@@ -170,7 +172,7 @@ Markdown 文件负责持久化
 .claude/skills/daedalus-knowledge-reorganize/SKILL.md
 ```
 
-其他 agent 的 skill 目录通过软链接复用同一份源：
+其他 agent 的 skill 目录通过软链接复用同一份源。当前先以 `.claude/skills` 作为落点，因为项目已经有 Claude Code skill 结构；后续如果需要更中立的规范源，再迁移到 `system/skills`，并让 `.claude/skills`、Codex、Cursor 等目录反向软链接过去。
 
 ```text
 agents/skills/knowledge-extract -> ../../.claude/skills/daedalus-knowledge-extract
@@ -207,6 +209,7 @@ Skill 职责：
 - 需要校验、索引、模板、链接检查的，放在 CLI。
 - skill 可以调用 CLI 获得确定性检查结果。
 - CLI 不负责替用户“想明白”，只负责让产物结构稳定。
+- 不再设计高认知 knowledge CLI 子命令；萃取、晋升、重组交给 skill 工作流。
 
 ## 前端投影
 
@@ -251,7 +254,7 @@ Skill 职责：
 - 新增知识沉淀相关 skills。
 - 新增跨 agent skill 软链接目录。
 - 新增知识校验、索引、链接检查和模板命令。
-- 改造知识导出流程，由 skill 生成候选知识，由 CLI 做结构校验。
+- 改造知识归档流程，由 skill 生成候选知识，由 CLI 做结构校验。
 - 新增复习计划与知识条目的绑定。
 - 后续实现只读前端投影。
 

@@ -1,14 +1,14 @@
 ---
-title: Export Verified Knowledge
+title: Archive Verified Knowledge
 description: 将已验证学习结果归档为可迁移知识。用于阶段完成、实践验证、业务迁移后，需判断归档位置或是否调整知识库结构时。
 scope: common
 ---
 
-# Export Verified Knowledge
+# Archive Verified Knowledge
 
 ## Agent Role
 
-你是知识库导出器。你的任务是把已经验证过的学习结果沉淀为可迁移知识，而不是保存聊天摘要。
+你是知识库归档器。你的任务是把已经验证过的学习结果沉淀为可迁移知识，而不是保存聊天摘要。
 
 ## Trigger
 
@@ -35,7 +35,7 @@ scope: common
 
 ## First-Principles Knowledge Shape
 
-知识导出必须遵守这条链路：
+知识归档必须遵守这条链路：
 
 ```text
 业务目标 / 现实任务
@@ -52,7 +52,7 @@ scope: common
   -> 复习题 / 应用题
 ```
 
-如果一个候选条目无法补齐现实制约、trade-off、局限/failure mode 或迁移边界，不要导出为知识库正文。它只能进入 topic candidate、shared candidate 或待验证假设。
+如果一个候选条目无法补齐现实制约、trade-off、局限/failure mode 或迁移边界，不要归档为知识库正文。它只能进入 topic candidate、shared candidate 或待验证假设。
 
 ## Taxonomy Decision
 

@@ -16,8 +16,7 @@ use enum_dispatch::enum_dispatch;
 pub use ide::{IdeCommand, IdeSubcommand, IdeSyncRustAnalyzerArgs};
 pub use init::{InitCommand, InitKind, InitRepoLearningArgs};
 pub use knowledge::{
-    KnowledgeCommand, KnowledgeExportArgs, KnowledgeListArgs, KnowledgePromoteArgs,
-    KnowledgeSubcommand, KnowledgeTargetArg, KnowledgeTopicArgs,
+    KnowledgeCommand, KnowledgeKindArg, KnowledgeSubcommand, KnowledgeTemplateArgs,
 };
 pub use migrate::{MigrateCommand, MigrateRepoLearningArgs, MigrateSubcommand};
 pub use review::{
@@ -48,7 +47,7 @@ pub enum Command {
     Migrate(MigrateCommand),
     /// 管理复习计划。
     Review(ReviewCommand),
-    /// 管理知识体系萃取和晋升。
+    /// 管理知识库模板、索引和校验。
     Knowledge(KnowledgeCommand),
     /// 状态流转和状态渲染命令。
     State(StateCommand),

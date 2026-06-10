@@ -34,7 +34,7 @@ flowchart TD
     TopicA --> Loop["10-stage learning loop"]
     Loop --> Demo["Mini Demo"]
     Loop --> Transfer["Business Transfer"]
-    Loop --> Knowledge["Knowledge Export"]
+    Loop --> Knowledge["Knowledge Archive"]
 ```
 
 - **Project**：长期学习同一个 repo、book、course 或 paper 的工作区。
@@ -143,10 +143,12 @@ daedalus validate <project-dir> --all-topics --reviews --knowledge
 daedalus review start --project-dir <project-dir> --topic <topic-slug> --goal "<goal>"
 daedalus review session start --project-dir <project-dir> <review-id>
 
-# knowledge
-daedalus knowledge extract --project-dir <project-dir> --topic <topic-slug>
-daedalus knowledge promote --project-dir <project-dir> --topic <topic-slug> --to shared
-daedalus knowledge export --project-dir <project-dir> --to knowledge-base
+# knowledge: CLI 只做确定性的知识库底座，不生成学习内容
+daedalus knowledge template <kind> <slug> --title "<title>"
+daedalus knowledge index
+daedalus knowledge list
+daedalus knowledge link-check
+daedalus knowledge validate
 
 # IDE
 daedalus ide sync-rust-analyzer
@@ -211,14 +213,14 @@ Review 是挂载在 topic/project 上的独立生命周期，不重新打开 lea
 - 生成复习 session。
 - 更新 mastery map。
 
-Knowledge extraction 是 promotion pipeline：
+Knowledge archival 是 skill-driven pipeline。CLI 不负责萃取、晋升或导出内容，只负责模板、索引、链接检查和结构校验：
 
 ```mermaid
 flowchart LR
-    Evidence["topic notes / demo / business transfer"] --> Candidates["topic candidates"]
-    Candidates --> Verify["验证边界和 trade-off"]
-    Verify --> Shared["shared candidates"]
-    Shared --> Export["knowledge-base entry"]
+    Evidence["topic notes / demo / business transfer"] --> Skill["knowledge skills 萃取和校准"]
+    Skill --> Verify["验证边界和 trade-off"]
+    Verify --> Entry["knowledge-base entry"]
+    Entry --> CLI["template / index / link-check / validate"]
 ```
 
 只有经过源码证据、demo、业务迁移或复习验证的结论，才应该进入 `knowledge-base/`。

@@ -29,10 +29,11 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed.
 - Commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
 - Tests should assert stable behavior, not incidental wording. For errors, prefer variant, category, or presence unless exact text is public contract.
-- Before marking a learning task completed, verify that it has goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, and knowledge export.
+- Before marking a learning task completed, verify that it has goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, and verified knowledge archival.
 
 ## Knowledge Rules
 
+- The CLI must not generate knowledge conclusions. It may create templates, indexes, link checks, and validation only; extraction, promotion, and reorganization are skill-driven learning workflows.
 - Archive only verified knowledge.
 - Prefer reusable patterns over repo-specific trivia.
 - Each knowledge entry should include reality constraints, core approach, trade-off, transferable pattern, and source.

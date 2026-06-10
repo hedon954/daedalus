@@ -21,7 +21,7 @@ pub mod topic;
 pub mod transition;
 
 pub use error::{ApprovalSource, DaedalusError, Result};
-pub use knowledge::{KnowledgePromotionTarget, KnowledgeSnapshot};
+pub use knowledge::KnowledgeSnapshot;
 pub use learning_task::{TaskLifecycle, WorkspaceBucket};
 pub use review::{ReviewLifecycle, ReviewMode, ReviewSnapshot, ReviewTarget};
 pub use stage::{StageSnapshot, StageState, StageTransitionKind};

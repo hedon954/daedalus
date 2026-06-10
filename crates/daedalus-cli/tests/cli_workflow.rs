@@ -45,6 +45,15 @@ fn repo_fixture() -> TempDir {
         &source_knowledge_template,
         &repo.join("system/templates/knowledge-system"),
     );
+    let source_knowledge_entry_template = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("repo root")
+        .join("system/templates/knowledge");
+    copy_dir(
+        &source_knowledge_entry_template,
+        &repo.join("system/templates/knowledge"),
+    );
     temp
 }
 
@@ -500,7 +509,7 @@ fn review_session_complete_requires_user_answers_before_review_completion() {
 }
 
 #[test]
-fn knowledge_extract_promote_export_and_validate() {
+fn knowledge_template_index_link_check_and_validate() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -523,76 +532,57 @@ fn knowledge_extract_promote_export_and_validate() {
         .current_dir(repo.path())
         .args([
             "knowledge",
-            "extract",
-            "--project-dir",
-            task_dir.to_str().expect("utf8"),
-            "--topic",
-            "main",
+            "template",
+            "pattern",
+            "agent-command-safety",
+            "--title",
+            "Agent Command Safety",
         ])
         .assert()
         .success()
-        .stdout(predicates::str::contains("action: knowledge-extract"));
-    let topic_knowledge = active_topic_dir(&task_dir).join("notes/knowledge-system");
-    assert!(topic_knowledge.join("extraction.md").exists());
-    assert!(topic_knowledge.join("invariant-map.md").exists());
+        .stdout(predicates::str::contains("action: knowledge-template"));
+    let pattern = repo
+        .path()
+        .join("knowledge-base/patterns/agent-command-safety.md");
+    assert!(pattern.exists());
+    let pattern_content = fs::read_to_string(&pattern).expect("pattern");
+    assert!(pattern_content.contains("## 第一性原理"));
+    assert!(pattern_content.contains("source = \"\""));
 
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
-        .args([
-            "knowledge",
-            "promote",
-            "--project-dir",
-            task_dir.to_str().expect("utf8"),
-            "--topic",
-            "main",
-            "--to",
-            "shared",
-        ])
+        .args(["knowledge", "index"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("action: knowledge-promote"));
-    let promotion_log =
-        fs::read_to_string(task_dir.join("shared/knowledge-system/promotion-log.md"))
-            .expect("promotion log");
-    assert!(promotion_log.contains("main"));
-    assert!(promotion_log.contains("shared verified candidate"));
+        .stdout(predicates::str::contains("action: knowledge-index"));
+    let index = fs::read_to_string(repo.path().join("knowledge-base/index.toml")).expect("index");
+    assert!(index.contains("patterns/agent-command-safety.md"));
 
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
-        .args([
-            "knowledge",
-            "export",
-            "--project-dir",
-            task_dir.to_str().expect("utf8"),
-            "--to",
-            "knowledge-base",
-        ])
+        .args(["knowledge", "list"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("action: knowledge-export"));
-    let candidates_dir = repo.path().join("knowledge-base/00-candidates");
-    assert!(
-        candidates_dir
-            .join("knowledge-flow-knowledge-candidate.md")
-            .exists()
-    );
+        .stdout(predicates::str::contains("knowledge: patterns"))
+        .stdout(predicates::str::contains("Agent Command Safety"));
 
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
-        .args([
-            "knowledge",
-            "list",
-            "--project-dir",
-            task_dir.to_str().expect("utf8"),
-        ])
+        .args(["knowledge", "link-check"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("knowledge: topic"))
-        .stdout(predicates::str::contains("knowledge: shared"))
-        .stdout(predicates::str::contains("knowledge: knowledge-base"));
+        .stdout(predicates::str::contains("action: knowledge-link-check"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["knowledge", "extract"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("unrecognized subcommand"));
 
     Command::cargo_bin("daedalus")
         .expect("binary")

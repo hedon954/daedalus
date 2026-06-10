@@ -2,35 +2,49 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::{DaedalusError, KnowledgeSnapshot, Result};
-use crate::infrastructure::{clock, state_toml, template_fs, workspace_fs};
+use crate::infrastructure::clock;
+use toml_edit::{DocumentMut, Item, Table, value};
 
-/// topic knowledge extraction 参数。
-#[derive(Debug, Clone)]
-pub struct ExtractKnowledgeOptions {
-    pub repo_root: PathBuf,
-    pub project_dir: PathBuf,
-    pub topic_slug: String,
-}
+const REQUIRED_KNOWLEDGE_DIRS: [&str; 10] = [
+    "concepts",
+    "skills",
+    "patterns",
+    "problems",
+    "cases",
+    "source-maps",
+    "trees",
+    "drills",
+    "index",
+    "site",
+];
 
-/// knowledge promote 参数。
-#[derive(Debug, Clone)]
-pub struct PromoteKnowledgeOptions {
-    pub repo_root: PathBuf,
-    pub project_dir: PathBuf,
-    pub topic_slug: String,
-}
+const ENTRY_DIRS: [&str; 8] = [
+    "concepts",
+    "skills",
+    "patterns",
+    "problems",
+    "cases",
+    "source-maps",
+    "trees",
+    "drills",
+];
 
-/// knowledge export 参数。
-#[derive(Debug, Clone)]
-pub struct ExportKnowledgeOptions {
-    pub repo_root: PathBuf,
-    pub project_dir: PathBuf,
-}
+const REQUIRED_ENTRY_HEADINGS: [&str; 10] = [
+    "## 回忆钩子",
+    "## 现实问题",
+    "## 第一性原理",
+    "## 机制模型",
+    "## 关键不变量",
+    "## 取舍",
+    "## 不要照搬",
+    "## 迁移方式",
+    "## 证据来源",
+    "## 复习练习",
+];
 
 /// knowledge 操作输出。
 #[derive(Debug, Clone)]
 pub struct KnowledgeOutput {
-    pub project_dir: PathBuf,
     pub action: String,
     pub path: PathBuf,
     pub next: String,
@@ -39,14 +53,15 @@ pub struct KnowledgeOutput {
 /// knowledge list 输出。
 #[derive(Debug, Clone)]
 pub struct KnowledgeListOutput {
-    pub project_dir: PathBuf,
+    pub root: PathBuf,
     pub items: Vec<KnowledgeSnapshot>,
 }
 
-/// knowledge validate 输出。
+/// knowledge validate / link-check 输出。
 #[derive(Debug, Clone)]
 pub struct KnowledgeValidationOutput {
-    pub project_dir: PathBuf,
+    pub root: PathBuf,
+    pub action: String,
     pub issues: Vec<String>,
 }
 
@@ -56,349 +71,347 @@ impl KnowledgeValidationOutput {
     }
 }
 
-/// 为 topic 创建知识体系萃取候选目录。
-pub fn extract_topic_knowledge(options: ExtractKnowledgeOptions) -> Result<KnowledgeOutput> {
-    let topic_dir = workspace_fs::topic_dir_by_slug(&options.project_dir, &options.topic_slug)?;
-    let target_dir = topic_dir.join("notes").join("knowledge-system");
-    copy_knowledge_template_missing(&options.repo_root, &target_dir)?;
-    Ok(KnowledgeOutput {
-        project_dir: options.project_dir,
-        action: "knowledge-extract".to_owned(),
-        path: target_dir,
-        next: "让用户校准 extraction.md 中的候选知识，再考虑 promote 到 shared。".to_owned(),
-    })
+/// 确保 knowledge-base 基础目录存在。
+pub fn ensure_knowledge_base_layout(repo_root: &Path) -> Result<PathBuf> {
+    let root = knowledge_root(repo_root);
+    ensure_dir(&root)?;
+    for dir in REQUIRED_KNOWLEDGE_DIRS {
+        ensure_dir(&root.join(dir))?;
+    }
+    ensure_index_readme(&root)?;
+    Ok(root)
 }
 
-/// 将 topic knowledge candidates 晋升到 shared knowledge-system。
-pub fn promote_topic_knowledge(options: PromoteKnowledgeOptions) -> Result<KnowledgeOutput> {
-    let topic_dir = workspace_fs::topic_dir_by_slug(&options.project_dir, &options.topic_slug)?;
-    let extraction = topic_dir
-        .join("notes")
-        .join("knowledge-system")
-        .join("extraction.md");
-    if !extraction.exists() {
+/// 生成某一类知识条目模板。
+pub fn create_knowledge_template(
+    repo_root: &Path,
+    kind: &str,
+    slug: &str,
+    title: Option<&str>,
+) -> Result<KnowledgeOutput> {
+    let root = ensure_knowledge_base_layout(repo_root)?;
+    let plural = plural_dir(kind)?;
+    let slug = sanitize_slug(slug);
+    let title = title
+        .filter(|value| !value.trim().is_empty())
+        .map(str::trim)
+        .unwrap_or(&slug);
+    let template_path = repo_root
+        .join("system")
+        .join("templates")
+        .join("knowledge")
+        .join(format!("{kind}.md"));
+    let template = fs::read_to_string(&template_path).map_err(|source| DaedalusError::Io {
+        path: template_path.clone(),
+        source,
+    })?;
+    let content = template
+        .replace("{{TITLE}}", title)
+        .replace("{{SLUG}}", &slug)
+        .replace("{{KIND}}", kind)
+        .replace("{{CREATED_AT}}", &clock::now_local_timestamp());
+    let path = root.join(plural).join(format!("{slug}.md"));
+    if path.exists() {
         return Err(DaedalusError::InvalidKnowledgeOperation(format!(
-            "topic `{}` has no knowledge extraction candidates",
-            options.topic_slug
+            "knowledge entry already exists: {}",
+            path.display()
         )));
     }
-    let shared_dir = options.project_dir.join("shared").join("knowledge-system");
-    copy_knowledge_template_missing(&options.repo_root, &shared_dir)?;
-    append_promotion_log(
-        &shared_dir.join("promotion-log.md"),
-        &options.topic_slug,
-        &format!(
-            "topics/{}/notes/knowledge-system/extraction.md",
-            options.topic_slug
-        ),
-        "shared/knowledge-system/",
-        "shared verified candidate",
-    )?;
+    fs::write(&path, content).map_err(|source| DaedalusError::Io {
+        path: path.clone(),
+        source,
+    })?;
     Ok(KnowledgeOutput {
-        project_dir: options.project_dir,
-        action: "knowledge-promote".to_owned(),
-        path: shared_dir,
-        next: "校准 shared knowledge-system 中的 concept/invariant/pattern/relation maps。"
-            .to_owned(),
+        action: "knowledge-template".to_owned(),
+        path,
+        next:
+            "校准条目的问题入口、机制模型、迁移边界和复习练习，然后运行 daedalus knowledge index。"
+                .to_owned(),
     })
 }
 
-/// 导出 project knowledge-base candidate。
-pub fn export_project_knowledge(options: ExportKnowledgeOptions) -> Result<KnowledgeOutput> {
-    let project_doc = state_toml::load_state_doc(&state_toml::state_path(&options.project_dir))?;
-    let project_name = state_toml::task_name(&project_doc);
-    let candidates_dir = options
-        .repo_root
-        .join("knowledge-base")
-        .join("00-candidates");
-    fs::create_dir_all(&candidates_dir).map_err(|source| DaedalusError::Io {
-        path: candidates_dir.clone(),
-        source,
-    })?;
-    let readme = candidates_dir.join("README.md");
-    if !readme.exists() {
-        fs::write(
-            &readme,
-            "# Knowledge Base Candidates\n\n这里保存等待用户确认的知识库候选条目。\n",
-        )
-        .map_err(|source| DaedalusError::Io {
-            path: readme,
-            source,
-        })?;
+/// 重建 knowledge-base/index.toml。
+pub fn rebuild_knowledge_index(repo_root: &Path) -> Result<KnowledgeOutput> {
+    let root = ensure_knowledge_base_layout(repo_root)?;
+    let entries = collect_knowledge_snapshots_from_root(&root)?;
+    let path = root.join("index.toml");
+    let mut doc = DocumentMut::new();
+    doc["schema_version"] = value(1);
+    doc["generated_at"] = value(clock::now_local_timestamp());
+    doc["entries"] = Item::ArrayOfTables(Default::default());
+    if let Some(array) = doc["entries"].as_array_of_tables_mut() {
+        for entry in entries {
+            let mut table = Table::new();
+            table["kind"] = value(entry.level);
+            table["title"] = value(entry.name);
+            table["path"] = value(entry.path);
+            table["status"] = value(entry.status);
+            array.push(table);
+        }
     }
-    let candidate_path = unique_candidate_path(&candidates_dir, &project_name);
-    fs::write(
-        &candidate_path,
-        knowledge_base_candidate_content(&project_name, &options.project_dir),
-    )
-    .map_err(|source| DaedalusError::Io {
-        path: candidate_path.clone(),
+    fs::write(&path, doc.to_string()).map_err(|source| DaedalusError::Io {
+        path: path.clone(),
         source,
     })?;
     Ok(KnowledgeOutput {
-        project_dir: options.project_dir,
-        action: "knowledge-export".to_owned(),
-        path: candidate_path,
-        next: "用户确认候选条目后，再移动到合适的 knowledge-base 分类。".to_owned(),
+        action: "knowledge-index".to_owned(),
+        path,
+        next: "运行 daedalus knowledge validate 和 daedalus knowledge link-check。".to_owned(),
     })
 }
 
-/// 列出 project 下已有 knowledge-system 产物。
-pub fn list_knowledge(project_dir: PathBuf, repo_root: PathBuf) -> Result<KnowledgeListOutput> {
+/// 列出 knowledge-base 条目。
+pub fn list_knowledge(repo_root: PathBuf) -> Result<KnowledgeListOutput> {
+    let root = ensure_knowledge_base_layout(&repo_root)?;
     Ok(KnowledgeListOutput {
-        items: collect_knowledge_snapshots(&project_dir, &repo_root)?,
-        project_dir,
+        items: collect_knowledge_snapshots_from_root(&root)?,
+        root,
     })
 }
 
-/// 校验 project knowledge-system 产物。
-pub fn validate_knowledge(
-    project_dir: PathBuf,
-    repo_root: PathBuf,
-) -> Result<KnowledgeValidationOutput> {
+/// 校验 knowledge-base 结构与条目最低质量门槛。
+pub fn validate_knowledge(repo_root: PathBuf) -> Result<KnowledgeValidationOutput> {
+    let root = knowledge_root(&repo_root);
     Ok(KnowledgeValidationOutput {
-        issues: validate_knowledge_paths(&project_dir, &repo_root)?,
-        project_dir,
+        issues: validate_knowledge_base(&root)?,
+        root,
+        action: "knowledge-validate".to_owned(),
+    })
+}
+
+/// 检查 knowledge-base 内部本地链接。
+pub fn link_check_knowledge(repo_root: PathBuf) -> Result<KnowledgeValidationOutput> {
+    let root = knowledge_root(&repo_root);
+    Ok(KnowledgeValidationOutput {
+        issues: link_check_knowledge_base(&root)?,
+        root,
+        action: "knowledge-link-check".to_owned(),
     })
 }
 
 /// 供 workspace validate 调用的 knowledge 校验。
-pub fn validate_project_knowledge(project_dir: &Path, repo_root: &Path) -> Result<Vec<String>> {
-    validate_knowledge_paths(project_dir, repo_root)
+pub fn validate_project_knowledge(_project_dir: &Path, repo_root: &Path) -> Result<Vec<String>> {
+    validate_knowledge_base(&knowledge_root(repo_root))
 }
 
-fn copy_knowledge_template_missing(repo_root: &Path, target_dir: &Path) -> Result<()> {
-    let template_dir = repo_root
-        .join("system")
-        .join("templates")
-        .join("knowledge-system");
-    template_fs::copy_template_dir_missing(&template_dir, target_dir, &[])
+fn knowledge_root(repo_root: &Path) -> PathBuf {
+    repo_root.join("knowledge-base")
 }
 
-fn collect_knowledge_snapshots(
-    project_dir: &Path,
-    repo_root: &Path,
-) -> Result<Vec<KnowledgeSnapshot>> {
+fn ensure_dir(path: &Path) -> Result<()> {
+    fs::create_dir_all(path).map_err(|source| DaedalusError::Io {
+        path: path.to_path_buf(),
+        source,
+    })
+}
+
+fn ensure_index_readme(root: &Path) -> Result<()> {
+    let path = root.join("index").join("README.md");
+    if !path.exists() {
+        fs::write(
+            &path,
+            "# 知识库导航\n\n这里是人可读的知识库入口。机器索引见 `../index.toml`。\n",
+        )
+        .map_err(|source| DaedalusError::Io { path, source })?;
+    }
+    Ok(())
+}
+
+fn collect_knowledge_snapshots_from_root(root: &Path) -> Result<Vec<KnowledgeSnapshot>> {
     let mut items = Vec::new();
-    let project_doc = state_toml::load_state_doc(&state_toml::state_path(project_dir))?;
-    for topic in state_toml::topics(&project_doc) {
-        let path = project_dir
-            .join(&topic.path)
-            .join("notes")
-            .join("knowledge-system")
-            .join("extraction.md");
-        if path.exists() {
-            items.push(KnowledgeSnapshot {
-                level: "topic".to_owned(),
-                name: topic.slug,
-                path: path
-                    .strip_prefix(project_dir)
-                    .unwrap_or(&path)
-                    .to_string_lossy()
-                    .to_string(),
-                status: "candidate".to_owned(),
-            });
+    for dir in ENTRY_DIRS {
+        let dir_path = root.join(dir);
+        if !dir_path.exists() {
+            continue;
         }
-    }
-    let shared = project_dir.join("shared").join("knowledge-system");
-    if shared.exists() {
-        items.push(KnowledgeSnapshot {
-            level: "shared".to_owned(),
-            name: "shared knowledge-system".to_owned(),
-            path: shared
-                .strip_prefix(project_dir)
-                .unwrap_or(&shared)
-                .to_string_lossy()
-                .to_string(),
-            status: "verified candidates".to_owned(),
-        });
-    }
-    let candidates_dir = repo_root.join("knowledge-base").join("00-candidates");
-    if candidates_dir.exists() {
-        for entry in fs::read_dir(&candidates_dir).map_err(|source| DaedalusError::Io {
-            path: candidates_dir.clone(),
+        for entry in fs::read_dir(&dir_path).map_err(|source| DaedalusError::Io {
+            path: dir_path.clone(),
             source,
         })? {
             let entry = entry.map_err(|source| DaedalusError::Io {
-                path: candidates_dir.clone(),
+                path: dir_path.clone(),
                 source,
             })?;
             let path = entry.path();
-            if path.extension().and_then(|value| value.to_str()) == Some("md")
-                && path.file_name().and_then(|value| value.to_str()) != Some("README.md")
-            {
-                items.push(KnowledgeSnapshot {
-                    level: "knowledge-base".to_owned(),
-                    name: path
-                        .file_stem()
-                        .and_then(|value| value.to_str())
-                        .unwrap_or("candidate")
-                        .to_owned(),
-                    path: path
-                        .strip_prefix(repo_root)
-                        .unwrap_or(&path)
-                        .to_string_lossy()
-                        .to_string(),
-                    status: "candidate".to_owned(),
-                });
+            if path.extension().and_then(|value| value.to_str()) != Some("md") {
+                continue;
             }
-        }
-    }
-    Ok(items)
-}
-
-fn validate_knowledge_paths(project_dir: &Path, repo_root: &Path) -> Result<Vec<String>> {
-    let mut issues = Vec::new();
-    let project_doc = state_toml::load_state_doc(&state_toml::state_path(project_dir))?;
-    for topic in state_toml::topics(&project_doc) {
-        let root = project_dir
-            .join(&topic.path)
-            .join("notes")
-            .join("knowledge-system");
-        if root.exists() {
-            for file in [
-                "extraction.md",
-                "concept-map.md",
-                "invariant-map.md",
-                "failure-mode-map.md",
-                "pattern-catalog.md",
-                "relation-map.md",
-                "promotion-log.md",
-            ] {
-                if !root.join(file).exists() {
-                    issues.push(format!(
-                        "topic `{}` knowledge-system missing file: {file}",
-                        topic.slug
-                    ));
-                }
-            }
-        }
-    }
-    let shared = project_dir.join("shared").join("knowledge-system");
-    if shared.exists() {
-        for file in [
-            "README.md",
-            "concept-map.md",
-            "invariant-map.md",
-            "failure-mode-map.md",
-            "pattern-catalog.md",
-            "relation-map.md",
-            "promotion-log.md",
-        ] {
-            if !shared.join(file).exists() {
-                issues.push(format!("shared knowledge-system missing file: {file}"));
-            }
-        }
-    }
-    let candidates = repo_root.join("knowledge-base").join("00-candidates");
-    if candidates.exists() {
-        for entry in fs::read_dir(&candidates).map_err(|source| DaedalusError::Io {
-            path: candidates.clone(),
-            source,
-        })? {
-            let entry = entry.map_err(|source| DaedalusError::Io {
-                path: candidates.clone(),
-                source,
-            })?;
-            let path = entry.path();
-            if path.extension().and_then(|value| value.to_str()) != Some("md")
-                || path.file_name().and_then(|value| value.to_str()) == Some("README.md")
-            {
+            if path.file_name().and_then(|value| value.to_str()) == Some("README.md") {
                 continue;
             }
             let content = fs::read_to_string(&path).map_err(|source| DaedalusError::Io {
                 path: path.clone(),
                 source,
             })?;
-            for heading in [
-                "## 业务目标 / 现实任务",
-                "## 现实制约",
-                "## Trade-off",
-                "## 可迁移模式",
-                "## 来源",
-            ] {
-                if !content.contains(heading) {
-                    issues.push(format!(
-                        "knowledge-base candidate `{}` missing heading: {heading}",
-                        path.display()
-                    ));
-                }
+            items.push(KnowledgeSnapshot {
+                level: dir.to_owned(),
+                name: first_heading(&content).unwrap_or_else(|| {
+                    path.file_stem()
+                        .and_then(|value| value.to_str())
+                        .unwrap_or("untitled")
+                        .to_owned()
+                }),
+                path: path
+                    .strip_prefix(root)
+                    .unwrap_or(&path)
+                    .to_string_lossy()
+                    .to_string(),
+                status: frontmatter_value(&content, "status").unwrap_or_else(|| "draft".to_owned()),
+            });
+        }
+    }
+    items.sort_by(|left, right| left.path.cmp(&right.path));
+    Ok(items)
+}
+
+fn validate_knowledge_base(root: &Path) -> Result<Vec<String>> {
+    let mut issues = Vec::new();
+    if !root.exists() {
+        issues.push("knowledge-base missing".to_owned());
+        return Ok(issues);
+    }
+    for dir in REQUIRED_KNOWLEDGE_DIRS {
+        if !root.join(dir).is_dir() {
+            issues.push(format!("knowledge-base missing directory: {dir}"));
+        }
+    }
+    if !root.join("index.toml").is_file() {
+        issues.push("knowledge-base missing index.toml; run daedalus knowledge index".to_owned());
+    }
+    for item in collect_knowledge_snapshots_from_root(root)? {
+        let path = root.join(&item.path);
+        let content = fs::read_to_string(&path).map_err(|source| DaedalusError::Io {
+            path: path.clone(),
+            source,
+        })?;
+        for heading in REQUIRED_ENTRY_HEADINGS {
+            if !content.contains(heading) {
+                issues.push(format!(
+                    "knowledge entry `{}` missing heading: {heading}",
+                    item.path
+                ));
+            }
+        }
+        if !content.contains("source = ") {
+            issues.push(format!(
+                "knowledge entry `{}` missing frontmatter source",
+                item.path
+            ));
+        }
+    }
+    Ok(issues)
+}
+
+fn link_check_knowledge_base(root: &Path) -> Result<Vec<String>> {
+    let mut issues = Vec::new();
+    if !root.exists() {
+        issues.push("knowledge-base missing".to_owned());
+        return Ok(issues);
+    }
+    for file in markdown_files(root)? {
+        let content = fs::read_to_string(&file).map_err(|source| DaedalusError::Io {
+            path: file.clone(),
+            source,
+        })?;
+        for link in markdown_links(&content) {
+            if is_external_or_anchor(&link) {
+                continue;
+            }
+            let without_fragment = link.split('#').next().unwrap_or("");
+            if without_fragment.is_empty() {
+                continue;
+            }
+            let target = file.parent().unwrap_or(root).join(without_fragment);
+            if !target.exists() {
+                issues.push(format!(
+                    "broken local link in `{}`: {}",
+                    file.strip_prefix(root).unwrap_or(&file).display(),
+                    link
+                ));
             }
         }
     }
     Ok(issues)
 }
 
-fn append_promotion_log(path: &Path, item: &str, from: &str, to: &str, status: &str) -> Result<()> {
-    let mut content = fs::read_to_string(path).unwrap_or_else(|_| {
-        "# Promotion Log\n\n| Item | From | To | Status | Evidence | Decision |\n| --- | --- | --- | --- | --- | --- |\n".to_owned()
-    });
-    let line = format!(
-        "| `{item}` | `{from}` | `{to}` | {status} | `{from}` | pending user calibration ({}) |\n",
-        clock::now_local_timestamp()
-    );
-    if !content.contains(&line) {
-        content.push_str(&line);
-    }
-    fs::write(path, content).map_err(|source| DaedalusError::Io {
-        path: path.to_path_buf(),
-        source,
-    })
-}
-
-fn unique_candidate_path(candidates_dir: &Path, project_name: &str) -> PathBuf {
-    let base = sanitize_slug(project_name);
-    let candidate = candidates_dir.join(format!("{base}-knowledge-candidate.md"));
-    if !candidate.exists() {
-        return candidate;
-    }
-    for idx in 2.. {
-        let candidate = candidates_dir.join(format!("{base}-knowledge-candidate-{idx}.md"));
-        if !candidate.exists() {
-            return candidate;
+fn markdown_files(root: &Path) -> Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    for entry in walkdir::WalkDir::new(root) {
+        let entry = entry.map_err(|source| DaedalusError::Io {
+            path: root.to_path_buf(),
+            source: std::io::Error::other(source),
+        })?;
+        if entry.file_type().is_file()
+            && entry.path().extension().and_then(|value| value.to_str()) == Some("md")
+        {
+            files.push(entry.path().to_path_buf());
         }
     }
-    unreachable!("infinite iterator should always return a candidate")
+    Ok(files)
 }
 
-fn knowledge_base_candidate_content(project_name: &str, project_dir: &Path) -> String {
-    format!(
-        r#"# {project_name} 知识库候选
+fn markdown_links(content: &str) -> Vec<String> {
+    let mut links = Vec::new();
+    for line in content.lines() {
+        let mut rest = line;
+        while let Some(start) = rest.find("](") {
+            rest = &rest[start + 2..];
+            let Some(end) = rest.find(')') else {
+                break;
+            };
+            links.push(rest[..end].to_owned());
+            rest = &rest[end + 1..];
+        }
+    }
+    links
+}
 
-## 归档决策
+fn is_external_or_anchor(link: &str) -> bool {
+    link.starts_with('#')
+        || link.starts_with("http://")
+        || link.starts_with("https://")
+        || link.starts_with("mailto:")
+}
 
-- 建议位置：
-- 是否需要调整知识库结构：
-- 理由：
-- Project source：`{}`
-- Created at：{}
+fn plural_dir(kind: &str) -> Result<&'static str> {
+    match kind {
+        "concept" => Ok("concepts"),
+        "skill" => Ok("skills"),
+        "pattern" => Ok("patterns"),
+        "problem" => Ok("problems"),
+        "case" => Ok("cases"),
+        "source-map" => Ok("source-maps"),
+        "tree" => Ok("trees"),
+        "drill" => Ok("drills"),
+        _ => Err(DaedalusError::InvalidKnowledgeOperation(format!(
+            "unknown knowledge kind: {kind}"
+        ))),
+    }
+}
 
-## 业务目标 / 现实任务
+fn first_heading(content: &str) -> Option<String> {
+    content
+        .lines()
+        .find_map(|line| line.strip_prefix("# ").map(|value| value.trim().to_owned()))
+}
 
-## 现实制约
-
-## Naive Solution 失败点
-
-## 核心抽象 / 不变量
-
-## 实现机制
-
-## Trade-off
-
-## 对比最佳实践
-
-## 可迁移模式
-
-## 适用边界
-
-## 复习题 / 应用题
-
-## 来源
-
-"#,
-        project_dir.display(),
-        clock::now_local_timestamp()
-    )
+fn frontmatter_value(content: &str, key: &str) -> Option<String> {
+    let mut lines = content.lines();
+    if lines.next()? != "---" {
+        return None;
+    }
+    for line in lines {
+        if line == "---" {
+            return None;
+        }
+        let Some((left, right)) = line.split_once('=') else {
+            continue;
+        };
+        if left.trim() == key {
+            return Some(right.trim().trim_matches('"').to_owned());
+        }
+    }
+    None
 }
 
 fn sanitize_slug(value: &str) -> String {
