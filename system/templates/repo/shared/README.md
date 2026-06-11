@@ -10,4 +10,3 @@
 - [`glossary.md`](glossary.md)：术语表。
 - [`evidence-registry.md`](evidence-registry.md)：可继承证据。
 - [`transfer-patterns.md`](transfer-patterns.md)：可迁移模式。
-- [`knowledge-system/`](knowledge-system/)：跨 topic 可复用的知识体系。

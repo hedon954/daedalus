@@ -185,7 +185,6 @@ workspaces/projects/<project-name>/
     glossary.md
     evidence-registry.md
     transfer-patterns.md
-    knowledge-system/
   source/
     pull_source.sh
   topics/
@@ -204,7 +203,7 @@ workspaces/projects/<project-name>/
 
 Project/topic 的 `.daedalus/state.toml` 和 `workspaces/.daedalus/current.toml` 是事实源；`state.md` 与 `current-project/current-topic` 是派生视图，不手动编辑。
 
-## Review And Knowledge System
+## Review And Human-Owned Knowledge
 
 Review 是挂载在 topic/project 上的独立生命周期，不重新打开 learning stage。它用于：
 
@@ -213,17 +212,18 @@ Review 是挂载在 topic/project 上的独立生命周期，不重新打开 lea
 - 生成复习 session。
 - 更新 mastery map。
 
-Knowledge archival 是 skill-driven pipeline。CLI 不负责萃取、晋升或导出内容，只负责模板、索引、链接检查和结构校验：
+Knowledge archival 不是 AI 从 notes 自动提取。`notes/` 是学习过程证据；进入 `knowledge-base/` 前，用户必须完成 topic closeout retrospective。AI 负责提问、挑战、外部最佳实践对比、链接和一致性检查，不能代写用户理解。
 
 ```mermaid
 flowchart LR
-    Evidence["topic notes / demo / business transfer"] --> Skill["knowledge skills 萃取和校准"]
-    Skill --> Verify["验证边界和 trade-off"]
-    Verify --> Entry["knowledge-base entry"]
+    Notes["human rough notes"] --> Review["AI challenge / review"]
+    Review --> Retro["human closeout retrospective"]
+    Retro --> Compare["AI links / best-practice comparison"]
+    Compare --> Entry["knowledge-base entry"]
     Entry --> CLI["template / index / link-check / validate"]
 ```
 
-只有经过源码证据、demo、业务迁移或复习验证的结论，才应该进入 `knowledge-base/`。
+只有经过用户主动回顾、AI challenge、证据校准和迁移边界确认的理解，才应该进入 `knowledge-base/`。
 
 ## Current Verified Sample
 

@@ -444,11 +444,11 @@ impl TuiOverview {
                 lines.push("Knowledge Focus".to_owned());
                 lines.extend(indented_or_empty(
                     &self.knowledge_summary,
-                    "No knowledge-system focus yet.",
+                    "No knowledge-base focus yet.",
                 ));
                 Ok(self.virtual_detail(
                     "Review / Knowledge Focus",
-                    "generated from .daedalus/reviews and knowledge-system files",
+                    "generated from .daedalus/reviews and knowledge-base signals",
                     lines,
                 ))
             }
@@ -942,19 +942,24 @@ fn collect_review_labels(root: &Path, owner: &str, values: &mut Vec<String>) {
 
 fn knowledge_summary(task_dir: &Path) -> Vec<String> {
     let mut values = Vec::new();
-    let shared = task_dir.join("shared").join("knowledge-system");
-    if shared.exists() {
-        values.push("shared knowledge-system present".to_owned());
+    let root = task_dir
+        .ancestors()
+        .find(|path| path.join("knowledge-base").exists())
+        .map(|path| path.join("knowledge-base"));
+    if let Some(root) = root
+        && root.join("index.toml").exists()
+    {
+        values.push("global knowledge-base index present".to_owned());
     }
     if let Ok(doc) = state_toml::load_state_doc(&state_toml::state_path(task_dir)) {
         for topic in state_toml::topics(&doc) {
-            let extraction = task_dir
+            let retrospective = task_dir
                 .join(&topic.path)
                 .join("notes")
-                .join("knowledge-system")
-                .join("extraction.md");
-            if extraction.exists() {
-                values.push(format!("{}: extraction candidates", topic.slug));
+                .join("10-archivist")
+                .join("closeout-retrospective.md");
+            if retrospective.exists() {
+                values.push(format!("{}: closeout retrospective", topic.slug));
             }
         }
     }
@@ -997,7 +1002,7 @@ mod tests {
                 "2026-06-02 22:00:00  checkpoint  08-demo-coder".to_owned(),
             ],
             review_summary: Vec::new(),
-            knowledge_summary: vec!["shared knowledge-system present".to_owned()],
+            knowledge_summary: vec!["global knowledge-base index present".to_owned()],
             closure_summary: Vec::new(),
         }
     }

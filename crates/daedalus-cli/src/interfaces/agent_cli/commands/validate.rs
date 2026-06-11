@@ -21,7 +21,7 @@ pub struct ValidateCommand {
     /// 同时校验 review plans。
     #[arg(long)]
     pub reviews: bool,
-    /// 同时校验 knowledge-system 产物。
+    /// 同时校验全局 knowledge-base 结构。
     #[arg(long)]
     pub knowledge: bool,
 }

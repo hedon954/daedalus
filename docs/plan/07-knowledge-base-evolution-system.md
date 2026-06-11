@@ -1,7 +1,9 @@
 # 知识库自进化体系方案
 
 > 日期：2026-06-10
-> 状态：已实现
+> 状态：已废弃，由 `08-human-owned-notes-knowledge-protocol.md` 取代
+
+> 废弃原因：本方案把高认知知识整理从 CLI 移到 skill，但仍让 AI 处于知识提取者位置。新的方向要求 notes 和 closeout retrospective 由用户主动完成，AI 只做提问、挑战、外部参照、组织和一致性检查。
 
 ## 背景
 

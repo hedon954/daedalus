@@ -4,7 +4,7 @@
 
 Use this contract when an Agent needs deterministic daedalus lifecycle, topic, review, knowledge, render, or validation commands.
 
-The CLI manages structure, state, indexes, and validation. It does not generate learning conclusions by itself; content still comes from Agent coaching plus user calibration.
+The CLI manages structure, state, indexes, and validation. It does not generate learning conclusions by itself; durable learning content comes from user-owned notes, user closeout retrospective, and Agent challenge/organization.
 
 ## Project And Topic Commands
 
@@ -76,4 +76,4 @@ daedalus knowledge link-check
 daedalus knowledge template
 ```
 
-Knowledge extraction, inspection, gap analysis, promotion, and reorganization are skill workflows, not deterministic CLI commands. The CLI only provides stable structure, templates, indexes, link checks, and validation.
+Knowledge CLI commands do not extract, inspect, promote, or reorganize understanding. The CLI only provides stable structure, templates, indexes, link checks, and validation.

@@ -36,15 +36,6 @@ fn repo_fixture() -> TempDir {
         &source_review_template,
         &repo.join("system/templates/review"),
     );
-    let source_knowledge_template = manifest_dir
-        .parent()
-        .and_then(Path::parent)
-        .expect("repo root")
-        .join("system/templates/knowledge-system");
-    copy_dir(
-        &source_knowledge_template,
-        &repo.join("system/templates/knowledge-system"),
-    );
     let source_knowledge_entry_template = manifest_dir
         .parent()
         .and_then(Path::parent)
@@ -160,7 +151,6 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(task_dir.join("CLAUDE.md").exists());
     assert!(!task_dir.join(".daedalus/CLAUDE.md").exists());
     assert!(task_dir.join("shared/README.md").exists());
-    assert!(task_dir.join("shared/knowledge-system/README.md").exists());
     assert!(task_dir.join("shared/source-index.md").exists());
     assert!(task_dir.join(".daedalus/reviews/README.md").exists());
     assert!(task_dir.join("topics/.gitkeep").exists());

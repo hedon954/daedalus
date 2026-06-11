@@ -26,5 +26,5 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 
 ## Repo Learning
 
-- Use `.claude/skills/repo-learning-coach/SKILL.md` for repo learning, review, and skill-driven knowledge archival.
-- Before marking a learning task completed, verify goal, core questions, run/debug evidence or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, and verified knowledge archival.
+- Use `.claude/skills/repo-learning-coach/SKILL.md` for repo learning, review, human-owned notes, and verified knowledge archival.
+- Before marking a learning task completed, verify goal, core questions, run/debug evidence or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, user closeout retrospective, and verified knowledge archival.

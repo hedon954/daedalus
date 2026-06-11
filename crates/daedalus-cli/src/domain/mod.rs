@@ -7,7 +7,7 @@
 pub mod artifact;
 /// 领域错误和统一结果类型。
 pub mod error;
-/// 知识体系萃取领域类型。
+/// 知识库结构领域类型。
 pub mod knowledge;
 /// 学习任务聚合的基础信息。
 pub mod learning_task;

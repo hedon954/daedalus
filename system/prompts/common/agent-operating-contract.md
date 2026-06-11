@@ -29,12 +29,14 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed.
 - Commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
 - Tests should assert stable behavior, not incidental wording. For errors, prefer variant, category, or presence unless exact text is public contract.
-- Before marking a learning task completed, verify that it has goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, and verified knowledge archival.
+- Before marking a learning task completed, verify that it has goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, user closeout retrospective, and verified knowledge archival.
 
 ## Knowledge Rules
 
-- The CLI must not generate knowledge conclusions. It may create templates, indexes, link checks, and validation only; extraction, promotion, and reorganization are skill-driven learning workflows.
-- Archive only verified knowledge.
+- Notes are human-owned. Do not ghostwrite new notes正文; ask questions, provide empty templates, or write clearly marked AI challenge/suggestion blocks until the user writes rough notes.
+- Knowledge-base entries require user closeout retrospective. Do not create knowledge-base正文 from notes or source material alone.
+- The CLI must not generate knowledge conclusions. It may create templates, indexes, link checks, and validation only.
+- Archive only reviewed human understanding.
 - Prefer reusable patterns over repo-specific trivia.
-- Each knowledge entry should include reality constraints, core approach, trade-off, transferable pattern, and source.
+- Each knowledge entry should include reality constraints, core approach, trade-off, transferable pattern, source, and review drill.
 - Revisit taxonomy as the knowledge base grows; do not over-design categories early.

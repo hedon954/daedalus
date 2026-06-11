@@ -5,8 +5,8 @@ phase: repo.phase4-closing
 ---
 
 @system/prompts/common/summarize.md
+@system/prompts/common/human-owned-notes.md
 @system/prompts/common/archive-knowledge.md
-@system/prompts/common/knowledge-system-extraction.md
 @system/prompts/common/compress-context.md
 @system/prompts/common/critical-lens.md
 
@@ -22,7 +22,7 @@ phase: repo.phase4-closing
 
 - repo 学习阶段完成。
 - 用户准备关闭、暂停或归档任务。
-- 需要把已验证内容导出到 `knowledge-base`。
+- 用户准备完成 closeout retrospective 并归档到 `knowledge-base`。
 
 ## Repo Completion Evidence
 
@@ -32,16 +32,17 @@ phase: repo.phase4-closing
 - 运行手册、调试链路、架构图、代码阅读笔记。
 - mini demo 的设计、代码位置、验证方式。
 - 业务迁移方案。
-- 应进入 `knowledge-base` 的可迁移知识点。
+- 用户 closeout retrospective。
+- 经过用户回顾和 AI challenge 后，才可能进入 `knowledge-base` 的可迁移理解。
 - 学习过程中识别出的局限、失败模式、not-to-copy 和 demo 中的忠实模仿边界。
 
 ## Repo-Specific Workflow
 
 1. 检查 active topic 是否满足 completed 条件；如要关闭 project，必须确认所有 topic 都已 completed 或 abandoned。
 2. 汇总产物清单和位置。
-3. 区分已验证结论、未解决问题和后续建议。
-4. 使用 `Knowledge System Extraction` 从业务目标、现实制约、naive 失败、核心不变量、实现机制、trade-off、局限 / failure mode、最佳实践对比和迁移模式中萃取候选知识体系。
-5. 使用 `Archive Verified Knowledge` 判断可迁移知识的归档位置。
+3. 检查用户是否已经完成 closeout retrospective；没有则先引导用户完成，不要代写。
+4. 区分用户已验证理解、未解决问题和后续建议。
+5. 使用 `Archive Reviewed Human Knowledge` 判断可迁移理解的归档位置。
 6. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
 7. 给出 closing report。
 

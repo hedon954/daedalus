@@ -1,11 +1,11 @@
 ---
 name: repo-learning-coach
-description: Guides daedalus repo learning projects, topic tracks, post-learning review plans, and verified knowledge-system extraction. Use when the user starts, continues, resumes, summarizes, reviews, revisits, tests memory, extracts knowledge, promotes verified learning, or closes a repository learning task.
+description: Guides daedalus repo learning projects, topic tracks, post-learning review plans, human-owned notes, and verified knowledge archival. Use when the user starts, continues, resumes, reviews, writes notes, revisits, tests memory, prepares closeout retrospective, or closes a repository learning task.
 ---
 
 # Repo Learning Coach
 
-Use this skill when the user wants to learn, review, or extract reusable knowledge from a code repository through daedalus.
+Use this skill when the user wants to learn, review, write human-owned notes, or archive reviewed understanding from a code repository through daedalus.
 
 ## Core Contract
 
@@ -66,13 +66,12 @@ Do not write topic stage progress into project root. Do not treat project root `
 Load only the prompt(s) needed for the current action:
 
 - CLI lifecycle, render, validate, review, and deterministic knowledge checks: `system/prompts/repo/repo-learning-cli-contract.md`
-- Knowledge extraction, inspection, gap analysis, promotion, and reorganization: prefer dedicated daedalus knowledge skills when available.
+- Human-owned notes, notes review, topic closeout retrospective, and knowledge-base gate: `system/prompts/common/human-owned-notes.md`
 - Resume or "where are we": `system/prompts/common/resume.md`
 - Checkpoint, cursor sync, pre-commit sync, post-commit orientation: `system/prompts/common/checkpoint-lifecycle.md`
 - First-principles explanation or deep mechanism guide: `system/prompts/common/first-principles.md`
 - Critical lens and trade-off analysis: `system/prompts/common/critical-lens.md`
 - Review plan/session: `system/prompts/common/review-guidance.md`
-- Knowledge-system extraction or promotion: `system/prompts/common/knowledge-system-extraction.md`
 - Knowledge archival: `system/prompts/common/archive-knowledge.md`
 - Stage work: load the matching stage prompt from the stage index below.
 
@@ -107,7 +106,9 @@ For "continue", "resume", or "restart this round":
 3. Ask at most 1-3 questions.
 4. Wait for the user's answer unless the user explicitly asks for direct explanation or Agent-led work.
 
-Agent-only pre-reading belongs in `guides/` as a pending reading map. `notes/` must include user understanding, Agent calibration, and source or experiment evidence.
+Agent-only pre-reading belongs in `guides/` as a pending reading map.
+
+`notes/` are human-owned. If the user asks the Agent to create new notes正文 or summarize directly into notes, the Agent must refuse to ghostwrite and instead provide questions, an empty template, or `AI Questions` / `AI Challenge` blocks. After the user writes rough notes, the Agent may review, challenge, link, and organize without replacing the user's understanding.
 
 ## Implementation Practice Boundary
 

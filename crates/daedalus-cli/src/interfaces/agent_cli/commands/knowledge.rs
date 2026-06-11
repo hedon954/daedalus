@@ -13,8 +13,7 @@ use crate::interfaces::agent_cli::presenter::{
 
 /// Knowledge 命令。
 ///
-/// CLI 只提供确定性的知识库底座能力。知识萃取、晋升、重组等认知工作由
-/// daedalus knowledge skills 完成。
+/// CLI 只提供确定性的知识库底座能力，不生成知识结论。
 #[derive(Debug, Args)]
 pub struct KnowledgeCommand {
     #[command(subcommand)]
