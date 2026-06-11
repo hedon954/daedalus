@@ -5,19 +5,6 @@ description: 从已完成或阶段闭环的 daedalus topic/project 中萃取可�
 
 # Daedalus Knowledge Extract
 
-## Contract
-
-这是认知工作流，不是 CLI 内容生成命令。不要调用已移除的高认知 knowledge CLI 子命令。
-
-CLI 只用于确定性支持：
-
-```bash
-daedalus knowledge template <kind> <slug> --title "<title>"
-daedalus knowledge index
-daedalus knowledge validate
-daedalus knowledge link-check
-```
-
 ## Extraction Rule
 
 只萃取同时具备以下条件的知识：

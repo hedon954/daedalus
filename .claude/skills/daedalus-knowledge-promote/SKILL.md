@@ -7,9 +7,7 @@ description: 判断 daedalus 候选知识是否可以晋升为稳定知识，并
 
 ## Contract
 
-晋升是一种判断，不是 CLI 子命令。不要调用已移除的高认知 knowledge CLI 子命令。
-
-编辑完成后，只用 CLI 做确定性检查：
+晋升是一种判断，编辑完成后，用 CLI 做确定性检查：
 
 ```bash
 daedalus knowledge index
