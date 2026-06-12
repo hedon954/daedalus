@@ -242,6 +242,8 @@ pub fn sync_current_workspace(
     let path = current_toml_path(repo_root);
     let project_dir = project_dir.map(|path| normalize_repo_path(repo_root, path));
     let topic_dir = topic_dir.map(|path| normalize_repo_path(repo_root, path));
+    let pending_closeout_project = current_path(repo_root, "pending_closeout_project")?;
+    let pending_closeout_topic = current_path(repo_root, "pending_closeout_topic")?;
     let mut doc = DocumentMut::new();
     doc["schema_version"] = value(1);
     doc["current_project"] = value(
@@ -253,6 +255,20 @@ pub fn sync_current_workspace(
     );
     doc["current_topic"] = value(
         topic_dir
+            .as_deref()
+            .and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
+            .map(|path| path.to_string_lossy().to_string())
+            .unwrap_or_default(),
+    );
+    doc["pending_closeout_project"] = value(
+        pending_closeout_project
+            .as_deref()
+            .and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
+            .map(|path| path.to_string_lossy().to_string())
+            .unwrap_or_default(),
+    );
+    doc["pending_closeout_topic"] = value(
+        pending_closeout_topic
             .as_deref()
             .and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
             .map(|path| path.to_string_lossy().to_string())
@@ -271,6 +287,64 @@ pub fn sync_current_workspace(
         &workspaces_root(repo_root).join("current-topic"),
         topic_dir.as_deref(),
     )?;
+    sync_symlink(
+        &workspaces_root(repo_root).join("closeout-project"),
+        pending_closeout_project.as_deref(),
+    )?;
+    sync_symlink(
+        &workspaces_root(repo_root).join("closeout-topic"),
+        pending_closeout_topic.as_deref(),
+    )?;
+    rebuild_project_index(repo_root)
+}
+
+/// 同步等待 closeout 的学习现场指针和可点击软链接。
+pub fn sync_closeout_workspace(
+    repo_root: &Path,
+    project_dir: Option<&Path>,
+    topic_dir: Option<&Path>,
+) -> Result<()> {
+    ensure_stable_workspace_layout(repo_root)?;
+    let path = current_toml_path(repo_root);
+    let current_project = current_project_dir(repo_root)?;
+    let current_topic = current_topic_dir(repo_root)?;
+    let project_dir = project_dir.map(|path| normalize_repo_path(repo_root, path));
+    let topic_dir = topic_dir.map(|path| normalize_repo_path(repo_root, path));
+    let mut doc = DocumentMut::new();
+    doc["schema_version"] = value(1);
+    doc["current_project"] = value(relative_workspace_value(
+        repo_root,
+        current_project.as_deref(),
+    ));
+    doc["current_topic"] = value(relative_workspace_value(
+        repo_root,
+        current_topic.as_deref(),
+    ));
+    doc["pending_closeout_project"] =
+        value(relative_workspace_value(repo_root, project_dir.as_deref()));
+    doc["pending_closeout_topic"] =
+        value(relative_workspace_value(repo_root, topic_dir.as_deref()));
+    fs::write(&path, doc.to_string()).map_err(|source| DaedalusError::Io {
+        path: path.clone(),
+        source,
+    })?;
+
+    sync_symlink(
+        &workspaces_root(repo_root).join("current-project"),
+        current_project.as_deref(),
+    )?;
+    sync_symlink(
+        &workspaces_root(repo_root).join("current-topic"),
+        current_topic.as_deref(),
+    )?;
+    sync_symlink(
+        &workspaces_root(repo_root).join("closeout-project"),
+        project_dir.as_deref(),
+    )?;
+    sync_symlink(
+        &workspaces_root(repo_root).join("closeout-topic"),
+        topic_dir.as_deref(),
+    )?;
     rebuild_project_index(repo_root)
 }
 
@@ -282,6 +356,16 @@ pub fn current_project_dir(repo_root: &Path) -> Result<Option<PathBuf>> {
 /// 从 current.toml 读取当前 topic。
 pub fn current_topic_dir(repo_root: &Path) -> Result<Option<PathBuf>> {
     current_path(repo_root, "current_topic")
+}
+
+/// 从 current.toml 读取等待 closeout 的 project。
+pub fn pending_closeout_project_dir(repo_root: &Path) -> Result<Option<PathBuf>> {
+    current_path(repo_root, "pending_closeout_project")
+}
+
+/// 从 current.toml 读取等待 closeout 的 topic。
+pub fn pending_closeout_topic_dir(repo_root: &Path) -> Result<Option<PathBuf>> {
+    current_path(repo_root, "pending_closeout_topic")
 }
 
 fn current_path(repo_root: &Path, key: &str) -> Result<Option<PathBuf>> {
@@ -470,11 +554,18 @@ fn sync_symlink(link: &Path, target: Option<&Path>) -> Result<()> {
 }
 
 fn normalize_repo_path(repo_root: &Path, path: &Path) -> PathBuf {
-    if path.is_absolute() {
+    let normalized = if path.is_absolute() {
         path.to_path_buf()
     } else {
         repo_root.join(path)
-    }
+    };
+    normalized.canonicalize().unwrap_or(normalized)
+}
+
+fn relative_workspace_value(repo_root: &Path, path: Option<&Path>) -> String {
+    path.and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
+        .map(|path| path.to_string_lossy().to_string())
+        .unwrap_or_default()
 }
 
 fn project_dir_from_any(path: &Path) -> Result<PathBuf> {

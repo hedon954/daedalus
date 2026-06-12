@@ -7,8 +7,8 @@
 # - task.lifecycle 只能是：active、idle、abandoned。
 # - task.workspace_bucket 固定为：projects。
 # - project.active_topic 必须指向 `[[topics]]` 中存在的 topic slug。
-# - topics.lifecycle 只能是：planned、active、blocked、completed、abandoned、skipped。
-# - transition.action 只能是：init、topic-new、topic-activate、topic-complete、topic-abandon、migrate、task-complete、abandon。
+# - topics.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
+# - transition.action 只能是：init、topic-new、topic-activate、topic-await-reflection、topic-complete、topic-abandon、migrate、task-complete、abandon。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
 
 [task]

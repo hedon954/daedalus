@@ -67,6 +67,10 @@ fn render_project_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<S
         "- Active Topic：`{}`\n",
         state_toml::active_topic(doc).unwrap_or_else(|| "none".to_owned())
     ));
+    output.push_str(&format!(
+        "- Pending Closeout：`{}`\n",
+        state_toml::awaiting_reflection_topic(doc).unwrap_or_else(|| "none".to_owned())
+    ));
     output.push_str(&format!("- 下一步：{}\n\n", state_toml::next_action(doc)));
 
     output.push_str("## Topics\n\n");
@@ -135,10 +139,10 @@ fn render_topic_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<Str
     output.push_str(&format!("- 下一步：{}\n\n", state_toml::next_action(doc)));
 
     output.push_str("## 枚举约束\n\n");
-    output.push_str("- `topic.lifecycle` 只能是：`planned`、`active`、`blocked`、`completed`、`abandoned`、`skipped`。\n");
+    output.push_str("- `topic.lifecycle` 只能是：`planned`、`active`、`blocked`、`awaiting-reflection`、`completed`、`abandoned`、`skipped`。\n");
     output
         .push_str("- `stage.status` 只能是：`pending`、`active`、`blocked`、`paused`、`done`。\n");
-    output.push_str("- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`rollback`、`topic-complete`、`topic-abandon`。\n");
+    output.push_str("- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`rollback`、`topic-await-reflection`、`topic-complete`、`topic-abandon`。\n");
     output.push_str("- `transition.approval_source` 只能是：`user-confirmed`、`artifact-equivalent`、`stage-not-applicable`。\n");
     output.push_str("- Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。\n\n");
 

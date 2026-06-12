@@ -15,20 +15,20 @@
 name = "openai-codex-cli-deep-learning"
 kind = "repo-learning"
 created_at = "2026-05-09 15:58:52"
-lifecycle = "active"
+lifecycle = "idle"
 workspace_bucket = "projects"
-next_action = "继续 active topic `tools-permissions`：进入 `10-archivist`，先由用户完成 `reflection/closeout.md`，再决定是否归档 knowledge-base。"
+next_action = "当前没有 active topic，但存在 awaiting-reflection topic；可以用大块时间完成 closeout reflection，或用 `daedalus topic new` / `daedalus topic activate` 启动新专题。"
 
 [project]
 mode = "multi-topic"
-active_topic = "tools-permissions"
+active_topic = ""
 source_kind = "repo"
 source_name = ""
 
 [[topics]]
 slug = "tools-permissions"
 title = "工具系统与权限系统"
-lifecycle = "active"
+lifecycle = "awaiting-reflection"
 path = "topics/tools-permissions"
 inherits = []
 
@@ -52,3 +52,10 @@ action = "topic-activate"
 timestamp = "2026-06-12 00:00:00"
 actor = "agent"
 reason = "回滚 topic 完成状态：知识库归档必须等待用户先完成 closeout reflection，不能使用 Agent 生成的知识库条目代替用户总结。"
+
+[[transitions]]
+stage = "project"
+action = "topic-await-reflection"
+timestamp = "2026-06-12 09:39:39"
+actor = "daedalus-cli"
+reason = "主体学习、demo、业务迁移和测试验证已完成；用户将在大块时间里完成 closeout reflection 后再归档知识库。"

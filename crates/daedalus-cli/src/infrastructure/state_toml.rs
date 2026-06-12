@@ -192,6 +192,22 @@ pub fn active_topic_count(doc: &DocumentMut) -> usize {
         .count()
 }
 
+/// 读取 project 中 awaiting-reflection topics 的数量。
+pub fn awaiting_reflection_topic_count(doc: &DocumentMut) -> usize {
+    topics(doc)
+        .iter()
+        .filter(|topic| topic.lifecycle == "awaiting-reflection")
+        .count()
+}
+
+/// 读取 project 中第一个 awaiting-reflection topic。
+pub fn awaiting_reflection_topic(doc: &DocumentMut) -> Option<String> {
+    topics(doc)
+        .into_iter()
+        .find(|topic| topic.lifecycle == "awaiting-reflection")
+        .map(|topic| topic.slug)
+}
+
 /// 设置 project topic lifecycle。
 pub fn set_project_topic_lifecycle(
     doc: &mut DocumentMut,

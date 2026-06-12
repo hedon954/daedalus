@@ -877,7 +877,10 @@ fn active_topic_doc(
     project_dir: &Path,
     project_doc: &toml_edit::DocumentMut,
 ) -> Result<(Option<PathBuf>, Option<toml_edit::DocumentMut>)> {
-    let Some(slug) = state_toml::active_topic(project_doc).filter(|slug| !slug.is_empty()) else {
+    let slug = state_toml::active_topic(project_doc)
+        .filter(|slug| !slug.is_empty())
+        .or_else(|| state_toml::awaiting_reflection_topic(project_doc));
+    let Some(slug) = slug else {
         return Ok((None, None));
     };
     let Some(path) = state_toml::topic_path(project_doc, &slug) else {

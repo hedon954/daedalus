@@ -108,6 +108,10 @@ pub fn validate_workspace(
     if active_count > 1 {
         issues.push("multiple active topics".to_owned());
     }
+    let awaiting_count = state_toml::awaiting_reflection_topic_count(&doc);
+    if awaiting_count > 1 {
+        issues.push("multiple awaiting-reflection topics".to_owned());
+    }
 
     let topics = state_toml::topics(&doc);
     let active_topic = state_toml::active_topic(&doc);
@@ -150,10 +154,18 @@ pub fn validate_workspace(
     }
 
     if let Some(repo_root) = repo_root {
+        let active_topic_path = active_topic
+            .as_deref()
+            .and_then(|slug| state_toml::topic_path(&doc, slug))
+            .map(|path| task_dir.join(path));
+        let awaiting_reflection_topic_path = state_toml::awaiting_reflection_topic(&doc)
+            .and_then(|slug| state_toml::topic_path(&doc, &slug))
+            .map(|path| task_dir.join(path));
         issues.extend(validate_current_projection(
             repo_root,
             task_dir,
-            active_topic.as_deref(),
+            active_topic_path.as_deref(),
+            awaiting_reflection_topic_path.as_deref(),
         )?);
         let active_projects = workspace_fs::active_projects(repo_root)?;
         if active_projects.len() > 1 {
@@ -170,7 +182,8 @@ pub fn validate_workspace(
 fn validate_current_projection(
     repo_root: &Path,
     task_dir: &Path,
-    active_topic: Option<&str>,
+    active_topic: Option<&Path>,
+    awaiting_reflection_topic: Option<&Path>,
 ) -> Result<Vec<String>> {
     let mut issues = Vec::new();
     let current_project = workspace_fs::current_project_dir(repo_root)?;
@@ -182,17 +195,97 @@ fn validate_current_projection(
             issues.push("current-project symlink is missing".to_owned());
         }
     }
-    let current_topic = workspace_fs::current_topic_dir(repo_root)?;
-    match (active_topic, current_topic) {
-        (Some(_), None) => {
-            issues.push("active_topic exists but current-topic is missing".to_owned())
-        }
-        (None, Some(_)) => {
-            issues.push("current-topic exists but project has no active_topic".to_owned())
-        }
+    validate_projected_path(
+        &mut issues,
+        repo_root,
+        task_dir,
+        "current-topic",
+        active_topic,
+        workspace_fs::current_topic_dir(repo_root)?,
+    )?;
+    validate_projected_path(
+        &mut issues,
+        repo_root,
+        task_dir,
+        "closeout-topic",
+        awaiting_reflection_topic,
+        workspace_fs::pending_closeout_topic_dir(repo_root)?,
+    )?;
+    Ok(issues)
+}
+
+fn validate_projected_path(
+    issues: &mut Vec<String>,
+    repo_root: &Path,
+    task_dir: &Path,
+    projection_name: &str,
+    expected: Option<&Path>,
+    stored: Option<PathBuf>,
+) -> Result<()> {
+    let link_target = projection_link_target(repo_root, projection_name)?;
+    match (expected, stored.as_deref()) {
+        (Some(_), None) => issues.push(format!(
+            "{projection_name} is missing from workspaces/.daedalus/current.toml"
+        )),
+        (Some(expected), Some(actual)) if !same_path(expected, actual)? => issues.push(format!(
+            "{projection_name} in workspaces/.daedalus/current.toml points to the wrong topic"
+        )),
+        (None, Some(actual)) if path_is_inside(actual, task_dir) => issues.push(format!(
+            "{projection_name} points into this project but project has no matching lifecycle topic"
+        )),
         _ => {}
     }
-    Ok(issues)
+    match (expected, link_target.as_deref()) {
+        (Some(_), None) => issues.push(format!("{projection_name} symlink is missing")),
+        (Some(expected), Some(actual)) if !same_path(expected, actual)? => {
+            issues.push(format!("{projection_name} symlink points to the wrong topic"))
+        }
+        (None, Some(actual)) if path_is_inside(actual, task_dir) => issues.push(format!(
+            "{projection_name} symlink points into this project but project has no matching lifecycle topic"
+        )),
+        _ => {}
+    }
+    Ok(())
+}
+
+fn projection_link_target(repo_root: &Path, name: &str) -> Result<Option<PathBuf>> {
+    let link = workspace_fs::workspaces_root(repo_root).join(name);
+    let Ok(metadata) = fs::symlink_metadata(&link) else {
+        return Ok(None);
+    };
+    if metadata.file_type().is_symlink() {
+        let target = fs::read_link(&link).map_err(|source| DaedalusError::Io {
+            path: link.clone(),
+            source,
+        })?;
+        let resolved = if target.is_absolute() {
+            target
+        } else {
+            link.parent().unwrap_or(repo_root).join(target)
+        };
+        return Ok(Some(resolved.canonicalize().unwrap_or(resolved)));
+    }
+    if metadata.is_file() {
+        let target = fs::read_to_string(&link).map_err(|source| DaedalusError::Io {
+            path: link.clone(),
+            source,
+        })?;
+        let target = PathBuf::from(target.trim());
+        let resolved = if target.is_absolute() {
+            target
+        } else {
+            link.parent().unwrap_or(repo_root).join(target)
+        };
+        return Ok(Some(resolved.canonicalize().unwrap_or(resolved)));
+    }
+    Ok(Some(link))
+}
+
+fn path_is_inside(path: &Path, parent: &Path) -> bool {
+    match (path.canonicalize(), parent.canonicalize()) {
+        (Ok(path), Ok(parent)) => path.starts_with(parent),
+        _ => path.starts_with(parent),
+    }
 }
 
 fn same_path(left: &Path, right: &Path) -> Result<bool> {

@@ -38,6 +38,8 @@ pub enum TopicSubcommand {
     Activate(TopicActivateArgs),
     /// 完成专题。
     Complete(TopicCloseArgs),
+    /// 主体学习完成，等待用户主动回顾。
+    AwaitReflection(TopicCloseArgs),
     /// 放弃专题。
     Abandon(TopicCloseArgs),
     /// 校验专题。
@@ -165,6 +167,10 @@ impl CmdExecutor for TopicSubcommand {
             Self::Activate(args) => args.execute(ctx).await,
             Self::Complete(args) => {
                 args.execute_with_lifecycle(ctx, TopicLifecycle::Completed)
+                    .await
+            }
+            Self::AwaitReflection(args) => {
+                args.execute_with_lifecycle(ctx, TopicLifecycle::AwaitingReflection)
                     .await
             }
             Self::Abandon(args) => {

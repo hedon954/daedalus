@@ -1,3 +1,5 @@
 schema_version = 1
 current_project = "projects/openai-codex-cli-deep-learning"
-current_topic = "projects/openai-codex-cli-deep-learning/topics/tools-permissions"
+current_topic = ""
+pending_closeout_project = "projects/openai-codex-cli-deep-learning"
+pending_closeout_topic = "projects/openai-codex-cli-deep-learning/topics/tools-permissions"

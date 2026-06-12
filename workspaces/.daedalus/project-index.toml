@@ -3,6 +3,6 @@ schema_version = 1
 [[projects]]
 slug = "openai-codex-cli-deep-learning"
 name = "openai-codex-cli-deep-learning"
-lifecycle = "active"
+lifecycle = "idle"
 path = "projects/openai-codex-cli-deep-learning"
-active_topic = "tools-permissions"
+active_topic = ""

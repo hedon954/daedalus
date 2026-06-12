@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use assert_cmd::Command;
 use tempfile::TempDir;
+use toml_edit::DocumentMut;
 
 fn repo_fixture() -> TempDir {
     let temp = TempDir::new().expect("temp dir");
@@ -64,6 +65,112 @@ fn copy_dir(source: &Path, target: &Path) {
 
 fn active_topic_dir(task_dir: &Path) -> PathBuf {
     task_dir.join("topics/main")
+}
+
+fn write_core_topic_artifacts(topic_dir: &Path) {
+    for path in [
+        "guides/02-repo-scout/README.md",
+        "notes/03-socratic-coach/README.md",
+        "notes/04-debugger-guide/README.md",
+        "notes/05-arch-analyzer/README.md",
+        "notes/06-code-reader/README.md",
+        "demo/design.md",
+        "demo/README.md",
+        "notes/09-biz-solver/README.md",
+    ] {
+        let path = topic_dir.join(path);
+        fs::create_dir_all(path.parent().expect("parent")).expect("artifact parent");
+        fs::write(path, "# artifact\n").expect("artifact");
+    }
+}
+
+fn complete_core_topic_stages(repo: &TempDir, task_dir: &Path) {
+    let stages = [
+        "01-goal-aligner",
+        "02-repo-scout",
+        "03-socratic-coach",
+        "04-debugger-guide",
+        "05-arch-analyzer",
+        "06-code-reader",
+        "07-demo-architecture",
+        "08-demo-coder",
+        "09-biz-solver",
+    ];
+    for (index, stage) in stages.iter().enumerate() {
+        if index > 0 {
+            Command::cargo_bin("daedalus")
+                .expect("binary")
+                .current_dir(repo.path())
+                .args([
+                    "state",
+                    "enter",
+                    stage,
+                    "--project-dir",
+                    task_dir.to_str().expect("utf8"),
+                    "--reason",
+                    "Move test topic through core learning stages.",
+                ])
+                .assert()
+                .success();
+        }
+        Command::cargo_bin("daedalus")
+            .expect("binary")
+            .current_dir(repo.path())
+            .args([
+                "state",
+                "complete",
+                stage,
+                "--project-dir",
+                task_dir.to_str().expect("utf8"),
+                "--reason",
+                "Core learning stage is complete for closeout lifecycle test.",
+            ])
+            .assert()
+            .success();
+    }
+}
+
+fn read_toml(path: &Path) -> DocumentMut {
+    fs::read_to_string(path)
+        .expect("toml file")
+        .parse::<DocumentMut>()
+        .expect("valid toml")
+}
+
+fn toml_string(doc: &DocumentMut, key: &str) -> String {
+    doc.get(key)
+        .and_then(|item| item.as_str())
+        .unwrap_or_default()
+        .to_owned()
+}
+
+fn project_active_topic(doc: &DocumentMut) -> String {
+    doc.get("project")
+        .and_then(|item| item.as_table())
+        .and_then(|table| table.get("active_topic"))
+        .and_then(|item| item.as_str())
+        .unwrap_or_default()
+        .to_owned()
+}
+
+fn topic_lifecycle(doc: &DocumentMut) -> String {
+    doc.get("topic")
+        .and_then(|item| item.as_table())
+        .and_then(|table| table.get("lifecycle"))
+        .and_then(|item| item.as_str())
+        .unwrap_or_default()
+        .to_owned()
+}
+
+fn project_topic_lifecycle(doc: &DocumentMut, slug: &str) -> Option<String> {
+    doc.get("topics")
+        .and_then(|item| item.as_array_of_tables())
+        .and_then(|topics| {
+            topics.iter().find_map(|topic| {
+                (topic["slug"].as_str() == Some(slug))
+                    .then(|| topic["lifecycle"].as_str().unwrap_or_default().to_owned())
+            })
+        })
 }
 
 fn first_review_id(reviews_root: &Path) -> String {
@@ -1499,6 +1606,335 @@ fn topic_new_and_activate_manage_project_active_topic() {
     assert!(project_state.contains("lifecycle = \"blocked\""));
     assert!(project_state.contains("slug = \"sub-agent\""));
     assert!(project_state.contains("lifecycle = \"active\""));
+}
+
+#[test]
+fn topic_await_reflection_releases_active_slot_and_preserves_closeout_pointer() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "closeout-flow",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/closeout-flow");
+    let topic_dir = active_topic_dir(&task_dir);
+    write_core_topic_artifacts(&topic_dir);
+    complete_core_topic_stages(&repo, &task_dir);
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Core learning is done; user will write closeout during a focused block.",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: topic-await-reflection"));
+
+    let project_state = read_toml(&task_dir.join(".daedalus/state.toml"));
+    assert_eq!(project_active_topic(&project_state), "");
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "main").as_deref(),
+        Some("awaiting-reflection")
+    );
+    let topic_state = read_toml(&topic_dir.join(".daedalus/state.toml"));
+    assert_eq!(topic_lifecycle(&topic_state), "awaiting-reflection");
+    assert!(!repo.path().join("workspaces/current-topic").exists());
+    assert!(repo.path().join("workspaces/closeout-topic").exists());
+    let current = read_toml(&repo.path().join("workspaces/.daedalus/current.toml"));
+    assert_eq!(toml_string(&current, "current_topic"), "");
+    assert_eq!(
+        toml_string(&current, "pending_closeout_topic"),
+        "projects/closeout-flow/topics/main"
+    );
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate", task_dir.to_str().expect("utf8")])
+        .assert()
+        .success();
+}
+
+#[test]
+fn awaiting_reflection_topic_does_not_block_next_active_topic() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "next-topic-after-closeout",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo
+        .path()
+        .join("workspaces/projects/next-topic-after-closeout");
+    let topic_dir = active_topic_dir(&task_dir);
+    write_core_topic_artifacts(&topic_dir);
+    complete_core_topic_stages(&repo, &task_dir);
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Core learning is done; closeout is scheduled.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "new",
+            "ddia",
+            "--title",
+            "DDIA",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "activate",
+            "ddia",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success();
+
+    let project_state = read_toml(&task_dir.join(".daedalus/state.toml"));
+    assert_eq!(project_active_topic(&project_state), "ddia");
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "main").as_deref(),
+        Some("awaiting-reflection")
+    );
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "ddia").as_deref(),
+        Some("active")
+    );
+    let current = read_toml(&repo.path().join("workspaces/.daedalus/current.toml"));
+    assert_eq!(
+        toml_string(&current, "current_topic"),
+        "projects/next-topic-after-closeout/topics/ddia"
+    );
+    assert_eq!(
+        toml_string(&current, "pending_closeout_topic"),
+        "projects/next-topic-after-closeout/topics/main"
+    );
+    assert!(repo.path().join("workspaces/current-topic").exists());
+    assert!(repo.path().join("workspaces/closeout-topic").exists());
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate", task_dir.to_str().expect("utf8"), "--all-topics"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn validate_rejects_missing_closeout_projection() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "missing-closeout-projection",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo
+        .path()
+        .join("workspaces/projects/missing-closeout-projection");
+    let topic_dir = active_topic_dir(&task_dir);
+    write_core_topic_artifacts(&topic_dir);
+    complete_core_topic_stages(&repo, &task_dir);
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Core learning is done; closeout is scheduled.",
+        ])
+        .assert()
+        .success();
+
+    fs::remove_file(repo.path().join("workspaces/closeout-topic")).expect("remove symlink");
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate", task_dir.to_str().expect("utf8")])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn topic_await_reflection_rejects_second_pending_closeout() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "single-closeout-debt",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/single-closeout-debt");
+    let main_dir = active_topic_dir(&task_dir);
+    write_core_topic_artifacts(&main_dir);
+    complete_core_topic_stages(&repo, &task_dir);
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Core learning is done; closeout is scheduled.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "new",
+            "ddia",
+            "--title",
+            "DDIA",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "activate",
+            "ddia",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success();
+
+    let ddia_dir = task_dir.join("topics/ddia");
+    write_core_topic_artifacts(&ddia_dir);
+    complete_core_topic_stages(&repo, &task_dir);
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "ddia",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Try to create a second closeout debt.",
+        ])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn topic_await_reflection_rejects_unfinished_core_stages() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "early-closeout",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/early-closeout");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Try to await reflection before core learning is done.",
+        ])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("cannot await reflection"));
 }
 
 #[test]

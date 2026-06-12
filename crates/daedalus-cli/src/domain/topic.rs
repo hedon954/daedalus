@@ -9,6 +9,8 @@ pub enum TopicLifecycle {
     Active,
     /// 专题被阻塞。
     Blocked,
+    /// 主体学习完成，等待用户主动回顾和归档。
+    AwaitingReflection,
     /// 专题已完成。
     Completed,
     /// 专题已放弃。
@@ -24,6 +26,7 @@ impl TopicLifecycle {
             Self::Planned => "planned",
             Self::Active => "active",
             Self::Blocked => "blocked",
+            Self::AwaitingReflection => "awaiting-reflection",
             Self::Completed => "completed",
             Self::Abandoned => "abandoned",
             Self::Skipped => "skipped",
@@ -36,6 +39,7 @@ impl TopicLifecycle {
             "planned" => Some(Self::Planned),
             "active" => Some(Self::Active),
             "blocked" => Some(Self::Blocked),
+            "awaiting-reflection" => Some(Self::AwaitingReflection),
             "completed" => Some(Self::Completed),
             "abandoned" => Some(Self::Abandoned),
             "skipped" => Some(Self::Skipped),

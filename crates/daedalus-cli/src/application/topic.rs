@@ -183,11 +183,24 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
     let project_dir = options.project_dir;
     let topic_dir = workspace_fs::topic_dir_by_slug(&project_dir, &options.slug)?;
     let mut output_topic_dir = topic_dir.clone();
-    if options.lifecycle == TopicLifecycle::Completed {
-        validate_topic_completion(&topic_dir, &options.slug)?;
+    match options.lifecycle {
+        TopicLifecycle::Completed => validate_topic_completion(&topic_dir, &options.slug)?,
+        TopicLifecycle::AwaitingReflection => {
+            validate_topic_awaiting_reflection(&topic_dir, &options.slug)?
+        }
+        _ => {}
     }
     let project_state_path = state_toml::state_path(&project_dir);
     let mut project_doc = state_toml::load_state_doc(&project_state_path)?;
+    if options.lifecycle == TopicLifecycle::AwaitingReflection
+        && state_toml::awaiting_reflection_topic(&project_doc)
+            .as_deref()
+            .is_some_and(|slug| slug != options.slug)
+    {
+        return Err(DaedalusError::InvalidTopicLifecycleTransition(
+            "another topic is already awaiting reflection".to_owned(),
+        ));
+    }
     state_toml::set_project_topic_lifecycle(&mut project_doc, &options.slug, options.lifecycle)?;
     if state_toml::active_topic(&project_doc).as_deref() == Some(&options.slug) {
         state_toml::set_active_topic(&mut project_doc, "");
@@ -198,6 +211,7 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
             stage: "project".to_owned(),
             action: match options.lifecycle {
                 TopicLifecycle::Completed => "topic-complete",
+                TopicLifecycle::AwaitingReflection => "topic-await-reflection",
                 TopicLifecycle::Abandoned => "topic-abandon",
                 _ => "topic-close",
             }
@@ -219,6 +233,7 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
             stage: "topic".to_owned(),
             action: match options.lifecycle {
                 TopicLifecycle::Completed => "topic-complete",
+                TopicLifecycle::AwaitingReflection => "topic-await-reflection",
                 TopicLifecycle::Abandoned => "topic-abandon",
                 _ => "topic-close",
             }
@@ -257,10 +272,12 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
     if state_toml::active_topic_count(&project_doc) == 0 {
         state_toml::set_task_lifecycle(&mut project_doc, TaskLifecycle::Idle);
         state_toml::set_workspace_bucket(&mut project_doc, WorkspaceBucket::Projects);
-        state_toml::set_next_action(
-            &mut project_doc,
-            "当前没有 active topic；可以复盘 project，或用 `daedalus topic new` 启动新专题。",
-        );
+        let next_action = if state_toml::awaiting_reflection_topic_count(&project_doc) > 0 {
+            "当前没有 active topic，但存在 awaiting-reflection topic；可以用大块时间完成 closeout reflection，或用 `daedalus topic new` / `daedalus topic activate` 启动新专题。"
+        } else {
+            "当前没有 active topic；可以复盘 project，或用 `daedalus topic new` 启动新专题。"
+        };
+        state_toml::set_next_action(&mut project_doc, next_action);
         state_toml::save_state_doc(&project_state_path, &project_doc)?;
     }
 
@@ -277,11 +294,39 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
         Some(&project_dir),
         current_topic.as_deref(),
     )?;
+    match options.lifecycle {
+        TopicLifecycle::AwaitingReflection => workspace_fs::sync_closeout_workspace(
+            &options.repo_root,
+            Some(&project_dir),
+            Some(&topic_dir),
+        )?,
+        TopicLifecycle::Completed | TopicLifecycle::Abandoned => {
+            let pending = workspace_fs::pending_closeout_topic_dir(&options.repo_root)?;
+            let topic_dir_for_compare = if topic_dir.is_absolute() {
+                topic_dir.clone()
+            } else {
+                options.repo_root.join(&topic_dir)
+            };
+            if pending
+                .as_deref()
+                .is_some_and(|pending| pending == topic_dir_for_compare)
+            {
+                workspace_fs::sync_closeout_workspace(&options.repo_root, None, None)?;
+            }
+        }
+        _ => {}
+    }
+    let action = match options.lifecycle {
+        TopicLifecycle::Completed => "topic-complete",
+        TopicLifecycle::AwaitingReflection => "topic-await-reflection",
+        TopicLifecycle::Abandoned => "topic-abandon",
+        _ => "topic-close",
+    };
     Ok(TopicOutput {
         project_dir,
         topic_dir: output_topic_dir,
         slug: options.slug,
-        action: "topic-close".to_owned(),
+        action: action.to_owned(),
         state_md,
     })
 }
@@ -302,6 +347,26 @@ fn validate_topic_completion(topic_dir: &std::path::Path, slug: &str) -> Result<
     if !unfinished.is_empty() {
         return Err(DaedalusError::InvalidTopicLifecycleTransition(format!(
             "topic `{slug}` has unfinished stages: {}",
+            unfinished.join(", ")
+        )));
+    }
+    let issues = validate_topic_workspace(topic_dir, slug)?;
+    if !issues.is_empty() {
+        return Err(DaedalusError::WorkspaceValidationFailed(issues));
+    }
+    Ok(())
+}
+
+fn validate_topic_awaiting_reflection(topic_dir: &std::path::Path, slug: &str) -> Result<()> {
+    let topic_doc = state_toml::load_state_doc(&state_toml::state_path(topic_dir))?;
+    let unfinished: Vec<_> = state_toml::stages(&topic_doc)
+        .into_iter()
+        .filter(|stage| stage.id != "10-archivist" && stage.status != "done")
+        .map(|stage| format!("{} ({})", stage.id, stage.status))
+        .collect();
+    if !unfinished.is_empty() {
+        return Err(DaedalusError::InvalidTopicLifecycleTransition(format!(
+            "topic `{slug}` cannot await reflection before core stages are done: {}",
             unfinished.join(", ")
         )));
     }

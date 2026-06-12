@@ -8,9 +8,9 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 
 - Use Chinese for project-facing learning artifacts unless the user asks otherwise.
 - Treat filesystem artifacts as durable memory. Do not let chat become the only learning record.
-- Keep WIP strict: `workspaces/projects` may contain many stable projects, but `workspaces/.daedalus/current.toml` may point to at most one active project and one active topic.
-- Resolve active learning context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading lifecycle state. The repository root intentionally does not own `.daedalus/state.toml`.
-- Treat project/topic `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` and `current-topic` are symlink projections for humans and agents.
+- Keep WIP strict: `workspaces/projects` may contain many stable projects, but `workspaces/.daedalus/current.toml` may point to at most one active topic and at most one pending closeout topic. `current-project` may remain as the selected project even when the project is idle.
+- Resolve active learning context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading lifecycle state. Resolve pending closeout context from `pending_closeout_topic` or `workspaces/closeout-topic`. The repository root intentionally does not own `.daedalus/state.toml`.
+- Treat project/topic `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` is the selected project, `current-topic` is the active topic projection, and `closeout-project` / `closeout-topic` are pending reflection projections.
 - Treat `workspaces/backlog` as pre-learning candidate space: one Markdown file per future study idea, no `.daedalus` lifecycle state, no active-learning artifacts, and no promotion without gatekeeper.
 - Use `system/prompts/common/backlog-capture.md` when the user only wants to save a future study idea; use `system/prompts/common/gatekeeper.md` only when deciding whether it should enter active learning.
 - Preserve goals, decisions, open questions, todo state, verified conclusions, risks, and next actions. Do not turn summaries into chat logs.
@@ -27,6 +27,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - Keep prompt files concise and composable.
 - Avoid broad abstractions before a concrete learning workflow requires them.
 - Prefer deterministic Rust code under `crates/` for deterministic logic.
+- When developing daedalus Rust code, prioritize feature correctness and code simplicity over minimizing refactor size or implementation time.
 - When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed.
 - Commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
 - Tests should assert stable behavior, not incidental wording. For errors, prefer variant, category, or presence unless exact text is public contract.

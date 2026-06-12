@@ -12,6 +12,7 @@ The CLI manages structure, state, indexes, and validation. It does not generate 
 daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>
 daedalus topic new <topic-slug> --title <topic-title>
 daedalus topic activate <topic-slug>
+daedalus topic await-reflection <topic-slug> --reason <reason>
 daedalus topic complete <topic-slug> --reason <reason>
 daedalus task complete --reason <reason>
 ```
@@ -19,7 +20,8 @@ daedalus task complete --reason <reason>
 Interpretation:
 
 ```text
-topic complete closes one topic.
+topic await-reflection releases the daily active slot after stages 01-09 are done, while preserving one pending closeout debt.
+topic complete closes one topic after user closeout retrospective and knowledge archival are done.
 task complete closes the whole learning project.
 ```
 

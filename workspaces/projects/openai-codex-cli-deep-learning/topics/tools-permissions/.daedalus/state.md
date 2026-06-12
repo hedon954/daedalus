@@ -5,16 +5,16 @@
 ## 当前状态
 
 - Topic：`tools-permissions` - 工具系统与权限系统
-- 生命周期：`active`
+- 生命周期：`awaiting-reflection`
 - 当前阶段：`10-archivist`
 - 状态：`active`
 - 下一步：请先由用户填写 `reflection/closeout.md`：写下真实理解变化、证据、可迁移模式、不可照搬边界和仍需 challenge 的问题。
 
 ## 枚举约束
 
-- `topic.lifecycle` 只能是：`planned`、`active`、`blocked`、`completed`、`abandoned`、`skipped`。
+- `topic.lifecycle` 只能是：`planned`、`active`、`blocked`、`awaiting-reflection`、`completed`、`abandoned`、`skipped`。
 - `stage.status` 只能是：`pending`、`active`、`blocked`、`paused`、`done`。
-- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`rollback`、`topic-complete`、`topic-abandon`。
+- `transition.action` 只能是：`init`、`enter`、`complete`、`block`、`resume`、`rollback`、`topic-await-reflection`、`topic-complete`、`topic-abandon`。
 - `transition.approval_source` 只能是：`user-confirmed`、`artifact-equivalent`、`stage-not-applicable`。
 - Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
 
@@ -33,7 +33,7 @@
 
 ## 缺失产物
 
-- `reflection/closeout.md` 需要用户填写后再进入知识库归档。
+- 无
 
 ## 阻塞项
 
@@ -41,7 +41,7 @@
 
 ## 最近状态流转
 
-> 共 26 条状态流转；下面显示最近 10 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
+> 共 27 条状态流转；下面显示最近 10 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
 
 - `2026-05-16 21:49:16` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `enter`：开始 08-demo-coder：按 guides/08-demo-coder/README.md 的 slice 地图实现 Phase 1 mini demo。
 - `2026-06-09 00:08:02` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `complete`：Phase 1 mini demo 已完成：demo/README.md 已补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移注意事项；cargo test 通过 72 个默认测试。
@@ -52,6 +52,7 @@
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `complete`：notes/09-biz-solver/README.md 已输出业务迁移方案，覆盖现实压力、第一性原理、迁移设计、取舍和验收标准。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-archivist` 执行 `enter`：进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。
 - `2026-06-12 00:00:00` 由 `agent` 对 `10-archivist` 执行 `rollback`：撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-archivist` 回到 active。
+- `2026-06-12 09:39:39` 由 `daedalus-cli` 对 `topic` 执行 `topic-await-reflection`：主体学习、demo、业务迁移和测试验证已完成；用户将在大块时间里完成 closeout reflection 后再归档知识库。
 
 ## 下一步 CLI 建议
 

@@ -18,8 +18,8 @@ Repo learning is a long-running, filesystem-first coaching process. The user lea
 Non-negotiables:
 
 - Keep stable projects under `workspaces/projects`; active context is projected through `workspaces/.daedalus/current.toml`, `workspaces/current-project`, and `workspaces/current-topic`.
-- Resolve active context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading project/topic state. The repo root intentionally has no `.daedalus/state.toml`.
-- Keep at most one active learning project and one active topic at a time.
+- Resolve active context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading project/topic state. Resolve pending closeout from `pending_closeout_topic` or `workspaces/closeout-topic`. The repo root intentionally has no `.daedalus/state.toml`.
+- Keep at most one active topic and at most one pending closeout topic. `current-project` may remain as the selected project even when no topic is active.
 - Prefer workspace artifacts over chat memory.
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
@@ -61,6 +61,12 @@ topics/<slug>/demo/
 ```
 
 Do not write topic stage progress into project root. Do not treat project root `.daedalus/state.toml` as a 10-stage task state.
+
+Lifecycle distinction:
+
+- `active` means the topic is the daily learning WIP.
+- `awaiting-reflection` means stages 01-09 are done and the topic is waiting for user closeout reflection; it does not occupy the active learning slot.
+- `completed` means closeout reflection, Agent challenge, user confirmation, and knowledge archival are complete.
 
 ## Prompt Loading Strategy
 
