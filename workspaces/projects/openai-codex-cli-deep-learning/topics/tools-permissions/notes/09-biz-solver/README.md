@@ -2,7 +2,7 @@
 
 ## Learning Navigation
 
-- Final artifact: business transfer note + knowledge-base entry
+- Final artifact: business transfer note + user closeout reflection before any knowledge-base entry
 - Source evidence: Codex tool / approval / sandbox 源码阅读，mini demo Phase 1/2 实现与测试
 - Current result: 将 `tools-permissions` topic 的学习结果迁移为自有 Agent/CLI 的安全命令执行设计
 

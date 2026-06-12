@@ -21,15 +21,16 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 | [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md) | 08 阶段编码子地图，按 slice 推进 Phase 1/2 demo | 已验证 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 已验证 |
 | [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 将权限/沙箱模式迁移到业务问题 | 已验证 |
-| [`knowledge-base entry`](../../../../../../knowledge-base/02-ai-engineering/local-agent-command-execution.md) | 已验证知识归档 | 已验证 |
+| [`reflection/closeout.md`](../reflection/closeout.md) | 用户主动回顾：理解变化、证据、迁移边界和待 challenge 问题 | 待补充 |
+| `knowledge-base entry` | 通过用户 closeout review 后再结构化归档 | 待补充 |
 
 ## Current Position
 
-- 当前阶段：topic closeout 后的 artifact consolidation。
-- 当前目标：把早期散落在 `guides/*.md` 和 `notes/*.md` 的产物收拢到对应 stage 目录。
-- 当前障碍：目录迁移后需要确保 state、artifact index、todo、outcome-map 和阶段 README 链接一致。
-- 当前动作服务的产物：可恢复的 learning map、阶段目录入口、最终归档质量。
-- 当前光标：目录整理完成后，回到 topic 级复盘或下一个学习 topic。
+- 当前阶段：`10-archivist` closeout reflection。
+- 当前目标：先由用户填写 `reflection/closeout.md`，再由 Agent challenge、补外部参照、整理链接。
+- 当前障碍：此前知识库条目由 Agent 生成，缺少用户主动回顾，因此不能作为最终知识库闭环。
+- 当前动作服务的产物：用户 closeout reflection 和 reviewed human understanding。
+- 当前光标：不是继续写 demo；先完成用户回顾，再决定 knowledge-base 归档。
 
 ## Artifact Dependency Graph
 
@@ -41,7 +42,8 @@ question-roadmap
   -> demo/design
   -> demo/README
   -> business-application
-  -> knowledge-base entry
+  -> user closeout reflection
+  -> reviewed knowledge-base entry
 ```
 
 ## Open Gaps
@@ -68,7 +70,9 @@ question-roadmap
 - [x] Slice 12 Hardening：收紧 profile 路径转义、`SandboxProfile::NoSandbox` 防御语义和上层 `ToolRuntime + OsExecutionRunner` smoke 验收。
 - [x] Slice 13 Ratatui Agent CLI REPL 基础 UI：真实终端交互、ReAct event stream、thinking/text delta 合并、Events 按视觉行滚动到底部和 approval once/session/reject 面板已手动验证满足基本诉求。
 - [x] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
-- [ ] Business Transfer：将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
+- [x] Business Transfer：已将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
+- [ ] Closeout Reflection：用户完成 `reflection/closeout.md`。
+- [ ] Knowledge Archival：在用户 closeout 通过 review 后，再写入 `knowledge-base/`。
 
 ## Critical Lens
 
@@ -99,7 +103,7 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 
 ## Why This Step Matters
 
-当前步骤不再服务于继续扩展 demo UI。下一步只服务于业务迁移和知识归档：把 `demo/README.md` 中验证过的安全执行模式转成业务设计建议，并沉淀为可复用知识。
+当前步骤不再服务于继续扩展 demo UI。下一步只服务于用户主动回顾：把 `demo/README.md` 和 `notes/09-biz-solver/README.md` 中验证过的内容，转成你自己的理解变化、证据、取舍和迁移边界。
 
 ## Stop Rules
 

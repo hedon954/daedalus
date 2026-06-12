@@ -11,6 +11,7 @@
 | [`.daedalus/validation-log.md`](validation-log.md) | all | 记录 daedalus 教学引导效果与改进点 | 草稿 |
 | [`guides/`](../guides) | all | Agent 生成的行动指南与验收清单 | 草稿 |
 | [`notes/`](../notes) | all | 用户亲自实践后的学习笔记 | 草稿 |
+| [`reflection/closeout.md`](../reflection/closeout.md) | 10-archivist | 用户完成 topic 后的主动回顾总结，是进入 knowledge-base 前的必要证据 | 草稿 |
 | [`guides/02-repo-scout/README.md`](../guides/02-repo-scout/README.md) | 02-repo-scout | 候选仓库比较、风险提示和源码准备建议的阶段入口 | 草稿 |
 | [`notes/03-socratic-coach/README.md`](../notes/03-socratic-coach/README.md) | 03-socratic-coach | 用户问题路线图、回答和阅读假设的阶段入口 | 草稿 |
 | [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 04-debugger-guide | 本地运行、调试和用户观察证据的阶段入口 | 草稿 |

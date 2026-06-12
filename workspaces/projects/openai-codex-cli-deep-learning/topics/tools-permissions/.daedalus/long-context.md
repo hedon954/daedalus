@@ -49,13 +49,13 @@
 - `06-code-reader` 已完成核心专题收敛：`auth/approval/sandbox` 已转化为 demo 的 approval、execution、retry 不变量。
 - `demo/design.md` 已从 draft 收敛为 architecture blueprint，核心数据结构、状态机、事件协议和验收用例已有设计；当前 `08-demo-coder` 已完成 Phase 1/2，包括真实 OS sandbox runner 和真人 TUI approval UI。
 - `09-biz-solver` 已输出 `notes/09-biz-solver/README.md`，把安全本地命令执行链路迁移为业务 Agent/CLI 设计方案。
-- `10-archivist` 已新增 `knowledge-base/02-ai-engineering/local-agent-command-execution.md`，还需要通过 daedalus state/topic lifecycle 做最终关闭校验。
+- `10-archivist` 已回滚为 active：当前不能使用 Agent 生成的知识库条目替代用户总结。下一步需要用户先完成 `reflection/closeout.md`，再由 Agent challenge、补外部参照、组织链接，并在用户确认后决定是否进入 `knowledge-base/`。
 
 ## 恢复上下文提示
 
-- 当前机器状态：`08-demo-coder`、`09-biz-solver` 与 `10-archivist` 均已有完成产物；当前收口重点是确保 guides / notes 按 stage 目录恢复一致。`04-debugger-guide`、`05-arch-analyzer`、`06-code-reader`、`07-demo-architecture` 已完成；`05-arch-analyzer` 已用 `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md` 作为架构专题产物。
+- 当前机器状态：`08-demo-coder` 与 `09-biz-solver` 已有完成产物；`10-archivist` 尚未完成，因为用户还没有写 closeout reflection。当前收口重点是先让用户完成 `reflection/closeout.md`，再进行 challenge、外部参照和知识库归档。`04-debugger-guide`、`05-arch-analyzer`、`06-code-reader`、`07-demo-architecture` 已完成；`05-arch-analyzer` 已用 `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md` 作为架构专题产物。
 - 当前最重要的两份 notes：
   - `notes/05-arch-analyzer/01-codex-agent-loop-architecture.md`：Codex agent loop、架构分层、工具系统、权限审批、沙箱和事件流。
   - `notes/06-code-reader/01-context-and-compaction.md`：上下文管理、prompt view、工具结果回灌、compact、rollout 恢复和重点掌握项。
 - 当前阶段入口：`guides/08-demo-coder/README.md`；demo 实现和阶段 notes/guides 以 `topics/tools-permissions` 下的 `demo/`、`notes/08-demo-coder/`、`guides/08-demo-coder/` 为准。
-- 当前导航：不是继续泛读 Codex 权限系统，也不是继续扩展完整 Codex TUI；`auth/approval/sandbox` 已收敛成 demo 不变量，`08-demo-coder` Phase 2 已完成。下一步是最终状态流转、topic complete、项目级 evolution 回顾和 README 重写。
+- 当前导航：不是继续泛读 Codex 权限系统，也不是继续扩展完整 Codex TUI；`auth/approval/sandbox` 已收敛成 demo 不变量，`08-demo-coder` Phase 2 已完成。下一步是用户主动 closeout reflection，而不是让 Agent 直接生成知识库。

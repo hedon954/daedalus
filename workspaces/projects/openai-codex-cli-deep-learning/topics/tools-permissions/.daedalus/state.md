@@ -5,10 +5,10 @@
 ## 当前状态
 
 - Topic：`tools-permissions` - 工具系统与权限系统
-- 生命周期：`completed`
+- 生命周期：`active`
 - 当前阶段：`10-archivist`
-- 状态：`done`
-- 下一步：所有阶段已完成；复核归档产物并关闭学习任务。
+- 状态：`active`
+- 下一步：请先由用户填写 `reflection/closeout.md`：写下真实理解变化、证据、可迁移模式、不可照搬边界和仍需 challenge 的问题。
 
 ## 枚举约束
 
@@ -29,11 +29,11 @@
 - `07-demo-architecture`: 设计 Repo Mini Demo (done)
 - `08-demo-coder`: 实现 Repo Mini Demo (done)
 - `09-biz-solver`: 将 Repo 学习迁移到业务问题 (done)
-- `10-archivist`: 闭环 Repo 学习任务 (done)
+- `10-archivist`: 闭环 Repo 学习任务 (active)
 
 ## 缺失产物
 
-- 无
+- `reflection/closeout.md` 需要用户填写后再进入知识库归档。
 
 ## 阻塞项
 
@@ -41,7 +41,7 @@
 
 ## 最近状态流转
 
-> 共 27 条状态流转；下面显示最近 10 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
+> 共 26 条状态流转；下面显示最近 10 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
 
 - `2026-05-16 21:49:16` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `enter`：开始 08-demo-coder：按 guides/08-demo-coder/README.md 的 slice 地图实现 Phase 1 mini demo。
 - `2026-06-09 00:08:02` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `complete`：Phase 1 mini demo 已完成：demo/README.md 已补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移注意事项；cargo test 通过 72 个默认测试。
@@ -50,9 +50,8 @@
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `complete`：Phase 2 mini demo 已完成：OsExecutionRunner 接入 sandbox-exec，ratatui Agent CLI REPL 支持持续 streaming、approval 面板和无副作用 approval-test 验收；demo README 已同步。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `enter`：进入业务迁移：将 Codex 工具/权限/沙箱链路转化为自有 Agent/CLI 的安全本地命令执行方案。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `complete`：notes/09-biz-solver/README.md 已输出业务迁移方案，覆盖现实压力、第一性原理、迁移设计、取舍和验收标准。
-- `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-archivist` 执行 `enter`：进入知识归档：将已验证的本地 Agent 命令执行安全模式沉淀到 knowledge-base。
-- `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-archivist` 执行 `complete`：knowledge-base/02-ai-engineering/local-agent-command-execution.md 已归档可复用模式，artifact-index 与 long-context 已更新。
-- `2026-06-10 03:27:52` 由 `daedalus-cli` 对 `topic` 执行 `topic-complete`：Codex tools-permissions topic 已完成：源码阅读、mini demo Phase 1/2、业务迁移和知识归档均已闭环。
+- `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-archivist` 执行 `enter`：进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。
+- `2026-06-12 00:00:00` 由 `agent` 对 `10-archivist` 执行 `rollback`：撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-archivist` 回到 active。
 
 ## 下一步 CLI 建议
 

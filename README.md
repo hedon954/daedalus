@@ -73,6 +73,7 @@ flowchart LR
 .daedalus/todo.md            当前路径看板
 guides/                      Agent 给用户的行动指南
 notes/                       用户实践和思考后的学习证据
+reflection/                  用户完成 topic 后的主动回顾总结
 demo/                        可运行、可测试、可讲解的 mini demo
 notes/09-biz-solver/         业务迁移方案
 knowledge-base/              长期知识归档
@@ -198,6 +199,7 @@ workspaces/projects/<project-name>/
         reviews/
       guides/
       notes/
+      reflection/
       demo/
 ```
 
@@ -212,29 +214,25 @@ Review 是挂载在 topic/project 上的独立生命周期，不重新打开 lea
 - 生成复习 session。
 - 更新 mastery map。
 
-Knowledge archival 不是 AI 从 notes 自动提取。`notes/` 是学习过程证据；进入 `knowledge-base/` 前，用户必须完成 topic closeout retrospective。AI 负责提问、挑战、外部最佳实践对比、链接和一致性检查，不能代写用户理解。
-
 ```mermaid
 flowchart LR
-    Notes["human rough notes"] --> Review["AI challenge / review"]
-    Review --> Retro["human closeout retrospective"]
-    Retro --> Compare["AI links / best-practice comparison"]
-    Compare --> Entry["knowledge-base entry"]
-    Entry --> CLI["template / index / link-check / validate"]
+    Material["Learning material"] --> Notes["Human rough notes"]
+    Notes --> Challenge["AI challenge / external references"]
+    Challenge --> Reflection["Human reflection/closeout.md"]
+    Reflection --> Organize["AI organize / link / consistency check"]
+    Organize --> KB["knowledge-base"]
 ```
 
-只有经过用户主动回顾、AI challenge、证据校准和迁移边界确认的理解，才应该进入 `knowledge-base/`。
+## Current Learning Sample
 
-## Current Verified Sample
-
-第一个完整闭环样本是：
+当前主样本是：
 
 ```text
 workspaces/projects/openai-codex-cli-deep-learning
 topic: tools-permissions
 ```
 
-这个 topic 已完成：
+这个 topic 已完成源码学习、demo 和业务迁移，但还没有完成用户 closeout reflection，因此尚不能进入最终知识库归档：
 
 - Codex CLI 工具/权限/沙箱源码阅读。
 - 以 `CommandRequest -> ApprovalRequirement -> sandbox first -> retry -> event -> observation` 为核心的 mini demo。
@@ -242,7 +240,7 @@ topic: tools-permissions
 - macOS `sandbox-exec` backed `OsExecutionRunner`。
 - `ratatui` Agent CLI REPL，支持 prompt、streaming transcript、approval once/session/reject 和无副作用 `echo approval-test` 验收。
 - 业务迁移方案：安全本地命令执行模式。
-- 知识库条目：[local-agent-command-execution.md](knowledge-base/02-ai-engineering/local-agent-command-execution.md)。
+- 待完成：用户填写 `reflection/closeout.md`，Agent review / challenge / 补外部参照，用户确认后再归档 `knowledge-base/`。
 
 验证：
 

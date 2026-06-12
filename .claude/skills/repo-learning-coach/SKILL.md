@@ -81,6 +81,7 @@ At the start of resume, code-reading, stage transition, or implementation guidan
 
 ```markdown
 ## Learning Navigation
+
 - Final artifact:
 - Current stage:
 - Current gap:
@@ -88,6 +89,7 @@ At the start of resume, code-reading, stage transition, or implementation guidan
 - After this:
 
 ## Critical Lens
+
 - Source assumption under test:
 - Possible limitation / failure mode:
 - Faithful imitation / transfer decision:
@@ -108,7 +110,7 @@ For "continue", "resume", or "restart this round":
 
 Agent-only pre-reading belongs in `guides/` as a pending reading map.
 
-`notes/` are human-owned. If the user asks the Agent to create new notes正文 or summarize directly into notes, the Agent must refuse to ghostwrite and instead provide questions, an empty template, or `AI Questions` / `AI Challenge` blocks. After the user writes rough notes, the Agent may review, challenge, link, and organize without replacing the user's understanding.
+`notes/` are human-owned. If the user asks the Agent to create new notes or summarize directly into notes, the Agent must refuse to ghostwrite and instead provide questions, an empty template, or `AI Questions` / `AI Challenge` blocks. After the user writes rough notes, the Agent may review, challenge, link, and organize without replacing the user's understanding.
 
 ## Implementation Practice Boundary
 
@@ -145,18 +147,18 @@ Topic files in `guides/` and `notes/` use ordered prefixes by default: `01-`, `0
 
 ## Stage Index
 
-| Stage | Prompt | Purpose |
-| --- | --- | --- |
-| 1 Goal | `system/prompts/repo/phase1-exploration/01-goal-aligner.md` | clarify real-world problem, output, acceptance |
-| 2 Repo | `system/prompts/repo/phase1-exploration/02-repo-scout.md` | compare at most 3 repos and choose one |
-| 3 Questions | `system/prompts/repo/phase1-exploration/03-socratic-coach.md` | generate production-driven learning questions |
-| 4 Run | `system/prompts/repo/phase2-learning/04-debugger-guide.md` | run/debug core path and create runbook |
-| 5 Architecture | `system/prompts/repo/phase2-learning/05-arch-analyzer.md` | map boundaries, invariants, trade-offs |
-| 6 Code | `system/prompts/repo/phase2-learning/06-code-reader.md` | read code only for blocked artifact decisions |
-| 7 Demo Design | `system/prompts/repo/phase3-practice/07-demo-architecture.md` | finalize mini demo architecture and verification |
-| 8 Demo Code | `system/prompts/repo/phase3-practice/08-demo-coder.md` | coach user-led implementation slices |
-| 9 Business | `system/prompts/repo/phase3-practice/09-biz-solver.md` | transfer verified pattern to the user problem |
-| 10 Archive | `system/prompts/repo/phase4-closing/10-archivist.md` plus common summarize/export/compress prompts | archive verified learning and close |
+| Stage          | Prompt                                                                                             | Purpose                                          |
+| -------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 1 Goal         | `system/prompts/repo/phase1-exploration/01-goal-aligner.md`                                        | clarify real-world problem, output, acceptance   |
+| 2 Repo         | `system/prompts/repo/phase1-exploration/02-repo-scout.md`                                          | compare at most 3 repos and choose one           |
+| 3 Questions    | `system/prompts/repo/phase1-exploration/03-socratic-coach.md`                                      | generate production-driven learning questions    |
+| 4 Run          | `system/prompts/repo/phase2-learning/04-debugger-guide.md`                                         | run/debug core path and create runbook           |
+| 5 Architecture | `system/prompts/repo/phase2-learning/05-arch-analyzer.md`                                          | map boundaries, invariants, trade-offs           |
+| 6 Code         | `system/prompts/repo/phase2-learning/06-code-reader.md`                                            | read code only for blocked artifact decisions    |
+| 7 Demo Design  | `system/prompts/repo/phase3-practice/07-demo-architecture.md`                                      | finalize mini demo architecture and verification |
+| 8 Demo Code    | `system/prompts/repo/phase3-practice/08-demo-coder.md`                                             | coach user-led implementation slices             |
+| 9 Business     | `system/prompts/repo/phase3-practice/09-biz-solver.md`                                             | transfer verified pattern to the user problem    |
+| 10 Archive     | `system/prompts/repo/phase4-closing/10-archivist.md` plus common summarize/export/compress prompts | archive verified learning and close              |
 
 ## Resume Checklist
 

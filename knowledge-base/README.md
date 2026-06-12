@@ -1,6 +1,33 @@
 # Knowledge Base
 
-这里保存经过校准的可复用知识。workspace 是学习现场，knowledge-base 是能力系统。
+这里保存经过用户主动回顾、AI challenge 和结构化校准后的可复用知识。workspace 是学习现场，knowledge-base 是能力系统。
+
+## 归档流程
+
+`knowledge-base/` 不是 Agent 从 notes 自动提取出来的总结。进入这里之前，用户必须先在 topic 的 `reflection/closeout.md` 中完成主动回顾；Agent 的职责是提问、challenge、搜索外部资料、补链接、检查一致性，并在用户确认后做结构化归档。
+
+```mermaid
+flowchart TD
+    Material["Learning material"] --> Study["Human studies"]
+    Study --> Notes["Human rough notes<br/>topics/<topic>/notes/"]
+    Notes --> Challenge["AI challenge / coach<br/>clarity, evidence, contradiction"]
+    Challenge --> Revise["Human revises notes"]
+    Revise --> Closeout["Human closeout reflection<br/>topics/<topic>/reflection/closeout.md"]
+    Closeout --> Compare["AI external references<br/>public sources, best practices, prior knowledge"]
+    Compare --> Gate{"Reviewed and confirmed<br/>by human?"}
+    Gate -->|No| Closeout
+    Gate -->|Yes| Structure["AI structure / link / format<br/>template, taxonomy, backlinks"]
+    Structure --> KB["knowledge-base/"]
+    KB --> Validate["daedalus knowledge<br/>index / validate / link-check"]
+```
+
+这个流程的核心边界：
+
+- 用户负责 meaning：主动回顾、总结判断、表达理解。
+- Agent 负责 structure：提问、挑战、外部参照、结构化、链接和校验。
+- `notes/` 是过程证据，不是知识库来源的充分条件。
+- `reflection/closeout.md` 是 topic 级闭环产物，是进入知识库前的必要条件。
+- `knowledge-base/` 只保存 reviewed human retrospective understanding。
 
 目录含义：
 

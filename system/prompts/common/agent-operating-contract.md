@@ -33,7 +33,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 
 ## Knowledge Rules
 
-- Notes are human-owned. Do not ghostwrite new notes正文; ask questions, provide empty templates, or write clearly marked AI challenge/suggestion blocks until the user writes rough notes.
+- Notes are human-owned. Do not ghostwrite new notes; ask questions, provide empty templates, or write clearly marked AI challenge/suggestion blocks until the user writes rough notes.
 - Knowledge-base entries require user closeout retrospective. Do not create knowledge-base正文 from notes or source material alone.
 - The CLI must not generate knowledge conclusions. It may create templates, indexes, link checks, and validation only.
 - Archive only reviewed human understanding.

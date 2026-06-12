@@ -56,8 +56,8 @@ required_artifacts = ["notes/09-biz-solver/README.md"]
 [[stages]]
 id = "10-archivist"
 title = "闭环 Repo 学习任务"
-status = "done"
-required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md"]
+status = "active"
+required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md", "reflection/closeout.md"]
 
 [[transitions]]
 stage = "01-goal-aligner"
@@ -233,27 +233,20 @@ stage = "10-archivist"
 action = "enter"
 timestamp = "2026-06-10 03:27:21"
 actor = "daedalus-cli"
-reason = "进入知识归档：将已验证的本地 Agent 命令执行安全模式沉淀到 knowledge-base。"
+reason = "进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。"
 
 [[transitions]]
 stage = "10-archivist"
-action = "complete"
-timestamp = "2026-06-10 03:27:21"
-actor = "daedalus-cli"
-reason = "knowledge-base/02-ai-engineering/local-agent-command-execution.md 已归档可复用模式，artifact-index 与 long-context 已更新。"
-
-[[transitions]]
-stage = "topic"
-action = "topic-complete"
-timestamp = "2026-06-10 03:27:52"
-actor = "daedalus-cli"
-reason = "Codex tools-permissions topic 已完成：源码阅读、mini demo Phase 1/2、业务迁移和知识归档均已闭环。"
+action = "rollback"
+timestamp = "2026-06-12 00:00:00"
+actor = "agent"
+reason = "撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-archivist` 回到 active。"
 
 [topic]
 slug = "tools-permissions"
 title = "工具系统与权限系统"
 kind = "repo-learning-topic"
 parent_project = "../.."
-lifecycle = "completed"
+lifecycle = "active"
 current_phase = "10-archivist"
-next_action = "所有阶段已完成；复核归档产物并关闭学习任务。"
+next_action = "请先由用户填写 `reflection/closeout.md`：写下真实理解变化、证据、可迁移模式、不可照搬边界和仍需 challenge 的问题。"
