@@ -256,10 +256,10 @@ sequenceDiagram
 当前验证结果：
 
 ```text
-cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
+cargo test --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
 -> 63 passed, 3 ignored
 
-cargo fmt --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml --check
+cargo fmt --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml --check
 -> passed
 
 git diff --check

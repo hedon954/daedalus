@@ -501,7 +501,7 @@ expected:
 手动验证命令：
 
 ```bash
-cd workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo
+cd workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo
 cargo test os_execution_runner -- --nocapture
 cargo run --example os_execution_runner
 cargo run --example os_tool_runtime

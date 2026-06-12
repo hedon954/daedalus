@@ -115,7 +115,7 @@ flowchart LR
 进入 demo 目录：
 
 ```bash
-cd workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo
+cd workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo
 cargo test
 ```
 

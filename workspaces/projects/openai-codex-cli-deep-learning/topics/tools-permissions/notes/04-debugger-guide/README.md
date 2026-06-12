@@ -76,7 +76,7 @@
 
 ### 配置修正
 
-- 用户反馈：按上一版 daedalus-root 配置，在单独打开 `codex-rs` 时会得到重复路径：`codex-rs/workspaces/02-learning/.../codex-rs`。
+- 用户反馈：按上一版 daedalus-root 配置，在单独打开 `codex-rs` 时会得到重复路径：`codex-rs/<old-daedalus-workspace-path>/codex-rs`。
 - 修正结论：后续 repo 学习应单独打开源码 repo 或其 Rust workspace 根目录；`launch.json` 应放在当前 repo 根目录，而不是 daedalus 根目录。
 - 已写入配置：`source/codex/codex-rs/.vscode/launch.json`。
 - 新配置假设：`${workspaceFolder}` 等于 `source/codex/codex-rs`，因此 `cwd` 使用 `${workspaceFolder}`，日志目录使用 `${workspaceFolder}/.codex-log`。

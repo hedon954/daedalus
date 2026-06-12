@@ -18,6 +18,7 @@ Repo learning is a long-running, filesystem-first coaching process. The user lea
 Non-negotiables:
 
 - Keep stable projects under `workspaces/projects`; active context is projected through `workspaces/.daedalus/current.toml`, `workspaces/current-project`, and `workspaces/current-topic`.
+- Resolve active context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading project/topic state. The repo root intentionally has no `.daedalus/state.toml`.
 - Keep at most one active learning project and one active topic at a time.
 - Prefer workspace artifacts over chat memory.
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
@@ -164,11 +165,12 @@ Topic files in `guides/` and `notes/` use ordered prefixes by default: `01-`, `0
 
 When resuming long-running work:
 
-1. Read project `.daedalus/project-map.md`, `.daedalus/topic-board.md`, and state.
-2. Read active topic `.daedalus/outcome-map.md`, `.daedalus/todo.md`, and `.daedalus/long-context.md`.
-3. Read relevant stage `guides/<stage-id>/README.md` or `notes/<stage-id>/README.md`.
-4. Verify implementation status from current code/tests when status matters.
-5. Treat "next action" as the next coaching question unless the user asks for direct execution.
+1. Resolve active project/topic from `workspaces/.daedalus/current.toml` or `workspaces/current-topic`; do not infer from repo root.
+2. Read project `.daedalus/project-map.md`, `.daedalus/topic-board.md`, and state.
+3. Read active topic `.daedalus/outcome-map.md`, `.daedalus/todo.md`, and `.daedalus/long-context.md`.
+4. Read relevant stage `guides/<stage-id>/README.md` or `notes/<stage-id>/README.md`.
+5. Verify implementation status from current code/tests when status matters.
+6. Treat "next action" as the next coaching question unless the user asks for direct execution.
 
 ## Rules
 

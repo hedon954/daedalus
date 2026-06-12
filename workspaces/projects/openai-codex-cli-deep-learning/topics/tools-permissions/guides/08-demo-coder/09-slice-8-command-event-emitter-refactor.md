@@ -144,7 +144,7 @@ return Rejected
 验收：
 
 ```text
-cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
+cargo test --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
 ```
 
 ### Step 2: Introduce `run_execution_attempt`

@@ -41,7 +41,7 @@ Interpretation:
 state complete <stage> completes the active topic's stage unless --topic is provided.
 ```
 
-If unsure which topic is active, read project `.daedalus/topic-board.md` and `.daedalus/state.toml` before running lifecycle commands.
+If unsure which topic is active, first resolve the project/topic from `workspaces/.daedalus/current.toml` or `workspaces/current-topic`, then read project `.daedalus/topic-board.md` and project/topic `.daedalus/state.toml` before running lifecycle commands.
 
 ## Render And Validate
 

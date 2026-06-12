@@ -53,7 +53,7 @@ flowchart TD
 验证命令：
 
 ```bash
-cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
+cargo test --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
 ```
 
 最新结果：65 passed，3 ignored。

@@ -143,7 +143,7 @@ source/codex/codex-rs/.vscode/launch.json
 ### 常见问题
 
 - 如果 TUI 画面在 Debug Console 里乱码，说明没有用 terminal 启动；改用 integrated/external terminal。
-- 如果出现路径重复，例如 `codex-rs/workspaces/02-learning/.../codex-rs`，说明当前窗口已经打开在 `codex-rs`，但配置仍按 daedalus 根目录拼路径；应使用本节这种 `cwd: "${workspaceFolder}"` 的配置。
+- 如果出现路径重复，例如 `codex-rs/<old-daedalus-workspace-path>/codex-rs`，说明当前窗口已经打开在 `codex-rs`，但配置仍按 daedalus 根目录拼路径；应使用本节这种 `cwd: "${workspaceFolder}"` 的配置。
 - 如果启动后停在登录或认证流程，这是预期现象；先用断点验证配置和入口链路，不必立刻完成真实模型调用。
 - 如果断点没有命中，先确认正在 debug 的 binary 是 `codex`，不是 `codex-tui` 或 `codex-exec`。
 - 如果只想验证交互式入口，不要传 `exec` subcommand；不带 subcommand 才会走 TUI。

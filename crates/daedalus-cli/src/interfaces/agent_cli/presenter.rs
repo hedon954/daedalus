@@ -533,7 +533,9 @@ fn print_text_error(error: &DaedalusError) {
         DaedalusError::InvalidTaskLifecycleTransition(message) => {
             eprintln!("error: invalid task lifecycle transition");
             eprintln!("detail: {message}");
-            eprintln!("next: inspect .daedalus/state.toml and run daedalus validate");
+            eprintln!(
+                "next: inspect workspaces/.daedalus/current.toml plus the active project/topic .daedalus/state.toml, then run daedalus validate"
+            );
         }
         DaedalusError::TaskLifecycleLocationMismatch(message) => {
             eprintln!("error: task lifecycle location mismatch");
@@ -602,7 +604,7 @@ fn print_json_error(error: &DaedalusError) {
             "ok": false,
             "error": "invalid_task_lifecycle_transition",
             "detail": message,
-            "next": "inspect .daedalus/state.toml and run daedalus validate"
+            "next": "inspect workspaces/.daedalus/current.toml plus the active project/topic .daedalus/state.toml, then run daedalus validate"
         }),
         DaedalusError::TaskLifecycleLocationMismatch(message) => json!({
             "ok": false,

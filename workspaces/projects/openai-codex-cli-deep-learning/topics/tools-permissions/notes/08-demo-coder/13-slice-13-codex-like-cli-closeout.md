@@ -215,7 +215,7 @@ python /tmp/calc.py
 确定性测试：
 
 ```bash
-cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2
+cargo test --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2
 ```
 
 结果：
@@ -227,7 +227,7 @@ cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning
 真实 TUI 启动验证：
 
 ```bash
-cargo run --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
+cargo run --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
 ```
 
 已验证：
