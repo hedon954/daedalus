@@ -33,7 +33,7 @@ const REQUIRED_ENTRY_HEADINGS: [&str; 10] = [
     "## 回忆钩子",
     "## 现实问题",
     "## 第一性原理",
-    "## 机制模型",
+    "## 底层原理",
     "## 关键不变量",
     "## 取舍",
     "## 不要照搬",
@@ -124,9 +124,8 @@ pub fn create_knowledge_template(
     Ok(KnowledgeOutput {
         action: "knowledge-template".to_owned(),
         path,
-        next:
-            "校准条目的问题入口、机制模型、迁移边界和复习练习，然后运行 daedalus knowledge index。"
-                .to_owned(),
+        next: "校准条目的问题入口、第一性原理、底层原理、迁移边界和复习练习，然后运行 daedalus knowledge index。"
+            .to_owned(),
     })
 }
 

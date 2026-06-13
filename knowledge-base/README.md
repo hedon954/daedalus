@@ -42,4 +42,17 @@ flowchart TD
 - `index/`：人可读导航页。
 - `site/`：可选前端投影。
 
+归档时先选择主落点：
+
+- 概念和底层原理进入 `concepts/`。
+- 能被练习和验收的能力进入 `skills/`。
+- 可迁移的架构、流程、状态机和取舍进入 `patterns/`。
+- 能统领一组知识的现实难题进入 `problems/`。
+- 一次学习、demo 或业务迁移的完整上下文进入 `cases/`。
+- 从书、论文、repo、课程到知识条目的映射进入 `source-maps/`。
+- 能力依赖、学习路径和薄弱点地图进入 `trees/`。
+- 复习、迁移和批判问题进入 `drills/`。
+
+同一个候选可以链接到多个目录，但必须有一个主落点。knowledge-base 要形成体系，而不是把候选表逐条搬进来。
+
 机器索引见 `index.toml`，由 `daedalus knowledge index` 重建。
