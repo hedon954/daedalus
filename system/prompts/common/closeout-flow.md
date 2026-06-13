@@ -70,11 +70,14 @@ Agent 动作：
 
 Agent 动作：
 
-- 以 closeout reflection 为主判断材料，同时扫描当前 topic 的 `guides/`、`notes/`、`demo/`、run/test evidence，提出候选知识条目。
+- 先读取整个学习过程中已经滚动维护的 `reflection/candidate-map.md`。
+- 不要从零生成候选表；10-reflection 只负责查漏补缺、去重、降噪、确认状态。
+- 如候选表明显缺失，再扫描当前 topic 的 `guides/`、`notes/`、`demo/`、run/test evidence 和外部参照补候选。
 - 候选必须说明它来自用户已吸收或验证的理解，而不是 Agent 在 `guides/` 中单方面写过的内容。
-- 区分 closeout 和 knowledge extraction：closeout 聚焦核心主线，但要点名重要旁路知识和基础薄弱点；knowledge extraction 必须贪心扫描所有 guides/notes/closeout/demo/test/external evidence。
-- 先给完整候选地图，再建议本轮最小归档集合。不要因为默认输出简短而漏掉 Rust、OS、runtime、UI、测试、并发等过程中学到的可迁移能力。
-- 每个候选只给：标题、类型、为什么值得归档、证据来源、适用边界。
+- 区分 closeout 和 knowledge extraction：closeout 聚焦核心主线，但要点名重要底层原理缺口；knowledge extraction 必须基于滚动候选表扫描所有 guides/notes/closeout/demo/test/external evidence，查漏补缺、去重和降噪。
+- 基于候选表建议本轮最小归档集合。不要因为默认输出简短而漏掉 Rust、OS、runtime、UI、测试、并发等过程中学到的可迁移能力。
+- 每个候选只给：候选、为什么值得看、证据、状态。
+- 候选状态只能使用 `候选中`、`总结中`、`已归档`、`已忽略`。
 - 补必要外部参照或旧知识链接。
 - 等用户确认后再写 `knowledge-base/` 正文。
 

@@ -413,10 +413,7 @@ fn validate_reflection_loop(topic_dir: &Path, slug: &str) -> Vec<String> {
     for path in [
         "reflection/README.md",
         "reflection/closeout.md",
-        "reflection/01-knowledge-candidate-map.md",
-        "reflection/02-closeout-prompts.md",
-        "reflection/03-selection.md",
-        "reflection/04-archive-evidence.md",
+        "reflection/candidate-map.md",
     ] {
         if !topic_dir.join(path).exists() {
             issues.push(format!(

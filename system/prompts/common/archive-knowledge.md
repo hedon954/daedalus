@@ -14,10 +14,10 @@ scope: common
 
 Closeout 和 knowledge extraction 是两种不同动作：
 
-- `closeout` 要聚焦核心：保护学习推进感，围绕学习目标、demo 决策、trade-off、架构图、迁移边界和关键薄弱点完成回顾；重要旁路知识要被点名，但不在 closeout 中无限展开。
+- `closeout` 要聚焦核心：保护学习推进感，围绕学习目标、demo 决策、trade-off、架构图、迁移边界和关键底层原理缺口完成回顾；重要可迁移能力要被点名，但不在 closeout 中无限展开。
 - `knowledge extraction` 要贪心：在 closeout 通过后，系统性回看本 topic 的全部学习材料，尽可能挖掘可迁移、可复用、能提升能力的知识点。
 
-不要要求用户在 closeout 里细究所有旁支通用知识；但 closeout 必须标记出重要旁路和基础薄弱点，后续在 knowledge extraction 阶段从 guides、notes、demo 和验证记录中重新深挖。
+不要要求用户在 closeout 里细究所有底层原理；但 closeout 必须标记出重要原理缺口和可迁移能力，后续在 knowledge extraction 阶段基于 `reflection/candidate-map.md` 从 guides、notes、demo 和验证记录中查漏补缺、去重和降噪。
 
 ## Required Input
 

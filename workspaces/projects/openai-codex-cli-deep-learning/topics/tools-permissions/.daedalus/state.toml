@@ -7,7 +7,7 @@ kind = "repo-learning-topic"
 parent_project = "../.."
 lifecycle = "awaiting-reflection"
 current_phase = "10-reflection"
-next_action = "进入 10-reflection：先用学习材料生成 reflection/01-knowledge-candidate-map.md，再围绕候选做用户筛选、修订和最终归档。"
+next_action = "进入 10-reflection：打开 reflection/candidate-map.md，通过对话把候选状态推进为候选中、总结中、已归档或已忽略。"
 
 [[stages]]
 id = "01-goal-aligner"
@@ -70,10 +70,7 @@ status = "active"
 required_artifacts = [
     ".daedalus/artifact-index.md",
     ".daedalus/long-context.md",
-    "reflection/01-knowledge-candidate-map.md",
-    "reflection/02-closeout-prompts.md",
-    "reflection/03-selection.md",
-    "reflection/04-archive-evidence.md",
+    "reflection/candidate-map.md",
     "reflection/closeout.md",
 ]
 

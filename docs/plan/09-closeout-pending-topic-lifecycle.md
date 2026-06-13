@@ -199,7 +199,7 @@ workspaces/closeout-topic -> projects/openai-codex-cli-deep-learning/topics/tool
 - `daedalus validate` 能发现：
   - `pending_closeout_topic` 指向不存在路径。
   - closeout symlink 与 `current.toml` 不一致。
-  - completed topic 缺少 `reflection/closeout.md` 或知识归档证据。
+  - completed topic 缺少 `reflection/closeout.md` 或知识库归档确认。
 - TUI 能同时展示当前 active topic 和 closeout debt。
 - `resume` 能正确回答：当前学习主线是什么，欠下的 closeout 是什么。
 

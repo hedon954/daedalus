@@ -153,7 +153,7 @@ AI 不得在没有用户 closeout retrospective 的情况下生成 knowledge-bas
 
 如果某个候选只存在于 Agent 写的 `guides/`，但用户没有在 notes/reflection/demo 中消化或验证，它不能直接进入 knowledge-base 正文，只能变成候选问题或复习提示。
 
-Closeout 应聚焦核心主线，但不能忽略重要旁路。用户不需要在 closeout 里复述所有额外通用知识；但应该点名学习过程中暴露的第一性原理、底层机制、Rust/工程技能、外部最佳实践和替代方案。Agent 在 knowledge extraction 阶段必须回看这些线索并贪心深挖。
+Closeout 应聚焦核心主线，但不能忽略重要底层原理缺口。用户不需要在 closeout 里复述所有额外通用知识；但应该点名学习过程中暴露的第一性原理、底层机制、Rust/工程技能、外部最佳实践和替代方案。Agent 在 knowledge extraction 阶段必须回看这些线索，并基于 `reflection/candidate-map.md` 查漏补缺、去重和降噪。
 
 如果某个基础知识薄弱点在多个 topic 中重复出现，Agent 应将它标记为高频薄弱点，并建议进入复习计划、backlog、project shared 或 knowledge-base 补强条目。
 

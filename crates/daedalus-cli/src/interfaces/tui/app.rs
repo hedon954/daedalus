@@ -705,19 +705,18 @@ fn reflection_next_action(artifact_root: &Path, current_status: &str, fallback: 
     }
     [
         format!("Current: 10-reflection / {current_status}"),
-        "Loop: 知识候选地图 -> closeout prompts -> 用户回顾与 challenge -> 候选筛选 -> 归档证据"
-            .to_owned(),
+        "Loop: 知识候选表 -> 用户 closeout -> Agent challenge -> 知识库归档".to_owned(),
         format!(
             "Next: {}",
-            if root.join("01-knowledge-candidate-map.md").exists() {
-                "打开 reflection/01-knowledge-candidate-map.md，确认候选筛选位置"
+            if root.join("candidate-map.md").exists() {
+                "打开 reflection/candidate-map.md，围绕候选表逐项确认状态"
             } else {
-                "从 guides / notes / demo / tests / closeout 生成知识候选地图草稿"
+                "创建 reflection/candidate-map.md，并用既有 guides / notes / demo / tests 查漏补缺"
             }
         ),
         format!(
             "Current reading: {}",
-            relative_display(artifact_root, &root.join("01-knowledge-candidate-map.md"))
+            relative_display(artifact_root, &root.join("candidate-map.md"))
         ),
     ]
     .join("\n")
@@ -725,9 +724,7 @@ fn reflection_next_action(artifact_root: &Path, current_status: &str, fallback: 
 
 fn find_current_guide(artifact_root: &Path, current_phase: &str) -> Option<PathBuf> {
     if current_phase == "10-reflection" {
-        let candidate_map = artifact_root
-            .join("reflection")
-            .join("01-knowledge-candidate-map.md");
+        let candidate_map = artifact_root.join("reflection").join("candidate-map.md");
         if candidate_map.exists() {
             return Some(candidate_map);
         }
@@ -1022,19 +1019,14 @@ fn knowledge_summary(task_dir: &Path) -> Vec<String> {
 
 fn reflection_summary(artifact_root: &Path) -> Vec<String> {
     let root = artifact_root.join("reflection");
-    [
-        ("候选地图", "01-knowledge-candidate-map.md"),
-        ("回顾提示", "02-closeout-prompts.md"),
-        ("候选筛选", "03-selection.md"),
-        ("归档证据", "04-archive-evidence.md"),
-    ]
-    .into_iter()
-    .filter_map(|(label, file)| {
-        let path = root.join(file);
-        path.exists()
-            .then(|| format!("{label}: {}", relative_display(artifact_root, &path)))
-    })
-    .collect()
+    [("候选表", "candidate-map.md")]
+        .into_iter()
+        .filter_map(|(label, file)| {
+            let path = root.join(file);
+            path.exists()
+                .then(|| format!("{label}: {}", relative_display(artifact_root, &path)))
+        })
+        .collect()
 }
 
 fn bucket_order(bucket: &str) -> usize {
@@ -1176,9 +1168,9 @@ mod tests {
     fn reflection_phase_uses_candidate_map_as_current_reading() {
         let temp = tempfile::TempDir::new().expect("temp dir");
         let root = temp.path();
-        let guide = root.join("reflection/01-knowledge-candidate-map.md");
+        let guide = root.join("reflection/candidate-map.md");
         fs::create_dir_all(guide.parent().expect("reflection parent")).expect("reflection dir");
-        fs::write(&guide, "# 知识候选地图草稿\n").expect("reflection");
+        fs::write(&guide, "# 知识候选表\n").expect("reflection");
 
         let current_guide = find_current_guide(root, "10-reflection").expect("current guide");
 

@@ -995,7 +995,7 @@ system/bin/migrate-add-review-knowledge-system <project-dir>
 
 3. knowledge extraction 是否应该自动写入 knowledge-base？
 
-   建议：不自动。先生成 candidate，再由用户确认 promotion。
+   建议：不自动。学习过程中滚动维护 candidate，再由用户确认 promotion。
 
 4. review 是否应该支持 scheduler？
 

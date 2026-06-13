@@ -8,7 +8,7 @@
 - 生命周期：`awaiting-reflection`
 - 当前阶段：`10-reflection`
 - 状态：`active`
-- 下一步：进入 10-reflection：先用学习材料生成 reflection/01-knowledge-candidate-map.md，再围绕候选做用户筛选、修订和最终归档。
+- 下一步：进入 10-reflection：打开 reflection/candidate-map.md，通过对话把候选状态推进为候选中、总结中、已归档或已忽略。
 
 ## 枚举约束
 

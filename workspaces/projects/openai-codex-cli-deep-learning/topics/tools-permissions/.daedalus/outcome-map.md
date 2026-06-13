@@ -26,11 +26,11 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 ## Current Position
 
-- 当前阶段：`10-reflection` 知识候选筛选循环。
-- 当前目标：先用 `reflection/01-knowledge-candidate-map.md` 帮用户看见这次 topic 里长出的核心知识、旁路技能、基础薄弱点和学习方法，再由用户筛选。
-- 当前障碍：`reflection/01-knowledge-candidate-map.md` 还没有经过用户筛选。
-- 当前动作服务的产物：知识候选筛选与经过用户确认的知识库条目。
-- 当前光标：不是继续写 demo，也不是直接写 knowledge-base；下一步是筛选候选，确认归档 / 延后 / 删除 / 修订。
+- 当前阶段：`10-reflection` 知识候选表确认。
+- 当前目标：用 `reflection/candidate-map.md` 帮用户快速看见这次 topic 里值得保留的少数候选。
+- 当前障碍：`reflection/candidate-map.md` 的状态还没有经过对话确认。
+- 当前动作服务的产物：经过用户确认的知识库条目。
+- 当前光标：不是继续写 demo，也不是直接写 knowledge-base；下一步是围绕候选表对话确认状态。
 
 ## Artifact Dependency Graph
 
@@ -72,7 +72,7 @@ question-roadmap
 - [x] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 - [x] Business Transfer：已将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
 - [x] Closeout Reflection：用户已完成 `reflection/closeout.md`，并在对话中完成关键 challenge：不变量、demo 暂缓、生产迁移边界、图文分工方法论。
-- [ ] 知识候选筛选：用户确认哪些候选归档、延后、删除或修订。
+- [ ] 知识候选表确认：对话确认各候选状态。
 - [ ] Knowledge Archival：只把用户确认后的少数高价值条目写入 `knowledge-base/`。
 
 ## Critical Lens

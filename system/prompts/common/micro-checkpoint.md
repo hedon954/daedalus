@@ -5,6 +5,7 @@ scope: common
 ---
 
 @system/prompts/common/checkpoint-lifecycle.md
+@system/prompts/common/candidate-map.md
 
 # Micro Checkpoint Protocol
 
@@ -21,6 +22,7 @@ scope: common
 - 一个 slice 的子目标完成，即使整个 stage 还没完成。
 - 用户接受某个设计结论或下一步方向。
 - 产生了会影响后续学习路径的代码、notes、guides、todo 或 outcome-map 变更。
+- 出现新的可迁移理解、底层原理缺口、工程模式或用户反复追问的问题，需要滚动更新 `reflection/candidate-map.md`。
 
 如果只是 WIP 光标变化，使用 `Cursor Sync`，不要制造完整 checkpoint。
 
@@ -33,6 +35,7 @@ scope: common
 - Current:
 - Completed:
 - Updated artifacts:
+- Candidate map:
 - Validation:
 - Commit:
 - Next:

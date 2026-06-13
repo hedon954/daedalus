@@ -6,8 +6,5 @@
 
 ## 文件
 
-- [`01-knowledge-candidate-map.md`](01-knowledge-candidate-map.md)：候选知识地图草稿，供你筛选。
-- [`02-closeout-prompts.md`](02-closeout-prompts.md)：基于当前 topic 的回顾提示。
-- [`03-selection.md`](03-selection.md)：你对候选知识的归档、延后、删除或修订决定。
-- [`04-archive-evidence.md`](04-archive-evidence.md)：最终知识归档证据和验证结果。
+- [`candidate-map.md`](candidate-map.md)：贯穿 01-09 滚动维护的候选知识表，10-reflection 负责查漏补缺、降噪和状态确认。
 - [`closeout.md`](closeout.md)：你的主动回顾总结。

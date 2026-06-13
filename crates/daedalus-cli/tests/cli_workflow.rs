@@ -287,14 +287,7 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(topic_dir.join("demo/.gitkeep").exists());
     assert!(topic_dir.join("guides/.gitkeep").exists());
     assert!(topic_dir.join("reflection/README.md").exists());
-    assert!(
-        topic_dir
-            .join("reflection/01-knowledge-candidate-map.md")
-            .exists()
-    );
-    assert!(topic_dir.join("reflection/02-closeout-prompts.md").exists());
-    assert!(topic_dir.join("reflection/03-selection.md").exists());
-    assert!(topic_dir.join("reflection/04-archive-evidence.md").exists());
+    assert!(topic_dir.join("reflection/candidate-map.md").exists());
     assert!(topic_dir.join("notes/.gitkeep").exists());
     assert!(topic_dir.join("reflection/closeout.md").exists());
     assert!(task_dir.join("source/.gitignore").exists());

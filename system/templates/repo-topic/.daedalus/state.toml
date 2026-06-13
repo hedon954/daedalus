@@ -84,10 +84,7 @@ status = "pending"
 required_artifacts = [
     ".daedalus/artifact-index.md",
     ".daedalus/long-context.md",
-    "reflection/01-knowledge-candidate-map.md",
-    "reflection/02-closeout-prompts.md",
-    "reflection/03-selection.md",
-    "reflection/04-archive-evidence.md",
+    "reflection/candidate-map.md",
     "reflection/closeout.md",
 ]
 
