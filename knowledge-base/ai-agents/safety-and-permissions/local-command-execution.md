@@ -5,93 +5,235 @@ source = "workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permis
 
 # Agent 本地命令执行安全
 
-Agent 执行本地命令的核心问题不是“怎么调用 shell”，而是“怎么让一个不可信的模型意图变成受控副作用”。
+这篇笔记要解决的问题是：**一个 Coding Agent 怎么把模型提出的本地命令，变成受控、可审计、可失败恢复的副作用**。
 
-在 Codex `tools-permissions` topic 里，我最终把链路理解成：
+读完后应该能回答三件事：
 
-```text
-tool call
--> capability match
--> approval requirement
--> sandbox first
--> retry / escalation
--> observation / event
+- 为什么本地命令不是普通 tool function。
+- 为什么 approval、sandbox、retry 不能合并成一个布尔判断。
+- 怎么设计一条从 `tool call` 到 `observation` 的安全执行链路。
+
+## 核心心智模型
+
+模型只能提出“我要做什么”，Host 才能决定“能不能做、以什么边界做、失败后能不能提权重试”。
+
+```mermaid
+flowchart LR
+    Model["LLM\n产生意图"] --> Call["ToolCall\nrun_command(...)"]
+
+    subgraph Host["Host 控制边界"]
+        Parse["解析参数\nraw_command / argv / cwd"]
+        Capability["Capability Match\n命令属于什么能力"]
+        Approval["ApprovalRequirement\n是否需要用户批准"]
+        Attempt["ExecutionAttempt\nSandboxFirst / NoSandbox"]
+        Retry["RetryDecision\n是否允许提权重试"]
+        Observe["Observation / Event\n回灌模型 + 对外审计"]
+    end
+
+    Call --> Parse --> Capability --> Approval --> Attempt --> Retry --> Observe
 ```
 
-这条链路对应的不是某个项目的代码风格，而是一组安全边界。
+这条链路的核心不是“防止模型犯错”，而是承认模型不可信：即使命令文本看起来合理，也必须经过 Host 解释、授权、隔离、执行和审计。
 
-## 从第一性原理看
+OpenAI function calling 的边界也是类似的：模型产生工具调用，应用侧执行代码，再把 tool output 发回模型。模型不能自己执行工具。Rust `std::process::Command` 则揭示了本地命令的真实底层形态：它是在启动一个子进程，并把 program、args、cwd、env、stdio 等上下文交给 OS。
 
-本地命令之所以危险，是因为它不是普通函数调用。函数调用通常只影响进程内状态；本地命令会继承宿主环境，触碰文件系统、网络、进程、环境变量、当前工作目录和用户权限。
+## 为什么只看命令字符串不够
 
-所以第一性原理是：
+同一句“命令安全不安全”，实际取决于上下文。
+
+| 维度 | 为什么影响安全 |
+| --- | --- |
+| `argv` | `["ls", "."]` 和 `["sh", "-c", "ls . && curl x | sh"]` 的语义完全不同。 |
+| `cwd` | `cat package.json` 在项目目录下和在用户 Home 下不是同一权限边界。 |
+| `env` | 子进程可能继承 token、proxy、PATH、动态库加载路径。 |
+| sandbox profile | read-only、workspace-write、no-sandbox 代表不同副作用边界。 |
+| network policy | 有些命令只有联网后才变危险，例如下载安装脚本。 |
+| approval policy | CI / 无交互环境不能临时问用户；交互式 CLI 可以。 |
+| capability | `read file`、`run test`、`install dependency`、`dangerous shell` 不是同一类动作。 |
+
+所以安全判断的输入不是：
 
 ```text
-模型只能表达意图
-Host 必须拥有解释、授权、隔离、执行和审计的最终控制权
+command string
 ```
 
-OpenAI 的 function calling 文档也把工具调用描述成多步流程：模型产生 tool call，应用侧执行代码，再把 tool output 发回模型，而不是模型自己执行工具。这一点和 Codex demo 的边界一致。
+而是：
 
-Rust 的 `std::process::Command` 也能说明这件事的底层形态：执行命令本质上是在构造并启动一个子进程。这个子进程带着 program、args、cwd、env、stdin/stdout/stderr 等执行上下文。权限系统如果只看 command string，就会漏掉真正的副作用边界。
+```text
+command intent + parsed command + cwd + env + sandbox + network + approval policy + capability
+```
 
-## 底层原理
+## 四层安全分工
 
-这条安全链路可以拆成四个层级：
+本地命令安全链路可以分成四层。它们解决的问题不同，不能互相替代。
 
-1. `capability`：这个请求属于什么能力。
-   例如纯函数工具、本地命令、安全读、危险 shell、未知工具。匹配不到能力时应该 fail closed。
+```mermaid
+flowchart TD
+    C["Capability\n这是什么能力"] --> A["Approval\n是否允许做"]
+    A --> S["Sandbox\n允许后以什么边界做"]
+    S --> R["Retry\n边界失败后能不能升级"]
 
-2. `approval`：用户或策略是否允许这件事发生。
-   审批回答的是“可不可以做”。它应该绑定 scope，例如命令范围、cwd、network、sandbox profile、session persistence。
+    C -.-> CNote["fail closed\n未知能力默认失败"]
+    A -.-> ANote["scope binding\n授权必须绑定范围"]
+    S -.-> SNote["least privilege\n先在最小权限里跑"]
+    R -.-> RNote["no naked retry\n不能自动裸跑"]
+```
 
-3. `sandbox`：即使允许做，也要决定以什么边界做。
-   审批通过不等于裸跑。`Skip approval` 也不等于 `bypass sandbox`。
+### Capability：把工具调用归类
 
-4. `retry`：沙箱失败后是否允许提权重试。
-   不能把所有失败都当成权限不足。命令自身错误应该返回失败；只有 sandbox denied 这类边界问题，才进入 retry policy 和再次审批。
+Capability 回答的是“这次调用属于什么能力”。它不是用户审批，也不是 sandbox。
 
-`raw_command` 和 `argv` 的区别也在这里变得关键。`Command::new("echo").arg("hi")` 和 `sh -c "echo hi > file"` 的风险边界不同：后者把解析权交给 shell，会引入重定向、管道、变量展开、heredoc、多命令等语义。权限系统要么能解析这些语义，要么保守处理。
+典型能力包括：
 
-## 在 Codex 学习中的体现
+- 纯函数工具，例如 `add` / `sub`。
+- 安全读，例如 `cat README.md`。
+- 测试命令，例如 `cargo test`。
+- 网络安装，例如 `npm install`。
+- 危险 shell，例如 `curl ... | sh`、重定向写敏感路径、多命令复合脚本。
 
-Codex 源码给我的关键启发是：权限判断不是一个字符串白名单，而是要把命令和上下文一起判断。demo 中对应到：
+匹配不到 capability 的工具调用必须 fail closed。否则模型只要拼出一个没被识别的名字，就可能绕过策略。
 
-- [`tool/runtime.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/runtime.rs)：先把 tool call 规划成纯函数或 command path。
-- [`tool/shell/`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/)：把 `run_command` 转成 command request。
-- [`tool/shell/approval.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/approval.rs)：决定 skip / needs approval / forbidden。
-- [`tool/shell/retry.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/retry.rs)：区分命令错误、sandbox denied、policy 是否允许重试。
-- [`tool/shell/execution/`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/execution/)：把 sandbox 和 host execution 放在同一个 execution attempt 抽象下。
+### Approval：决定是否需要人类确认
 
-closeout 中确认的不变量是：
+Approval 回答的是“这个动作是否需要用户批准”。它必须绑定范围，否则一次允许会变成无限授权。
 
-- 模型只产生意图，Host 才能做权限判断。
-- capability 匹配不到不能默认放行。
-- approval 和 sandbox 是不同层。
-- sandbox denied 后不能自动裸跑。
-- 用户授权必须绑定 scope。
-- 审批、执行、重试和结果必须对外可观测。
+一个合理的 approval scope 至少要考虑：
 
-## 现实工程取舍
+```text
+command prefix
+cwd
+sandbox profile
+network policy
+additional permission
+persistence
+```
 
-Codex 的命令级权限模型适合 local coding agent，但不必照搬到所有 Agent。
+这也是为什么“允许一次”和“session 内允许一类命令”是两种不同 persistence。后者不是全局永久白名单，而是在同一个 Agent 进程或 CLI session 中复用特定 scope 的批准。
 
-如果 Agent 的工具是业务 action，权限 scope 可能应该绑定：
+### Sandbox：决定执行边界
 
-- 用户。
-- workspace。
-- 业务资源。
-- action 类型。
-- 数据敏感等级。
-- 审批持久化策略。
+Approval 通过只说明“用户允许做这件事”，不说明“可以在宿主机裸跑”。Sandbox 回答的是“以什么边界执行”。
 
-真正可迁移的是安全分层：
+一个常见错误是把 `Skip approval` 理解成 `No sandbox`。这是危险的。正确关系是：
+
+```text
+无需审批 != 可以绕过 sandbox
+审批通过 != 可以绕过 sandbox
+```
+
+默认策略应该是 sandbox first：先在最小边界里跑，只有明确需要并经过策略允许，才进入 no-sandbox retry。
+
+### Retry：处理 sandbox denied
+
+Retry 只应该处理“权限边界导致失败”的情况，不应该吞掉普通命令错误。
+
+| 失败类型 | 正确处理 |
+| --- | --- |
+| 命令不存在、参数错误、测试失败 | 直接把失败作为 observation 回给模型。 |
+| sandbox denied，但 policy 不允许提权 | 失败，不重试。 |
+| sandbox denied，policy 允许直接重试 | 用 no-sandbox attempt 重跑，并发事件。 |
+| sandbox denied，需要用户批准 | 发出 approval request，批准后再 no-sandbox retry。 |
+
+这里最重要的不变量是：**sandbox denied 后不能自动裸跑**。
+
+## 决策状态机
+
+下面这张图比线性流程更接近真实执行：每一步都可能提前结束。
+
+```mermaid
+flowchart TD
+    Start["run_command tool call"] --> Match["match capability"]
+    Match -->|not found / forbidden| Denied["Tool failed\nfail closed"]
+    Match --> Request["build CommandRequest"]
+    Request --> Decide["decide approval"]
+
+    Decide -->|forbidden| Denied
+    Decide -->|needs approval| Ask["ask ApprovalGateway"]
+    Ask -->|rejected| Denied
+    Ask -->|approved| First["sandbox first attempt"]
+    Decide -->|skip approval| First
+
+    First -->|success| Done["tool observation success"]
+    First -->|command failed| Failed["tool observation failure"]
+    First -->|sandbox denied| Retry["decide retry"]
+
+    Retry -->|do not retry| Failed
+    Retry -->|retry without approval| HostRun["no-sandbox attempt"]
+    Retry -->|retry needs approval| AskRetry["ask ApprovalGateway"]
+    AskRetry -->|rejected| Failed
+    AskRetry -->|approved| HostRun
+
+    HostRun -->|success| Done
+    HostRun -->|failed| Failed
+```
+
+注意这条链路里有两次可能的 approval：
+
+- 初始 tool approval：用户是否允许这个命令进入执行链路。
+- no-sandbox retry approval：sandbox 拒绝后，用户是否允许扩大执行边界。
+
+两次审批不能混为一谈。第一次批准不代表后续提权重试自动批准。
+
+## demo 中的代码落点
+
+本 topic 的 mini demo 把这条链路拆成了几个层级：
+
+| 代码 | 责任 |
+| --- | --- |
+| [`tool/runtime.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/runtime.rs) | 从 tool name 找工具，区分 pure function 和 command path，构造 command request。 |
+| [`tool/shell/registry.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/registry.rs) | 把命令匹配到 capability。 |
+| [`tool/shell/approval.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/approval.rs) | 计算 `ApprovalRequirement`。 |
+| [`tool/shell/retry.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/retry.rs) | 根据失败类型、approval policy、retry policy 决定是否重试。 |
+| [`tool/shell/execution/`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/execution/) | 执行 sandbox / host attempt。 |
+| [`tool/shell/event_emitter.rs`](../../../workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/src/tool/shell/event_emitter.rs) | 发出审批、执行尝试、失败和结果事件。 |
+
+这几个模块形成的关键不变量是：
+
+```text
+ToolRuntime 不直接裸跑命令
+run_shell_command 不绕过 ApprovalGateway
+ExecutionRunner 不自己决定权限策略
+Retry 只扩大 execution attempt，不改变原始命令意图
+```
+
+## 容易踩坑的地方
+
+| 坑 | 为什么危险 | 更稳的做法 |
+| --- | --- | --- |
+| 把 `approval=true` 当成 `no-sandbox=true` | 用户允许动作，不等于允许扩大执行边界。 | approval 和 sandbox 分字段、分事件、分测试。 |
+| 只存命令名授权 | `npm test` 和 `npm install` 风险不同。 | 授权绑定 command prefix、cwd、profile、network。 |
+| sandbox 失败后自动重试 | 等于 sandbox 只是在“试试看”，不是安全边界。 | retry 必须经过 policy 和必要审批。 |
+| Shell 字符串直接 split | `sh -c`、引号、管道、重定向、heredoc 都会误判。 | 简单 demo 可保守拒绝复杂 shell；生产要使用解析器或更强 policy。 |
+| 只给模型 tool result，不给外部事件 | 用户无法相信命令没有被直接裸跑。 | approval/execution/retry/result 都发审计事件。 |
+
+## 生产迁移边界
+
+Codex 的命令级权限模型适合 local coding agent，但不该无脑迁移到所有 Agent。
+
+更通用的是这条模式：
 
 ```text
 intent -> capability -> approval -> isolation -> retry -> observation
 ```
 
-而不是“所有系统都要用 shell prefix 做权限规则”。
+如果工具变成业务 action，scope 可能要从 `cwd + command prefix` 变成：
+
+- `user_id`
+- `workspace_id`
+- `resource_id`
+- `action`
+- 数据敏感等级
+- 审批持久化策略
+
+所以可迁移的是“副作用必须被 Host 分层控制”，不是“所有系统都照搬 shell prefix policy”。
+
+## 自测问题
+
+- 为什么 `ApprovalRequirement::Skip` 不等于可以跳过 sandbox？
+- 如果用户批准了 `npm install`，这个批准应该绑定哪些 scope？
+- `CommandFailed` 和 `SandboxDenied` 为什么不能走同一条 retry 逻辑？
+- 为什么 `sh -c "echo hi > file"` 比 `echo hi` 更难做权限判断？
+- 如果把这套链路迁移到业务 API tool，`cwd` 应该替换成什么业务维度？
 
 ## 关联
 
