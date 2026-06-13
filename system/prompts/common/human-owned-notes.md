@@ -104,11 +104,15 @@ daedalus 应更主动搜索公网资料和业内最佳实践，用外部参照�
 
 `knowledge-base/` 不是从 `notes/` 自动提取出来的摘要。`notes/` 是学习过程中的原始证据和阶段性理解。
 
-进入 knowledge-base 前，用户必须在 topic 完成后主动写一份 closeout retrospective。它必须回答：
+进入 knowledge-base 前，用户必须在 topic 完成后主动写一份 closeout retrospective。它必须围绕核心主线回答：
 
 - 这次学习解决了什么真实问题。
 - 我的理解发生了什么变化。
 - 我现在长出了什么能力。
+- 我从一开始的学习目标中真正学到了什么。
+- demo 实现过程中做了哪些关键决策、trade-off 和简化。
+- demo 的核心架构图是什么；如果需要图，一开始应由用户手绘并人工迭代，最后再由 AI Agent 落盘。
+- 学习或实现 demo 时暴露了哪些基础知识薄弱点。
 - 哪些结论有证据支撑。
 - 哪些设计只能忠实模仿，不能迁移。
 - 哪些部分可以举一反三。
@@ -144,6 +148,21 @@ AI 不得在没有用户 closeout retrospective 的情况下生成 knowledge-bas
 - 有证据链接。
 - 有适用边界和不要照搬的部分。
 - 有复习或迁移练习。
+
+候选知识条目不能只从 closeout 或单篇 notes 中摘取。Agent 应把 closeout 当作用户最终理解的入口，再回看 topic 的 `guides/`、`notes/`、`demo/` 和验证记录，寻找真正可迁移的能力、抽象、不变量、失败模式和工程技能。
+
+如果某个候选只存在于 Agent 写的 `guides/`，但用户没有在 notes/reflection/demo 中消化或验证，它不能直接进入 knowledge-base 正文，只能变成候选问题或复习提示。
+
+Closeout 应聚焦核心主线，但不能忽略重要旁路。用户不需要在 closeout 里复述所有额外通用知识；但应该点名学习过程中暴露的第一性原理、底层机制、Rust/工程技能、外部最佳实践和替代方案。Agent 在 knowledge extraction 阶段必须回看这些线索并贪心深挖。
+
+如果某个基础知识薄弱点在多个 topic 中重复出现，Agent 应将它标记为高频薄弱点，并建议进入复习计划、backlog、project shared 或 knowledge-base 补强条目。
+
+候选输出不要只问“新增什么”。还要判断：
+
+- 是否补充已有知识。
+- 是否修正已有知识。
+- 是否和已有知识形成对比。
+- 是否只是旁支复习问题，暂不归档。
 
 CLI 只负责：
 

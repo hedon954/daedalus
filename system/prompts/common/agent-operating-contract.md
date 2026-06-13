@@ -30,6 +30,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - Avoid broad abstractions before a concrete learning workflow requires them.
 - Prefer deterministic Rust code under `crates/` for deterministic logic.
 - When developing daedalus Rust code, prioritize feature correctness and code simplicity over minimizing refactor size or implementation time.
+- When writing daedalus implementation plans, describe the target outcome directly. Do not weaken the plan with "first version", "do it later", or schedule-saving language unless the user explicitly asks for phased delivery.
 - When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed.
 - Commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
 - Tests should assert stable behavior, not incidental wording. For errors, prefer variant, category, or presence unless exact text is public contract.
@@ -39,6 +40,8 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 
 - Notes are human-owned. Do not ghostwrite new notes; ask questions, provide empty templates, or write clearly marked AI challenge/suggestion blocks until the user writes rough notes.
 - Knowledge-base entries require user closeout retrospective. Do not create knowledge-base正文 from notes or source material alone.
+- Knowledge-base candidate mining must use closeout as the user's final-understanding anchor and scan guides, notes, demo, and validation evidence as the evidence pool. Do not mine from closeout alone.
+- Keep closeout focused on core goals, demo decisions, trade-offs, architecture, transfer boundaries, and important weak foundations; make knowledge extraction greedy across topic core, first-principles side quests, Rust/engineering skills, external comparisons, failures, and transfer boundaries.
 - The CLI must not generate knowledge conclusions. It may create templates, indexes, link checks, and validation only.
 - Archive only reviewed human understanding.
 - Prefer reusable patterns over repo-specific trivia.

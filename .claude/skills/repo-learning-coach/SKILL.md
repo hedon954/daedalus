@@ -24,6 +24,7 @@ Non-negotiables:
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
 - Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
+- Keep closeout focused on core goals, demo decisions, trade-offs, architecture, transfer boundaries, and important weak foundations; make knowledge extraction greedy across closeout, guides, notes, demo, tests, external references, and first-principles side quests.
 - When a discussion produces a reusable learning method, thinking tool, artifact pattern, or Agent operating lesson, promote it to the right durable layer instead of leaving it only in the current topic.
 - Before long-running repo-learning work, make the first working message a small parallel study handoff instead of leaving the learner idle.
 - Before repo-learning commits, run checkpoint lifecycle pre-commit sync; after commits, output post-commit orientation.

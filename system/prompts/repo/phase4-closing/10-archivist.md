@@ -50,7 +50,7 @@ phase: repo.phase4-closing
 6. 区分用户已验证理解、未解决问题和后续建议。
 7. 如果 closeout 需要图，检查图是否只承担分层和主方向，关键决策点是否由文字解释。
 8. 检查学习过程中出现的通用方法、思维工具或 Agent 失败模式是否需要提升到 project shared、system prompts/templates 或 knowledge-base candidate，而不是只留在当前 topic。
-9. 使用 `Archive Reviewed Human Knowledge` 判断可迁移理解的归档位置。
+9. closeout review 聚焦核心主线，同时点名重要旁路知识和基础薄弱点；进入 knowledge-base gate 后，按 `Archive Reviewed Human Knowledge` 贪心扫描 closeout、guides、notes、demo、测试、外部参照和第一性原理旁支，判断可迁移理解的归档位置。
 10. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
 11. 给出 closing report 或下一 gate 的唯一行动。
 

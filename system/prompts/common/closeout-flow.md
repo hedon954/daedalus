@@ -70,7 +70,10 @@ Agent 动作：
 
 Agent 动作：
 
-- 从 reviewed human understanding 中提出 1-3 个候选知识条目。
+- 以 closeout reflection 为主判断材料，同时扫描当前 topic 的 `guides/`、`notes/`、`demo/`、run/test evidence，提出候选知识条目。
+- 候选必须说明它来自用户已吸收或验证的理解，而不是 Agent 在 `guides/` 中单方面写过的内容。
+- 区分 closeout 和 knowledge extraction：closeout 聚焦核心主线，但要点名重要旁路知识和基础薄弱点；knowledge extraction 必须贪心扫描所有 guides/notes/closeout/demo/test/external evidence。
+- 先给完整候选地图，再建议本轮最小归档集合。不要因为默认输出简短而漏掉 Rust、OS、runtime、UI、测试、并发等过程中学到的可迁移能力。
 - 每个候选只给：标题、类型、为什么值得归档、证据来源、适用边界。
 - 补必要外部参照或旧知识链接。
 - 等用户确认后再写 `knowledge-base/` 正文。
