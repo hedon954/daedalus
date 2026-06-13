@@ -86,6 +86,19 @@ fn discover_linked_projects(repo_root: &Path) -> Vec<String> {
         projects.insert("crates/Cargo.toml".to_owned());
     }
 
+    for entry in ["current-topic", "closeout-topic"] {
+        let manifest = repo_root
+            .join("workspaces")
+            .join(entry)
+            .join("demo")
+            .join("Cargo.toml");
+        if manifest.is_file()
+            && let Some(relative) = relative_unix_path(repo_root, &manifest)
+        {
+            projects.insert(relative);
+        }
+    }
+
     let workspace_root = repo_root.join("workspaces");
     if workspace_root.exists() {
         for entry in WalkDir::new(&workspace_root)

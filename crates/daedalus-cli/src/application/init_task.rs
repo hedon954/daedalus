@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use crate::application::ide::sync_rust_analyzer_linked_projects;
 use crate::application::render::render_state;
 use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::{clock, template_fs, workspace_fs};
@@ -100,6 +101,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
     let state_md = render_state(&task_dir)?.path;
     let topic_state_md = render_state(&topic_dir)?.path;
     workspace_fs::sync_current_workspace(&options.repo_root, Some(&task_dir), Some(&topic_dir))?;
+    sync_rust_analyzer_linked_projects(&options.repo_root)?;
 
     Ok(InitTaskOutput {
         task_dir,

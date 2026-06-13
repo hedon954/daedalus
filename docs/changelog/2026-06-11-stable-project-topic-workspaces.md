@@ -3,6 +3,7 @@
 > 日期：2026-06-11
 > 对应计划：`docs/plan/06-project-topic-lifecycle-stable-workspaces.md`
 > 状态：已完成
+> 后续修正：为了让顶层 workspace 只显示行动入口，`current-project` 已改为仅在 active topic 存在时出现。
 
 ## 变更摘要
 
@@ -25,7 +26,7 @@
 - 当前 project 状态：`idle`
 - 当前 topic：`tools-permissions`
 - 当前 topic 状态：`completed`
-- `current-project` 保留，方便用户点击进入项目。
+- `current-project` 后续已收窄为 active learning 入口，idle project 不再投影。
 - `current-topic` 已移除，因为当前没有 active topic。
 
 ## 验证

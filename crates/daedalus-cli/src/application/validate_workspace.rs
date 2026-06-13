@@ -186,15 +186,7 @@ fn validate_current_projection(
     awaiting_reflection_topic: Option<&Path>,
 ) -> Result<Vec<String>> {
     let mut issues = Vec::new();
-    let current_project = workspace_fs::current_project_dir(repo_root)?;
-    if let Some(current_project) = current_project
-        && same_path(&current_project, task_dir)?
-    {
-        let link = workspace_fs::workspaces_root(repo_root).join("current-project");
-        if !link.exists() {
-            issues.push("current-project symlink is missing".to_owned());
-        }
-    }
+    validate_current_project_projection(&mut issues, repo_root, task_dir, active_topic.is_some())?;
     validate_projected_path(
         &mut issues,
         repo_root,
@@ -212,6 +204,41 @@ fn validate_current_projection(
         workspace_fs::pending_closeout_topic_dir(repo_root)?,
     )?;
     Ok(issues)
+}
+
+fn validate_current_project_projection(
+    issues: &mut Vec<String>,
+    repo_root: &Path,
+    task_dir: &Path,
+    has_active_topic: bool,
+) -> Result<()> {
+    let expected = has_active_topic.then_some(task_dir);
+    let stored = workspace_fs::current_project_dir(repo_root)?;
+    let link_target = projection_link_target(repo_root, "current-project")?;
+
+    match (expected, stored.as_deref()) {
+        (Some(_), None) => issues
+            .push("current-project is missing from workspaces/.daedalus/current.toml".to_owned()),
+        (Some(expected), Some(actual)) if !same_path(expected, actual)? => issues.push(
+            "current-project in workspaces/.daedalus/current.toml points to the wrong project"
+                .to_owned(),
+        ),
+        (None, Some(_)) => {}
+        _ => {}
+    }
+
+    match (expected, link_target.as_deref()) {
+        (Some(_), None) => issues.push("current-project symlink is missing".to_owned()),
+        (Some(expected), Some(actual)) if !same_path(expected, actual)? => {
+            issues.push("current-project symlink points to the wrong project".to_owned())
+        }
+        (None, Some(actual)) if path_is_inside(actual, task_dir) => issues.push(
+            "current-project symlink points into this project but project has no active topic"
+                .to_owned(),
+        ),
+        _ => {}
+    }
+    Ok(())
 }
 
 fn validate_projected_path(

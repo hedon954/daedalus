@@ -87,15 +87,15 @@ pending_closeout_topic = "projects/<old-project>/topics/<old-topic>"
 新增人类入口：
 
 ```text
-workspaces/closeout-project -> projects/<old-project>
 workspaces/closeout-topic -> projects/<old-project>/topics/<old-topic>
 ```
 
 规则：
 
-- `current-project` 表示当前选中的 project，可以在 project idle 时保留。
+- `current.toml` 保存完整机器状态，包括 current project 和 pending closeout project。
+- `current-project` / `current-topic` 只表示 active learning 入口；没有 active topic 时不展示。
 - `current-topic` 表示今天要推进的 active 学习主题。
-- `closeout-topic` 表示已经欠下的主动回顾。
+- `closeout-topic` 表示已经欠下的主动回顾；不再额外投影 `closeout-project`。
 - Agent 恢复上下文时先读 `current-topic`，再提示 `closeout-topic`。
 - 周末或用户明确说“做 closeout / 回顾 / 归档”时，优先进入 `closeout-topic`。
 

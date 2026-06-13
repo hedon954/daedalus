@@ -2,6 +2,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use crate::application::ide::sync_rust_analyzer_linked_projects;
 use crate::application::render::render_state;
 use crate::application::state_machine::StateTransition;
 use crate::domain::transition::Transition;
@@ -188,6 +189,7 @@ fn commit_close_task(options: CloseTaskOptions) -> Result<CloseTaskOutput> {
         None
     };
     workspace_fs::sync_current_workspace(&options.repo_root, current_project, None)?;
+    sync_rust_analyzer_linked_projects(&options.repo_root)?;
 
     Ok(CloseTaskOutput {
         action: options.action.as_str().to_owned(),

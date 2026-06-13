@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::application::ide::sync_rust_analyzer_linked_projects;
 use crate::application::render::render_state;
 use crate::application::validate_workspace::validate_topic_workspace;
 use crate::domain::transition::Transition;
@@ -165,6 +166,7 @@ pub fn activate_topic(options: ActivateTopicOptions) -> Result<TopicOutput> {
     let _ = render_state(&project_dir)?;
     let state_md = render_state(&topic_dir)?.path;
     workspace_fs::sync_current_workspace(&options.repo_root, Some(&project_dir), Some(&topic_dir))?;
+    sync_rust_analyzer_linked_projects(&options.repo_root)?;
     Ok(TopicOutput {
         project_dir,
         topic_dir,
@@ -316,6 +318,7 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
         }
         _ => {}
     }
+    sync_rust_analyzer_linked_projects(&options.repo_root)?;
     let action = match options.lifecycle {
         TopicLifecycle::Completed => "topic-complete",
         TopicLifecycle::AwaitingReflection => "topic-await-reflection",

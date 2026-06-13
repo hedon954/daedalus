@@ -233,6 +233,10 @@ pub fn ensure_stable_workspace_layout(repo_root: &Path) -> Result<()> {
 }
 
 /// 同步当前学习现场指针和可点击软链接。
+///
+/// `current.toml` 保留完整机器状态；顶层 symlink 只保留学习者当前要点击
+/// 进入的行动入口。因此只有存在 active topic 时才展示 `current-project` /
+/// `current-topic`，等待回顾的项目只展示 `closeout-topic`。
 pub fn sync_current_workspace(
     repo_root: &Path,
     project_dir: Option<&Path>,
@@ -279,18 +283,19 @@ pub fn sync_current_workspace(
         source,
     })?;
 
+    let active_project_link = topic_dir
+        .as_ref()
+        .and(project_dir.as_ref())
+        .map(PathBuf::as_path);
     sync_symlink(
         &workspaces_root(repo_root).join("current-project"),
-        project_dir.as_deref(),
+        active_project_link,
     )?;
     sync_symlink(
         &workspaces_root(repo_root).join("current-topic"),
         topic_dir.as_deref(),
     )?;
-    sync_symlink(
-        &workspaces_root(repo_root).join("closeout-project"),
-        pending_closeout_project.as_deref(),
-    )?;
+    sync_symlink(&workspaces_root(repo_root).join("closeout-project"), None)?;
     sync_symlink(
         &workspaces_root(repo_root).join("closeout-topic"),
         pending_closeout_topic.as_deref(),
@@ -329,18 +334,19 @@ pub fn sync_closeout_workspace(
         source,
     })?;
 
+    let active_project_link = current_topic
+        .as_ref()
+        .and(current_project.as_ref())
+        .map(PathBuf::as_path);
     sync_symlink(
         &workspaces_root(repo_root).join("current-project"),
-        current_project.as_deref(),
+        active_project_link,
     )?;
     sync_symlink(
         &workspaces_root(repo_root).join("current-topic"),
         current_topic.as_deref(),
     )?;
-    sync_symlink(
-        &workspaces_root(repo_root).join("closeout-project"),
-        project_dir.as_deref(),
-    )?;
+    sync_symlink(&workspaces_root(repo_root).join("closeout-project"), None)?;
     sync_symlink(
         &workspaces_root(repo_root).join("closeout-topic"),
         topic_dir.as_deref(),

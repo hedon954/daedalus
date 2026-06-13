@@ -73,7 +73,7 @@ Agent 不可以：
 - 实现后立刻运行最小验证。
 - 判断 slice 是否完成、还剩什么或能否进入下一 slice 时，必须先看当前实现：相关源码、测试、最近 diff、TODO 和运行结果。`todo.md`、`outcome-map.md`、guides 和 notes 只能作为导航，不能单独作为完成证据。
 - 如果代码和学习地图不一致，先告诉用户地图已过期，再按代码/测试事实重新分类：退出前必做、当前 slice 可选 hardening、明确后置 non-goal。
-- Rust demo 的 `Cargo.toml` 创建、移动或迁移后，运行 `daedalus ide sync-rust-analyzer`，让 VSCode / rust-analyzer 的 linkedProjects 从 filesystem state 自动刷新。
+- daedalus 生命周期命令会自动刷新 VSCode / rust-analyzer 的 `linkedProjects`；如果编辑器仍然丢失 demo crate，再运行 `daedalus ide sync-rust-analyzer` 作为修复命令。
 - 用户练习优先于 Agent 速度。每个 slice 先给行动卡，等用户实现或明确授权后再改代码。
 - Review、验证、cursor sync、pre-commit sync 和 post-commit orientation 都执行 `Checkpoint Lifecycle`；不要在聊天里留下唯一进度记录。
 - 每个 slice closeout 必须执行 `Critical Lens` 小检查：本 slice 忠实模仿了什么，简化/改进/丢弃了什么，哪些取舍会影响业务迁移。

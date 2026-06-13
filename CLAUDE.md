@@ -9,7 +9,7 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 - Prefer filesystem artifacts over hidden chat memory. Long-running learning state must be recoverable from files.
 - Keep WIP strict: `workspaces/projects` may contain many stable projects, but at most one topic can be active through `workspaces/.daedalus/current.toml`.
 - Resolve active learning context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` first. Resolve pending closeout context from `pending_closeout_topic` or `workspaces/closeout-topic`. Do not look for `.daedalus/state.toml` at the repository root.
-- Treat project/topic `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` is the selected project, `current-topic` is the active topic, and `closeout-project` / `closeout-topic` are the pending reflection projection.
+- Treat project/topic `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` / `current-topic` are active-learning entry symlinks and should only appear when an active topic exists; `closeout-topic` is the pending reflection entry.
 - Ground implementation progress in current code, tests, runtime output, and git diff before trusting learning maps.
 - After review, validation, or commit changes completion status, risks, evidence, or next action, synchronize the relevant learning artifacts.
 - Before repo-learning commits, run a learning-map sync check; after repo-learning commits, end with post-commit orientation.

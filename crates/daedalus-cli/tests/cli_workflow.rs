@@ -84,6 +84,28 @@ fn write_core_topic_artifacts(topic_dir: &Path) {
     }
 }
 
+fn write_demo_manifest(topic_dir: &Path, package_name: &str) {
+    let manifest = topic_dir.join("demo/Cargo.toml");
+    fs::create_dir_all(manifest.parent().expect("demo dir")).expect("demo dir");
+    fs::write(
+        manifest,
+        format!("[package]\nname = \"{package_name}\"\nversion = \"0.1.0\"\n"),
+    )
+    .expect("demo manifest");
+}
+
+fn rust_analyzer_linked_projects(repo_root: &Path) -> Vec<String> {
+    let settings = fs::read_to_string(repo_root.join(".vscode/settings.json")).expect("settings");
+    let value: serde_json::Value = serde_json::from_str(&settings).expect("settings json");
+    value
+        .get("rust-analyzer.linkedProjects")
+        .and_then(|item| item.as_array())
+        .expect("linked projects")
+        .iter()
+        .filter_map(|item| item.as_str().map(ToOwned::to_owned))
+        .collect()
+}
+
 fn complete_core_topic_stages(repo: &TempDir, task_dir: &Path) {
     let stages = [
         "01-goal-aligner",
@@ -358,12 +380,13 @@ fn ide_sync_rust_analyzer_updates_topic_demo_manifest() {
 
     let settings = fs::read_to_string(settings_dir.join("settings.json")).expect("synced settings");
     assert!(settings.contains("\"editor.formatOnSave\": true"));
-    assert!(settings.contains("\"crates/Cargo.toml\""));
-    assert!(
-        settings
-            .contains("\"workspaces/projects/ide-demo/topics/tools-permissions/demo/Cargo.toml\"")
-    );
-    assert!(!settings.contains("\"workspaces/projects/ide-demo/demo/Cargo.toml\""));
+    let linked_projects = rust_analyzer_linked_projects(repo.path());
+    assert!(linked_projects.contains(&"crates/Cargo.toml".to_owned()));
+    assert!(linked_projects.contains(
+        &"workspaces/projects/ide-demo/topics/tools-permissions/demo/Cargo.toml".to_owned()
+    ));
+    assert!(linked_projects.contains(&"workspaces/current-topic/demo/Cargo.toml".to_owned()));
+    assert!(!linked_projects.contains(&"workspaces/projects/ide-demo/demo/Cargo.toml".to_owned()));
 }
 
 #[test]
@@ -1345,7 +1368,7 @@ fn task_complete_marks_project_idle_and_keeps_stable_path() {
         fs::read_to_string(repo.path().join("workspaces/.daedalus/current.toml")).expect("current");
     assert!(current.contains("current_project = \"projects/close-me\""));
     assert!(current.contains("current_topic = \"\""));
-    assert!(repo.path().join("workspaces/current-project").exists());
+    assert!(!repo.path().join("workspaces/current-project").exists());
     assert!(!repo.path().join("workspaces/current-topic").exists());
     let decision_log =
         fs::read_to_string(task_dir.join(".daedalus/decision-log.md")).expect("decision log");
@@ -1629,6 +1652,7 @@ fn topic_await_reflection_releases_active_slot_and_preserves_closeout_pointer() 
     let task_dir = repo.path().join("workspaces/projects/closeout-flow");
     let topic_dir = active_topic_dir(&task_dir);
     write_core_topic_artifacts(&topic_dir);
+    write_demo_manifest(&topic_dir, "closeout-flow-demo");
     complete_core_topic_stages(&repo, &task_dir);
 
     Command::cargo_bin("daedalus")
@@ -1655,8 +1679,16 @@ fn topic_await_reflection_releases_active_slot_and_preserves_closeout_pointer() 
     );
     let topic_state = read_toml(&topic_dir.join(".daedalus/state.toml"));
     assert_eq!(topic_lifecycle(&topic_state), "awaiting-reflection");
+    assert!(!repo.path().join("workspaces/current-project").exists());
     assert!(!repo.path().join("workspaces/current-topic").exists());
+    assert!(!repo.path().join("workspaces/closeout-project").exists());
     assert!(repo.path().join("workspaces/closeout-topic").exists());
+    let linked_projects = rust_analyzer_linked_projects(repo.path());
+    assert!(linked_projects.contains(&"workspaces/closeout-topic/demo/Cargo.toml".to_owned()));
+    assert!(
+        linked_projects
+            .contains(&"workspaces/projects/closeout-flow/topics/main/demo/Cargo.toml".to_owned())
+    );
     let current = read_toml(&repo.path().join("workspaces/.daedalus/current.toml"));
     assert_eq!(toml_string(&current, "current_topic"), "");
     assert_eq!(
@@ -1695,6 +1727,7 @@ fn awaiting_reflection_topic_does_not_block_next_active_topic() {
         .join("workspaces/projects/next-topic-after-closeout");
     let topic_dir = active_topic_dir(&task_dir);
     write_core_topic_artifacts(&topic_dir);
+    write_demo_manifest(&topic_dir, "main-demo");
     complete_core_topic_stages(&repo, &task_dir);
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -1725,6 +1758,8 @@ fn awaiting_reflection_topic_does_not_block_next_active_topic() {
         ])
         .assert()
         .success();
+    let ddia_dir = task_dir.join("topics/ddia");
+    write_demo_manifest(&ddia_dir, "ddia-demo");
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -1757,8 +1792,13 @@ fn awaiting_reflection_topic_does_not_block_next_active_topic() {
         toml_string(&current, "pending_closeout_topic"),
         "projects/next-topic-after-closeout/topics/main"
     );
+    assert!(repo.path().join("workspaces/current-project").exists());
     assert!(repo.path().join("workspaces/current-topic").exists());
+    assert!(!repo.path().join("workspaces/closeout-project").exists());
     assert!(repo.path().join("workspaces/closeout-topic").exists());
+    let linked_projects = rust_analyzer_linked_projects(repo.path());
+    assert!(linked_projects.contains(&"workspaces/current-topic/demo/Cargo.toml".to_owned()));
+    assert!(linked_projects.contains(&"workspaces/closeout-topic/demo/Cargo.toml".to_owned()));
 
     Command::cargo_bin("daedalus")
         .expect("binary")

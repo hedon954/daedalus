@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use toml_edit::{DocumentMut, Item, Table, value};
 
+use crate::application::ide::sync_rust_analyzer_linked_projects;
 use crate::application::render::render_state;
 use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::{clock, state_toml, template_fs, workspace_fs};
@@ -154,6 +155,8 @@ pub fn migrate_repo_learning(
 
     let state_md = render_state(&project_dir)?.path;
     let topic_state_md = render_state(&topic_dir)?.path;
+    workspace_fs::sync_current_workspace(&options.repo_root, Some(&project_dir), Some(&topic_dir))?;
+    sync_rust_analyzer_linked_projects(&options.repo_root)?;
     Ok(MigrateRepoLearningOutput {
         project_dir,
         topic_dir,

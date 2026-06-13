@@ -2,6 +2,7 @@
 
 > 日期：2026-06-10
 > 状态：已实现
+> 后续修正：`current-project` 已收窄为 active topic 的行动入口；project idle 时不再投影顶层 symlink。
 
 ## 背景
 
@@ -44,7 +45,7 @@ workspaces/
 - `current.toml` 是当前学习现场的机器真相。
 - `current-project` 和 `current-topic` 是用户可点击入口，可以提交到 Git。
 - `current-topic` 只在有活跃专题时存在。
-- `current-project` 可以在项目空闲时保留，方便复盘和启动新专题。
+- `current-project` 最初设计为可在项目空闲时保留；后续为了降低顶层入口噪音，已改为只有 active topic 存在时才出现。
 - 废弃专题进入项目内部 `.archive/`。
 - 暂不考虑 Windows 一等体验；个人 macOS 使用下，软链接是合理取舍。
 

@@ -17,9 +17,9 @@ Repo learning is a long-running, filesystem-first coaching process. The user lea
 
 Non-negotiables:
 
-- Keep stable projects under `workspaces/projects`; active context is projected through `workspaces/.daedalus/current.toml`, `workspaces/current-project`, and `workspaces/current-topic`.
+- Keep stable projects under `workspaces/projects`; complete context lives in `workspaces/.daedalus/current.toml`, while top-level symlinks show only action entries: `current-project` / `current-topic` for active learning and `closeout-topic` for pending reflection.
 - Resolve active context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading project/topic state. Resolve pending closeout from `pending_closeout_topic` or `workspaces/closeout-topic`. The repo root intentionally has no `.daedalus/state.toml`.
-- Keep at most one active topic and at most one pending closeout topic. `current-project` may remain as the selected project even when no topic is active.
+- Keep at most one active topic and at most one pending closeout topic. When no active topic exists, do not treat a selected project as the current learning entry.
 - Prefer workspace artifacts over chat memory.
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
@@ -187,5 +187,5 @@ When resuming long-running work:
 - When explaining principles, follow the mechanism depth ladder in `first-principles.md`; do not stop at a framework abstraction if the lower runtime, OS, protocol, or hardware layer changes the design decision.
 - When a review, validation, scan, doc rewrite, test loop, or commit sequence may take more than roughly 30-60 seconds, use `Long-Running Turn Handoff` from `checkpoint-lifecycle.md` before continuing.
 - Do not accept a code-reading note that only explains call chains; it must include production constraints, failure handling, invariants, trade-offs, and transfer limits.
-- When a Rust demo `Cargo.toml` is created, moved, or migrated under a topic, run `daedalus ide sync-rust-analyzer`.
+- daedalus lifecycle commands automatically refresh VSCode rust-analyzer `linkedProjects`; if the editor still loses a demo crate, run `daedalus ide sync-rust-analyzer` as a repair command.
 - Do not mark a task complete until demo, business transfer, and knowledge archival are addressed or explicitly justified.

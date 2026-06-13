@@ -15,8 +15,8 @@
   - `pending_closeout_project`
   - `pending_closeout_topic`
 - 新增人类可点击入口：
-  - `workspaces/closeout-project`
   - `workspaces/closeout-topic`
+- 顶层 symlink 只作为行动入口：没有 active topic 时不展示 `current-project`；pending closeout 只展示 `closeout-topic`。
 - `validate` 会检查 active topic、pending closeout topic、`current.toml` 和 symlink 投影是否一致。
 - `TUI` 在无 active topic 时可以回落展示 awaiting-reflection topic，避免 closeout 现场丢失。
 - 更新 `AGENTS.md`、`CLAUDE.md`、repo-learning skill、resume prompt、CLI contract 和 topic 模板，明确 active topic 与 pending closeout 的差异。
