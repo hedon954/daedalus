@@ -7,7 +7,7 @@ kind = "repo-learning-topic"
 parent_project = "../.."
 lifecycle = "awaiting-reflection"
 current_phase = "10-archivist"
-next_action = "请先由用户填写 `reflection/closeout.md`：写下真实理解变化、证据、可迁移模式、不可照搬边界和仍需 challenge 的问题。"
+next_action = "用户 closeout reflection 已完成并经过对话 challenge；下一步进入 knowledge-base gate：整理可归档的 reviewed human understanding、补外部参照和链接，然后由用户确认是否归档。"
 
 [[stages]]
 id = "01-goal-aligner"

@@ -8,7 +8,7 @@
 - 生命周期：`awaiting-reflection`
 - 当前阶段：`10-archivist`
 - 状态：`active`
-- 下一步：请先由用户填写 `reflection/closeout.md`：写下真实理解变化、证据、可迁移模式、不可照搬边界和仍需 challenge 的问题。
+- 下一步：用户 closeout reflection 已完成并经过对话 challenge；下一步进入 knowledge-base gate：整理可归档的 reviewed human understanding、补外部参照和链接，然后由用户确认是否归档。
 
 ## 枚举约束
 

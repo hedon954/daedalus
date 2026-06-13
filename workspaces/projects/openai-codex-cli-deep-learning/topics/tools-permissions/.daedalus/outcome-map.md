@@ -21,16 +21,16 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 | [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md) | 08 阶段编码子地图，按 slice 推进 Phase 1/2 demo | 已验证 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 已验证 |
 | [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 将权限/沙箱模式迁移到业务问题 | 已验证 |
-| [`reflection/closeout.md`](../reflection/closeout.md) | 用户主动回顾：理解变化、证据、迁移边界和待 challenge 问题 | 待补充 |
-| `knowledge-base entry` | 通过用户 closeout review 后再结构化归档 | 待补充 |
+| [`reflection/closeout.md`](../reflection/closeout.md) | 用户主动回顾：理解变化、证据、迁移边界和图示总结 | 已完成 |
+| `knowledge-base entry` | 基于已 review 的用户理解结构化归档 | 待归档 |
 
 ## Current Position
 
-- 当前阶段：`10-archivist` closeout reflection。
-- 当前目标：先由用户填写 `reflection/closeout.md`，再由 Agent challenge、补外部参照、整理链接。
-- 当前障碍：此前知识库条目由 Agent 生成，缺少用户主动回顾，因此不能作为最终知识库闭环。
-- 当前动作服务的产物：用户 closeout reflection 和 reviewed human understanding。
-- 当前光标：不是继续写 demo；先完成用户回顾，再决定 knowledge-base 归档。
+- 当前阶段：`10-archivist` knowledge-base gate。
+- 当前目标：把已完成且经过对话 challenge 的 `reflection/closeout.md`，转成可归档的 reviewed human understanding。
+- 当前障碍：需要确认哪些内容可以进入 `knowledge-base/`，哪些只保留为 topic closeout 或后续 engineering gap。
+- 当前动作服务的产物：reviewed knowledge-base entry。
+- 当前光标：不是继续写 demo，也不是重新 challenge closeout；下一步是整理可迁移知识、补外部参照和链接，再由用户确认是否归档。
 
 ## Artifact Dependency Graph
 
@@ -71,8 +71,8 @@ question-roadmap
 - [x] Slice 13 Ratatui Agent CLI REPL 基础 UI：真实终端交互、ReAct event stream、thinking/text delta 合并、Events 按视觉行滚动到底部和 approval once/session/reject 面板已手动验证满足基本诉求。
 - [x] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 - [x] Business Transfer：已将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
-- [ ] Closeout Reflection：用户完成 `reflection/closeout.md`。
-- [ ] Knowledge Archival：在用户 closeout 通过 review 后，再写入 `knowledge-base/`。
+- [x] Closeout Reflection：用户已完成 `reflection/closeout.md`，并在对话中完成关键 challenge：不变量、demo 暂缓、生产迁移边界、图文分工方法论。
+- [ ] Knowledge Archival：基于 reviewed human understanding 写入 `knowledge-base/`。
 
 ## Critical Lens
 
