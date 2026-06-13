@@ -75,7 +75,7 @@ Review is attached to a topic or project. It must not reopen or mutate completed
 daedalus knowledge validate
 daedalus knowledge index
 daedalus knowledge link-check
-daedalus knowledge template
+daedalus knowledge template <knowledge-base-relative-path>
 ```
 
-Knowledge CLI commands do not extract, inspect, promote, or reorganize understanding. The CLI only provides stable structure, templates, indexes, link checks, and validation.
+Knowledge CLI commands do not extract, inspect, promote, or reorganize understanding. The CLI only provides stable structure, blank note skeletons, indexes, link checks, and validation.

@@ -617,18 +617,17 @@ fn knowledge_template_index_link_check_and_validate() {
         .args([
             "knowledge",
             "template",
-            "pattern",
-            "agent-command-safety",
+            "ai-agents/safety-and-permissions/agent-command-safety.md",
             "--title",
             "Agent Command Safety",
         ])
         .assert()
         .success()
         .stdout(predicates::str::contains("action: knowledge-template"));
-    let pattern = repo
+    let entry = repo
         .path()
-        .join("knowledge-base/patterns/agent-command-safety.md");
-    assert!(pattern.exists());
+        .join("knowledge-base/ai-agents/safety-and-permissions/agent-command-safety.md");
+    assert!(entry.exists());
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
@@ -637,7 +636,7 @@ fn knowledge_template_index_link_check_and_validate() {
         .success()
         .stdout(predicates::str::contains("action: knowledge-index"));
     let index = fs::read_to_string(repo.path().join("knowledge-base/index.toml")).expect("index");
-    assert!(index.contains("patterns/agent-command-safety.md"));
+    assert!(index.contains("ai-agents/safety-and-permissions/agent-command-safety.md"));
 
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -645,7 +644,9 @@ fn knowledge_template_index_link_check_and_validate() {
         .args(["knowledge", "list"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("knowledge: patterns"))
+        .stdout(predicates::str::contains(
+            "knowledge: ai-agents/safety-and-permissions",
+        ))
         .stdout(predicates::str::contains("Agent Command Safety"));
 
     Command::cargo_bin("daedalus")
@@ -670,6 +671,14 @@ fn knowledge_template_index_link_check_and_validate() {
         .args(["validate", task_dir.to_str().expect("utf8"), "--knowledge"])
         .assert()
         .success();
+
+    fs::remove_file(&entry).expect("remove indexed knowledge entry");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["knowledge", "validate"])
+        .assert()
+        .failure();
 }
 
 #[test]

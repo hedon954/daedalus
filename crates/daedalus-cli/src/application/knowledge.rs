@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -5,42 +6,7 @@ use crate::domain::{DaedalusError, KnowledgeSnapshot, Result};
 use crate::infrastructure::clock;
 use toml_edit::{DocumentMut, Item, Table, value};
 
-const REQUIRED_KNOWLEDGE_DIRS: [&str; 10] = [
-    "concepts",
-    "skills",
-    "patterns",
-    "problems",
-    "cases",
-    "source-maps",
-    "trees",
-    "drills",
-    "index",
-    "site",
-];
-
-const ENTRY_DIRS: [&str; 8] = [
-    "concepts",
-    "skills",
-    "patterns",
-    "problems",
-    "cases",
-    "source-maps",
-    "trees",
-    "drills",
-];
-
-const REQUIRED_ENTRY_HEADINGS: [&str; 10] = [
-    "## 回忆钩子",
-    "## 现实问题",
-    "## 第一性原理",
-    "## 底层原理",
-    "## 关键不变量",
-    "## 取舍",
-    "## 不要照搬",
-    "## 迁移方式",
-    "## 证据来源",
-    "## 复习练习",
-];
+const RESERVED_MARKDOWN_FILES: [&str; 2] = ["README.md", "index.md"];
 
 /// knowledge 操作输出。
 #[derive(Debug, Clone)]
@@ -75,48 +41,36 @@ impl KnowledgeValidationOutput {
 pub fn ensure_knowledge_base_layout(repo_root: &Path) -> Result<PathBuf> {
     let root = knowledge_root(repo_root);
     ensure_dir(&root)?;
-    for dir in REQUIRED_KNOWLEDGE_DIRS {
-        ensure_dir(&root.join(dir))?;
-    }
-    ensure_index_readme(&root)?;
+    ensure_human_index(&root)?;
     Ok(root)
 }
 
-/// 生成某一类知识条目模板。
+/// 生成一篇空白知识笔记骨架。
 pub fn create_knowledge_template(
     repo_root: &Path,
-    kind: &str,
-    slug: &str,
+    entry_path: &str,
     title: Option<&str>,
 ) -> Result<KnowledgeOutput> {
     let root = ensure_knowledge_base_layout(repo_root)?;
-    let plural = plural_dir(kind)?;
-    let slug = sanitize_slug(slug);
+    let path = normalize_entry_path(&root, entry_path)?;
     let title = title
         .filter(|value| !value.trim().is_empty())
         .map(str::trim)
-        .unwrap_or(&slug);
-    let template_path = repo_root
-        .join("system")
-        .join("templates")
-        .join("knowledge")
-        .join(format!("{kind}.md"));
-    let template = fs::read_to_string(&template_path).map_err(|source| DaedalusError::Io {
-        path: template_path.clone(),
-        source,
-    })?;
-    let content = template
-        .replace("{{TITLE}}", title)
-        .replace("{{SLUG}}", &slug)
-        .replace("{{KIND}}", kind)
-        .replace("{{CREATED_AT}}", &clock::now_local_timestamp());
-    let path = root.join(plural).join(format!("{slug}.md"));
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| title_from_path(&path));
     if path.exists() {
         return Err(DaedalusError::InvalidKnowledgeOperation(format!(
             "knowledge entry already exists: {}",
             path.display()
         )));
     }
+    if let Some(parent) = path.parent() {
+        ensure_dir(parent)?;
+    }
+    let content = format!(
+        "---\nstatus = \"draft\"\ncreated_at = \"{}\"\n---\n\n# {title}\n",
+        clock::now_local_timestamp()
+    );
     fs::write(&path, content).map_err(|source| DaedalusError::Io {
         path: path.clone(),
         source,
@@ -124,8 +78,7 @@ pub fn create_knowledge_template(
     Ok(KnowledgeOutput {
         action: "knowledge-template".to_owned(),
         path,
-        next: "校准条目的问题入口、第一性原理、底层原理、迁移边界和复习练习，然后运行 daedalus knowledge index。"
-            .to_owned(),
+        next: "根据这篇笔记的主题按需组织内容，补齐外部资料、第一性原理、底层原理和学习来源链接，然后运行 daedalus knowledge index。".to_owned(),
     })
 }
 
@@ -141,7 +94,7 @@ pub fn rebuild_knowledge_index(repo_root: &Path) -> Result<KnowledgeOutput> {
     if let Some(array) = doc["entries"].as_array_of_tables_mut() {
         for entry in entries {
             let mut table = Table::new();
-            table["kind"] = value(entry.level);
+            table["level"] = value(entry.level);
             table["title"] = value(entry.name);
             table["path"] = value(entry.path);
             table["status"] = value(entry.status);
@@ -204,12 +157,12 @@ fn ensure_dir(path: &Path) -> Result<()> {
     })
 }
 
-fn ensure_index_readme(root: &Path) -> Result<()> {
-    let path = root.join("index").join("README.md");
+fn ensure_human_index(root: &Path) -> Result<()> {
+    let path = root.join("index.md");
     if !path.exists() {
         fs::write(
             &path,
-            "# 知识库导航\n\n这里是人可读的知识库入口。机器索引见 `../index.toml`。\n",
+            "# 知识库导航\n\n这里是人可读的知识树入口。机器索引见 `index.toml`。\n",
         )
         .map_err(|source| DaedalusError::Io { path, source })?;
     }
@@ -218,46 +171,21 @@ fn ensure_index_readme(root: &Path) -> Result<()> {
 
 fn collect_knowledge_snapshots_from_root(root: &Path) -> Result<Vec<KnowledgeSnapshot>> {
     let mut items = Vec::new();
-    for dir in ENTRY_DIRS {
-        let dir_path = root.join(dir);
-        if !dir_path.exists() {
+    for path in markdown_files(root)? {
+        if !is_knowledge_entry_file(root, &path) {
             continue;
         }
-        for entry in fs::read_dir(&dir_path).map_err(|source| DaedalusError::Io {
-            path: dir_path.clone(),
+        let content = fs::read_to_string(&path).map_err(|source| DaedalusError::Io {
+            path: path.clone(),
             source,
-        })? {
-            let entry = entry.map_err(|source| DaedalusError::Io {
-                path: dir_path.clone(),
-                source,
-            })?;
-            let path = entry.path();
-            if path.extension().and_then(|value| value.to_str()) != Some("md") {
-                continue;
-            }
-            if path.file_name().and_then(|value| value.to_str()) == Some("README.md") {
-                continue;
-            }
-            let content = fs::read_to_string(&path).map_err(|source| DaedalusError::Io {
-                path: path.clone(),
-                source,
-            })?;
-            items.push(KnowledgeSnapshot {
-                level: dir.to_owned(),
-                name: first_heading(&content).unwrap_or_else(|| {
-                    path.file_stem()
-                        .and_then(|value| value.to_str())
-                        .unwrap_or("untitled")
-                        .to_owned()
-                }),
-                path: path
-                    .strip_prefix(root)
-                    .unwrap_or(&path)
-                    .to_string_lossy()
-                    .to_string(),
-                status: frontmatter_value(&content, "status").unwrap_or_else(|| "draft".to_owned()),
-            });
-        }
+        })?;
+        let relative = path.strip_prefix(root).unwrap_or(&path);
+        items.push(KnowledgeSnapshot {
+            level: knowledge_level(relative),
+            name: first_heading(&content).unwrap_or_else(|| title_from_path(&path)),
+            path: relative.to_string_lossy().to_string(),
+            status: frontmatter_value(&content, "status").unwrap_or_else(|| "draft".to_owned()),
+        });
     }
     items.sort_by(|left, right| left.path.cmp(&right.path));
     Ok(items)
@@ -269,36 +197,78 @@ fn validate_knowledge_base(root: &Path) -> Result<Vec<String>> {
         issues.push("knowledge-base missing".to_owned());
         return Ok(issues);
     }
-    for dir in REQUIRED_KNOWLEDGE_DIRS {
-        if !root.join(dir).is_dir() {
-            issues.push(format!("knowledge-base missing directory: {dir}"));
-        }
-    }
-    if !root.join("index.toml").is_file() {
+    let index_path = root.join("index.toml");
+    let entries = collect_knowledge_snapshots_from_root(root)?;
+    if !index_path.is_file() {
         issues.push("knowledge-base missing index.toml; run daedalus knowledge index".to_owned());
+    } else {
+        validate_knowledge_index(root, &index_path, &entries, &mut issues)?;
     }
-    for item in collect_knowledge_snapshots_from_root(root)? {
+    for item in entries {
         let path = root.join(&item.path);
         let content = fs::read_to_string(&path).map_err(|source| DaedalusError::Io {
             path: path.clone(),
             source,
         })?;
-        for heading in REQUIRED_ENTRY_HEADINGS {
-            if !content.contains(heading) {
-                issues.push(format!(
-                    "knowledge entry `{}` missing heading: {heading}",
-                    item.path
-                ));
-            }
-        }
-        if !content.contains("source = ") {
+        if first_heading(&content).is_none() {
             issues.push(format!(
-                "knowledge entry `{}` missing frontmatter source",
+                "knowledge entry `{}` missing title heading",
                 item.path
             ));
         }
     }
     Ok(issues)
+}
+
+fn validate_knowledge_index(
+    root: &Path,
+    index_path: &Path,
+    entries: &[KnowledgeSnapshot],
+    issues: &mut Vec<String>,
+) -> Result<()> {
+    let content = fs::read_to_string(index_path).map_err(|source| DaedalusError::Io {
+        path: index_path.to_path_buf(),
+        source,
+    })?;
+    let Ok(doc) = content.parse::<DocumentMut>() else {
+        issues
+            .push("knowledge-base index.toml is invalid; run daedalus knowledge index".to_owned());
+        return Ok(());
+    };
+    let Some(indexed_entries) = doc["entries"].as_array_of_tables() else {
+        issues.push(
+            "knowledge-base index.toml missing entries array; run daedalus knowledge index"
+                .to_owned(),
+        );
+        return Ok(());
+    };
+
+    let current_paths = entries
+        .iter()
+        .map(|entry| entry.path.clone())
+        .collect::<BTreeSet<_>>();
+    let mut indexed_paths = BTreeSet::new();
+    for entry in indexed_entries {
+        let Some(path) = entry.get("path").and_then(|item| item.as_str()) else {
+            issues.push(
+                "knowledge-base index.toml contains entry without path; run daedalus knowledge index"
+                    .to_owned(),
+            );
+            continue;
+        };
+        indexed_paths.insert(path.to_owned());
+        if !root.join(path).is_file() {
+            issues.push(format!(
+                "knowledge-base index.toml points to missing entry `{path}`; run daedalus knowledge index"
+            ));
+        }
+    }
+    for path in current_paths.difference(&indexed_paths) {
+        issues.push(format!(
+            "knowledge entry `{path}` missing from index.toml; run daedalus knowledge index"
+        ));
+    }
+    Ok(())
 }
 
 fn link_check_knowledge_base(root: &Path) -> Result<Vec<String>> {
@@ -372,22 +342,6 @@ fn is_external_or_anchor(link: &str) -> bool {
         || link.starts_with("mailto:")
 }
 
-fn plural_dir(kind: &str) -> Result<&'static str> {
-    match kind {
-        "concept" => Ok("concepts"),
-        "skill" => Ok("skills"),
-        "pattern" => Ok("patterns"),
-        "problem" => Ok("problems"),
-        "case" => Ok("cases"),
-        "source-map" => Ok("source-maps"),
-        "tree" => Ok("trees"),
-        "drill" => Ok("drills"),
-        _ => Err(DaedalusError::InvalidKnowledgeOperation(format!(
-            "unknown knowledge kind: {kind}"
-        ))),
-    }
-}
-
 fn first_heading(content: &str) -> Option<String> {
     content
         .lines()
@@ -413,21 +367,52 @@ fn frontmatter_value(content: &str, key: &str) -> Option<String> {
     None
 }
 
-fn sanitize_slug(value: &str) -> String {
-    let sanitized: String = value
-        .chars()
-        .map(|ch| {
-            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
-                ch.to_ascii_lowercase()
-            } else {
-                '-'
-            }
-        })
-        .collect();
-    let sanitized = sanitized.trim_matches('-');
-    if sanitized.is_empty() {
-        "knowledge".to_owned()
-    } else {
-        sanitized.to_owned()
+fn normalize_entry_path(root: &Path, value: &str) -> Result<PathBuf> {
+    let relative = Path::new(value);
+    if relative.is_absolute()
+        || relative
+            .components()
+            .any(|component| matches!(component, std::path::Component::ParentDir))
+    {
+        return Err(DaedalusError::InvalidKnowledgeOperation(format!(
+            "knowledge entry path must stay inside knowledge-base: {value}"
+        )));
     }
+    let mut path = root.join(relative);
+    if path.extension().and_then(|value| value.to_str()) != Some("md") {
+        path.set_extension("md");
+    }
+    Ok(path)
+}
+
+fn title_from_path(path: &Path) -> String {
+    path.file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or("untitled")
+        .replace(['-', '_'], " ")
+}
+
+fn is_knowledge_entry_file(root: &Path, path: &Path) -> bool {
+    let Ok(relative) = path.strip_prefix(root) else {
+        return false;
+    };
+    if relative.components().count() == 1
+        && relative
+            .file_name()
+            .and_then(|value| value.to_str())
+            .is_some_and(|name| RESERVED_MARKDOWN_FILES.contains(&name))
+    {
+        return false;
+    }
+    path.file_name()
+        .and_then(|value| value.to_str())
+        .is_some_and(|name| name != "README.md")
+}
+
+fn knowledge_level(relative: &Path) -> String {
+    relative
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .map(|parent| parent.to_string_lossy().to_string())
+        .unwrap_or_else(|| "root".to_owned())
 }

@@ -45,8 +45,8 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - The CLI must not generate knowledge conclusions. It may create templates, indexes, link checks, and validation only.
 - Archive only reviewed human understanding.
 - Prefer reusable patterns over repo-specific trivia.
-- Each knowledge entry should include reality constraints, core approach, trade-off, transferable pattern, source, and review drill.
-- Revisit taxonomy as the knowledge base grows; do not over-design categories early.
+- Do not force every knowledge entry into a fixed template. Write natural notes that fit the topic while preserving first principles, bottom-level mechanism, evidence, trade-off, source links, and review paths.
+- Let the knowledge tree evolve from real entries. Add, merge, move, or rename directories when the user's knowledge structure becomes clearer.
 
 ## Promotion Rules
 

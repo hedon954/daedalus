@@ -1,50 +1,32 @@
 schema_version = 1
-generated_at = "2026-06-13 21:24:01"
+generated_at = "2026-06-13 23:19:15"
 
 [[entries]]
-kind = "cases"
-title = "Codex Tools-Permissions 学习案例"
-path = "cases/codex-tools-permissions-demo.md"
+level = "ai-agents/safety-and-permissions"
+title = "Agent 本地命令执行安全"
+path = "ai-agents/safety-and-permissions/local-command-execution.md"
 status = "verified"
 
 [[entries]]
-kind = "concepts"
-title = "OS Sandbox 与 Shell 执行边界"
-path = "concepts/os-sandbox-and-shell-boundary.md"
+level = "ai-agents/tool-use"
+title = "ReAct 工具运行时"
+path = "ai-agents/tool-use/react-tool-runtime.md"
 status = "verified"
 
 [[entries]]
-kind = "drills"
-title = "Agent 本地命令安全复习练习"
-path = "drills/agent-command-safety-review.md"
+level = "computer-systems/operating-systems"
+title = "Sandbox 的第一性原理"
+path = "computer-systems/operating-systems/sandbox.md"
 status = "verified"
 
 [[entries]]
-kind = "patterns"
-title = "Agent 本地命令安全执行链路"
-path = "patterns/agent-command-safety-pipeline.md"
+level = "rust/async-runtime"
+title = "Rust 流式 Agent 与 Tokio 运行时"
+path = "rust/async-runtime/streaming-agent.md"
 status = "verified"
 
 [[entries]]
-kind = "patterns"
-title = "工具可观察性与 ReAct 回灌"
-path = "patterns/tool-observability-react-feedback.md"
-status = "verified"
-
-[[entries]]
-kind = "problems"
-title = "Agent 本地命令执行为什么危险"
-path = "problems/agent-local-command-execution.md"
-status = "verified"
-
-[[entries]]
-kind = "skills"
-title = "Rust 异步流式 Agent 实现"
-path = "skills/rust-async-streaming-agent.md"
-status = "verified"
-
-[[entries]]
-kind = "source-maps"
-title = "Codex Tools-Permissions 来源映射"
-path = "source-maps/codex-tools-permissions.md"
+level = "rust/cli-and-tui"
+title = "终端 Agent UI 的事件循环"
+path = "rust/cli-and-tui/terminal-agent-ui.md"
 status = "verified"

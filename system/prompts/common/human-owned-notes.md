@@ -166,7 +166,7 @@ Closeout 应聚焦核心主线，但不能忽略重要底层原理缺口。用�
 
 CLI 只负责：
 
-- `daedalus knowledge template`
+- `daedalus knowledge template <knowledge-base-relative-path>`
 - `daedalus knowledge index`
 - `daedalus knowledge list`
 - `daedalus knowledge link-check`

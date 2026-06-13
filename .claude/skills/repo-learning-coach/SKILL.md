@@ -25,6 +25,8 @@ Non-negotiables:
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
 - Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
 - Keep closeout focused on core goals, demo decisions, trade-offs, architecture, transfer boundaries, and important weak foundations; make knowledge extraction greedy across closeout, guides, notes, demo, tests, external references, and first-principles side quests.
+- Knowledge-base entries are natural notes in an evolving knowledge tree, not fixed templates or type buckets.
+- When summaries or knowledge archival fill technical details, verify them with external sources when possible; prefer official docs, papers, source repos, or established best-practice references.
 - When a discussion produces a reusable learning method, thinking tool, artifact pattern, or Agent operating lesson, promote it to the right durable layer instead of leaving it only in the current topic.
 - Before long-running repo-learning work, make the first working message a small parallel study handoff instead of leaving the learner idle.
 - Before repo-learning commits, run checkpoint lifecycle pre-commit sync; after commits, output post-commit orientation.

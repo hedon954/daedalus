@@ -145,7 +145,7 @@ daedalus review start --project-dir <project-dir> --topic <topic-slug> --goal "<
 daedalus review session start --project-dir <project-dir> <review-id>
 
 # knowledge: CLI 只做确定性的知识库底座，不生成学习内容
-daedalus knowledge template <kind> <slug> --title "<title>"
+daedalus knowledge template <knowledge-base-relative-path> --title "<title>"
 daedalus knowledge index
 daedalus knowledge list
 daedalus knowledge link-check

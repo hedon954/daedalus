@@ -14,4 +14,4 @@ Reusable filesystem templates for daedalus artifacts.
 ## Review / Knowledge
 
 - `review/`：复习计划和 session 模板。
-- `knowledge/`：长期知识库条目模板，由 `daedalus knowledge template` 使用。
+- `knowledge/`：知识库空白骨架说明。`daedalus knowledge template <path>` 只创建最小笔记文件，不生成知识结论或固定字段模板。

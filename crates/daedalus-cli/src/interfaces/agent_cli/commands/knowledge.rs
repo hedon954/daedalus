@@ -1,4 +1,4 @@
-use clap::{Args, Subcommand, ValueEnum};
+use clap::{Args, Subcommand};
 
 use crate::application::knowledge::{
     create_knowledge_template, link_check_knowledge, list_knowledge, rebuild_knowledge_index,
@@ -41,52 +41,18 @@ pub enum KnowledgeSubcommand {
     Validate,
 }
 
-/// 知识条目类型。
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum KnowledgeKindArg {
-    Concept,
-    Skill,
-    Pattern,
-    Problem,
-    Case,
-    SourceMap,
-    Tree,
-    Drill,
-}
-
-impl KnowledgeKindArg {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Concept => "concept",
-            Self::Skill => "skill",
-            Self::Pattern => "pattern",
-            Self::Problem => "problem",
-            Self::Case => "case",
-            Self::SourceMap => "source-map",
-            Self::Tree => "tree",
-            Self::Drill => "drill",
-        }
-    }
-}
-
 /// template 参数。
 #[derive(Debug, Args)]
 pub struct KnowledgeTemplateArgs {
-    #[arg(value_enum)]
-    pub kind: KnowledgeKindArg,
-    pub slug: String,
+    /// knowledge-base 内的相对路径，例如 `ai-agents/tool-use/react-tool-runtime.md`。
+    pub path: String,
     #[arg(long)]
     pub title: Option<String>,
 }
 
 impl CmdExecutor for KnowledgeTemplateArgs {
     async fn execute(self, ctx: AgentCliContext) -> Result<()> {
-        let output = create_knowledge_template(
-            &ctx.repo_root,
-            self.kind.as_str(),
-            &self.slug,
-            self.title.as_deref(),
-        )?;
+        let output = create_knowledge_template(&ctx.repo_root, &self.path, self.title.as_deref())?;
         print_knowledge(&output, ctx.format);
         Ok(())
     }

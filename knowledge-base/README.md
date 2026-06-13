@@ -1,58 +1,45 @@
 # Knowledge Base
 
-这里保存经过用户主动回顾、AI challenge 和结构化校准后的可复用知识。workspace 是学习现场，knowledge-base 是能力系统。
+这里保存经过用户主动回顾、AI challenge、外部资料校准和结构化整理后的可复用知识。
+
+`knowledge-base/` 不是资料摘要库，也不是 Agent 从 notes 自动提取出来的结论。它保存的是 reviewed human understanding：用户已经在 topic closeout 中主动表达过，Agent 再帮助补资料、校准边界、组织链接。
+
+## 核心原则
+
+```text
+用户负责生成理解
+Agent 负责挑战、校准、链接和组织
+知识库负责长期复习与迁移
+```
+
+知识库不使用固定模板，也不使用固定类型桶。每篇笔记按内容需要自然组织，但必须能回答：
+
+- 它解决什么现实问题。
+- 第一性原理是什么。
+- 底层原理是什么。
+- 现实约束和 trade-off 是什么。
+- 它和学习过的项目、topic、demo 或源码有什么关系。
+- 它参考了哪些外部资料。
+- 未来如何复习、迁移或继续追问。
+
+## 当前知识树
+
+- [`ai-agents/`](ai-agents/)：Agent 工具体系、权限安全、ReAct runtime、上下文和可观察性。
+- [`computer-systems/`](computer-systems/)：操作系统、网络、数据库、编译器等底层机制。
+- [`rust/`](rust/)：Rust 异步、进程、CLI/TUI、类型系统和工程实践。
+
+目录不是永久设计。新增学习内容时，可以新建、移动、合并或重命名目录，让知识树跟着真实理解一起演化。
 
 ## 归档流程
 
-`knowledge-base/` 不是 Agent 从 notes 自动提取出来的总结。进入这里之前，用户必须先在 topic 的 `reflection/closeout.md` 中完成主动回顾；Agent 的职责是提问、challenge、搜索外部资料、补链接、检查一致性，并在用户确认后做结构化归档。
-
 ```mermaid
-flowchart TD
-    Material["Learning material"] --> Study["Human studies"]
-    Study --> Notes["Human rough notes<br/>topics/<topic>/notes/"]
-    Notes --> Challenge["AI challenge / coach<br/>clarity, evidence, contradiction"]
-    Challenge --> Revise["Human revises notes"]
-    Revise --> Closeout["Human closeout reflection<br/>topics/<topic>/reflection/closeout.md"]
-    Closeout --> Compare["AI external references<br/>public sources, best practices, prior knowledge"]
-    Compare --> Gate{"Reviewed and confirmed<br/>by human?"}
-    Gate -->|No| Closeout
-    Gate -->|Yes| Structure["AI structure / link / format<br/>template, taxonomy, backlinks"]
-    Structure --> KB["knowledge-base/"]
-    KB --> Validate["daedalus knowledge<br/>index / validate / link-check"]
+flowchart LR
+    Candidate["reflection/candidate-map.md"] --> Review["用户 closeout + Agent challenge"]
+    Review --> Route["选择知识树位置"]
+    Route --> Research["查外部资料校准"]
+    Research --> Write["按需写自然笔记"]
+    Write --> Link["关联 topic / demo / 旧知识"]
+    Link --> Validate["knowledge index / validate / link-check"]
 ```
 
-这个流程的核心边界：
-
-- 用户负责 meaning：主动回顾、总结判断、表达理解。
-- Agent 负责 structure：提问、挑战、外部参照、结构化、链接和校验。
-- `notes/` 是过程证据，不是知识库来源的充分条件。
-- `reflection/closeout.md` 是 topic 级闭环产物，是进入知识库前的必要条件。
-- `knowledge-base/` 只保存 reviewed human retrospective understanding。
-
-目录含义：
-
-- `concepts/`：原子概念。
-- `skills/`：能力条目。
-- `patterns/`：可迁移模式。
-- `problems/`：问题入口。
-- `cases/`：案例证据。
-- `source-maps/`：来源映射。
-- `trees/`：技能树和学习路径。
-- `drills/`：复习、迁移和批判练习。
-- `index/`：人可读导航页。
-- `site/`：可选前端投影。
-
-归档时先选择主落点：
-
-- 概念和底层原理进入 `concepts/`。
-- 能被练习和验收的能力进入 `skills/`。
-- 可迁移的架构、流程、状态机和取舍进入 `patterns/`。
-- 能统领一组知识的现实难题进入 `problems/`。
-- 一次学习、demo 或业务迁移的完整上下文进入 `cases/`。
-- 从书、论文、repo、课程到知识条目的映射进入 `source-maps/`。
-- 能力依赖、学习路径和薄弱点地图进入 `trees/`。
-- 复习、迁移和批判问题进入 `drills/`。
-
-同一个候选可以链接到多个目录，但必须有一个主落点。knowledge-base 要形成体系，而不是把候选表逐条搬进来。
-
-机器索引见 `index.toml`，由 `daedalus knowledge index` 重建。
+机器索引见 [`index.toml`](index.toml)，人可读入口见 [`index.md`](index.md)。

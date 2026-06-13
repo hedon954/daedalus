@@ -51,18 +51,24 @@ closeout 是主判断材料，用来确认“用户真正理解了什么”；�
 
 ## Knowledge Routing
 
-正式写入 `knowledge-base/` 前，必须先判断每个候选应该落到知识库的哪个体系节点，而不是只按当前 topic 分组：
+正式写入 `knowledge-base/` 前，必须先判断每个候选应该落到哪棵知识树，而不是套用固定类型目录。
 
-- `concepts/`：概念和底层原理。适合回答“它是什么、为什么存在、容易误解在哪里”，例如 sandbox、waker、SSE。
-- `skills/`：可练习能力。适合回答“掌握后我能做什么、如何验证掌握”，例如 Rust 流式实现、ratatui CLI 实作。
-- `patterns/`：可迁移设计模式。适合回答“什么场景复用、有什么取舍、什么时候不要用”，例如 approval / sandbox / retry 链路、事件可观察性。
-- `problems/`：问题入口。适合回答“这个问题为什么难、有哪些约束、当前最佳答案是什么”，例如 Agent 为什么不能直接执行本地命令。
-- `cases/`：一次完整学习或 demo 案例。适合保留 Codex tools-permissions topic 的上下文、证据和结论。
-- `source-maps/`：来源映射。适合记录 Codex 源码、demo、外部资料分别贡献了什么，以及哪些部分不应照搬。
-- `trees/`：能力依赖和学习路径。适合组织 Agent 工具体系、安全执行、Rust async、OS sandbox 等依赖关系。
-- `drills/`：复习、迁移和批判练习。适合把知识转成 recall、debug、design review 或 mini implementation 练习。
+知识库目录是有机演化的能力地图。可以参考但不要固化这些方向：
 
-同一个候选可以产生多个相关条目，但必须有主落点。优先少而精：先归档能支撑复习和迁移的核心条目，再用链接连接概念、技能、模式和案例。
+- `computer-systems/`：操作系统、网络、数据库、编译器、编程语言等底层知识。
+- `software-engineering/`：架构设计、设计原则、测试、可观察性、工程协作。
+- `ai-agents/`：工具调用、上下文工程、权限安全、Agent runtime、CLI/TUI 交互。
+- `rust/`：异步 runtime、进程与 IO、CLI/TUI、类型和所有权实践。
+- `learning-methods/`：可迁移的学习方法、复盘方法和图示方法。
+
+这些目录不是模板。归档时允许新建目录、合并旧目录、移动条目或补充索引。判断顺序是：
+
+1. 这个候选属于哪个问题域？
+2. 它和已有知识是新增、补充、修正、对比，还是只需要链接？
+3. 多个候选是否应该合并成一篇更完整的主题笔记？
+4. 这篇笔记应该放在哪里，未来用户最可能在哪里找回它？
+
+不要为每个候选机械生成一篇文章。优先少而精，让一篇笔记围绕一个真实问题讲完整。
 
 ## Greedy Candidate Mining
 
@@ -108,7 +114,7 @@ AI 可以：
 - 主动搜索公网资料、官方文档、论文、工程博客或业内最佳实践作为外部参照。
 - 对比用户结论和既有知识库条目。
 - 从 closeout、guides、notes、demo 和验证记录中挖掘候选知识条目，但必须标明用户理解证据来自哪里。
-- 建议知识条目分类、标题、链接和复习练习。
+- 建议知识树位置、标题、链接和复习练习。
 - 在用户理解已经存在后，协助格式化 Markdown。
 
 AI 不可以：
@@ -118,34 +124,32 @@ AI 不可以：
 - 在用户没有完成主动回顾时判定“可以归档”。
 - 用流畅表达覆盖用户自己的粗糙但真实的理解。
 
-## Knowledge Shape
+## Knowledge Writing
 
-归档后的知识条目至少回答：
+不要使用固定模板硬套每篇笔记。知识库笔记应按主题需要自然组织。
 
-- 现实问题是什么。
-- 现实制约是什么。
-- naive solution 为什么不够。
-- 第一性原理是什么。
-- 底层原理是什么。
-- 核心抽象或不变量是什么。
-- trade-off 是什么。
-- 和外部最佳实践相比有什么异同。
-- 局限和 failure mode 是什么。
-- 忠实模仿边界是什么。
-- 可迁移模式是什么。
-- 不应照抄什么。
-- 如何复习或迁移验证。
+写作时必须先完成这些判断：
+
+- 这篇笔记解决什么问题。
+- 为什么这个问题会出现；它背后的第一性原理是什么。
+- 底层原理是什么；哪些机制不是当前项目特有的。
+- 本次 topic / demo / closeout 如何暴露或验证了它。
+- 查阅了哪些外部资料，哪些事实被校准过。
+- 现实工程里有什么 trade-off、局限和 failure mode。
+- 它如何和已有知识库条目连接；没有关联时不要强行关联。
+
+如果适合用流程、对比表、代码片段、案例叙事或复习题，就按实际需要组织。不要为了字段完整而牺牲可读性。
 
 ## CLI Boundary
 
 CLI 只负责结构能力：
 
 ```text
-daedalus knowledge template
+daedalus knowledge template <knowledge-base-relative-path>
 daedalus knowledge index
 daedalus knowledge list
 daedalus knowledge link-check
 daedalus knowledge validate
 ```
 
-CLI 不生成知识结论。
+CLI 不生成知识结论，也不强制固定标题结构。
