@@ -1,75 +1,92 @@
 # 第一次 Repo Learning 闭环回顾：Codex 工具与权限系统
 
-日期：2026-06-10
-范围：`main..learning/codex`
+日期：2026-06-14
 对象：`openai-codex-cli-deep-learning / tools-permissions`
+状态：topic 已完成，已完成用户 closeout、knowledge-base 归档和知识网页策展。
 
-## Executive Summary
+## 总结
 
-这次分支不是一次普通功能开发，而是 daedalus 的第一次完整实战闭环：
-
-```text
-学习一个真实 repo
-  -> 暴露 coach 协议缺陷
-  -> 修改 daedalus 自身
-  -> 继续学习
-  -> 实现 mini demo
-  -> 迁移业务模式
-  -> 归档知识
-```
-
-最终产物不是“读懂 Codex 的若干笔记”，而是一套已经被源码阅读、demo 实现、测试和 UI 验证过的学习工作流：
-
-- repo-learning 从单任务模型升级为 project/topic 模型。
-- 学习过程从阶段流水线升级为 outcome-driven map。
-- demo 从模拟状态机推进到真实 OS sandbox 和 `ratatui` CLI。
-- review / knowledge system 成为 learning 之后的独立能力。
-- daedalus 自身指令被多次压缩、校准和强化，减少“Agent 替用户学习”的风险。
-
-## Timeline
+这次不是一次普通源码学习，而是 daedalus 第一次跑完整个深度学习闭环：
 
 ```mermaid
-timeline
-    title Codex Repo Learning Evolution
-    2026-05-09 : 初始化 Codex CLI 源码学习任务
-    2026-05-12 : 支持阶段回退 : 强化工业问题驱动阅读
-    2026-05-17 : 引入 outcome-map : 以最终产物驱动学习
-    2026-05-23 : 重构为多 topic project model
-    2026-05-24 : 加入 review 和 knowledge extraction
-    2026-05-28 : demo ReAct loop 开始成形 : TUI cockpit 改进
-    2026-06-03 : 加入 critical lens : 不把学习材料当权威
-    2026-06-06 : Slice 8 事件协议与审批回流完成
-    2026-06-08 : Slice 9 多工具并发执行完成
-    2026-06-09 : OsExecutionRunner 接入 sandbox-exec
-    2026-06-10 : ratatui Agent CLI REPL 完成 : tools-permissions topic 闭环
+flowchart LR
+    Goal["真实学习问题"] --> Repo["源码阅读"]
+    Repo --> Demo["mini demo 实现"]
+    Demo --> Transfer["业务迁移"]
+    Transfer --> Reflection["用户 closeout"]
+    Reflection --> Knowledge["knowledge-base"]
+    Knowledge --> Web["interactive knowledge web"]
+    Web --> Daedalus["daedalus 规则进化"]
+    Daedalus --> Goal
 ```
 
-## What Changed In Daedalus
+最终成果不是“读懂 Codex 的几份笔记”，而是同时完成了三件事：
 
-### 1. 从单任务学习升级为多专题项目
+- 学懂 Codex 工具、权限、sandbox、retry、事件和 ReAct loop 的核心机制。
+- 通过 Rust mini demo 亲手实现安全本地命令执行链路、真实 OS sandbox 和 ratatui Agent CLI。
+- 反过来升级 daedalus 的学习协议、closeout 流程、知识沉淀流程和知识网页标准。
 
-最初 repo-learning 更像一个 10-stage workspace。随着用户提出“同一个 repo 里会有多个学习 topic”，系统升级为：
+## Codex Topic 学到什么
+
+这个 topic 最核心的结论是：
 
 ```text
-repo learning project
-  -> shared/
-  -> topics/<slug>/
-       -> .daedalus/state.toml
-       -> notes/
-       -> guides/
-       -> demo/
+本地命令执行不是函数调用，而是受控副作用。
 ```
 
-这个改动解决了两个问题：
+模型只能提出意图，Host 必须接管后续链路：
 
-- 同一个 repo 可以学习多个主题，例如工具权限、sub-agent、prompt engineering。
-- topic 内产物可以闭环，shared 只保存跨 topic 可复用的 verified knowledge。
+```mermaid
+flowchart LR
+    Intent["model intent"] --> Capability["capability match"]
+    Capability --> Approval["approval requirement"]
+    Approval --> Attempt["execution attempt"]
+    Attempt --> Sandbox["sandbox first"]
+    Sandbox --> Retry["retry / escalation gate"]
+    Retry --> Observation["observation + event"]
+```
 
-代价是状态模型更复杂，CLI/TUI/prompt 都必须区分 project state 和 topic state。
+这条链路里有几个不变量：
 
-### 2. 从阶段导航升级为终点地图
+- `Allow / Skip approval` 不等于 `bypass sandbox`。
+- `approval accepted` 不等于 `NoSandbox`。
+- `CommandFailed` 和 `SandboxDenied` 必须区分。
+- sandbox denied 后不能自动裸跑，必须经过 retry policy 和必要审批。
+- 用户授权必须绑定 scope，例如 command prefix、cwd、sandbox profile、network policy 和 persistence。
+- 工具结果给模型，工具事件给外部观察者，两条线不能混。
 
-用户指出早期学习缺少“我们要去哪里”的方向感。于是新增 `outcome-map.md`，并把学习协议改成：
+## Demo 最终长什么样
+
+demo 从模拟状态机推进到真实可用的 local Agent CLI：
+
+```mermaid
+flowchart TD
+    LLM["OpenAI-compatible LLM stream"] --> React["ReActAgent"]
+    React --> Runtime["ToolRuntime"]
+    Runtime --> Pure["pure function tools"]
+    Runtime --> Command["run_command tool"]
+    Command --> Approval["ApprovalGateway"]
+    Command --> Execution["ExecutionRunner"]
+    Execution --> Sim["SimulatedExecutionRunner"]
+    Execution --> OS["OsExecutionRunner / sandbox-exec"]
+    React --> Events["StreamEvent"]
+    Events --> TUI["ratatui Agent CLI"]
+```
+
+几个关键实现闭环：
+
+- `ToolRuntime` 先规划再执行，未知 tool fail closed。
+- 同一轮多个 tool call 并发执行，结果按 index/call_id 稳定回灌。
+- `ApprovalGateway` 支持 single-call 与 session scope 复用。
+- `ExecutionRunner` 把 sandbox attempt 与 no-sandbox attempt 收敛为统一接口。
+- `OsExecutionRunner` 使用 macOS `sandbox-exec` 验证真实 read-only / workspace-write 边界。
+- `ratatui` CLI 支持 prompt、流式 transcript、approval panel、滚动和持续事件刷新。
+
+## daedalus 在过程中如何进化
+
+### 1. 从阶段流水线到产物驱动
+
+早期 repo-learning 有阶段，但用户不知道“下一步要走到哪里”。后来引入 outcome map：
 
 ```text
 每个学习动作必须说明：
@@ -79,158 +96,118 @@ repo learning project
   -> 完成后解锁什么
 ```
 
-这个改变直接减少了源码细节沼泽。Codex 权限系统没有继续泛读，而是收敛到三个 demo 缺口：
+这让源码阅读从“继续读 Codex 权限系统”收敛成“补 demo/design.md 的某个设计决策”。
 
-- Decision 合成
-- Runtime request assembly
-- Orchestrator retry
+### 2. 从单 topic 到 project / topic 模型
 
-### 3. notes / guides 文件夹化
-
-早期每个阶段一份 markdown，很快变成无法导航的大文件。后来改成：
+用户指出同一个 repo 会有多个学习主题。daedalus 因此从单任务 workspace 升级为：
 
 ```text
-guides/<stage-id>/README.md
-guides/<stage-id>/<topic>.md
-notes/<stage-id>/README.md
-notes/<stage-id>/<topic>.md
+projects/<repo>/
+  shared/
+  source/
+  topics/<topic>/
+    notes/
+    guides/
+    demo/
+    reflection/
 ```
 
-这个结构让阶段内部也有“地图 + 专题证据”，避免所有内容塞进一个 `code-reading.md`。
+这让 Codex 的 `tools-permissions` 可以作为一个 topic 完整闭环，未来还能继续学习 sub-agent、prompt engineering、context engineering 等新 topic。
 
-### 4. Review 和 Knowledge System 独立出来
+### 3. 从“Agent 总结”到“用户主动回顾”
 
-用户提出“已经学完的 topic 或 repo 应该能随时启动复习计划”。于是 daedalus 增加：
+最大的一次规则修正是：daedalus 不能替用户学习。
 
-- `daedalus review ...`
-- `daedalus knowledge ...`
-- review templates
-- knowledge-system templates
+现在的分工是：
 
-重要设计是：review 不重新打开 learning stage，而是挂载在 completed topic/project 上，帮助从第一性原理重建理解、暴露薄弱点并更新 mastery map。
+| 角色 | 责任 |
+| --- | --- |
+| 用户 | 写 notes、实践 demo、完成 closeout reflection、确认哪些理解可归档 |
+| Agent | 写 guides、提问、challenge、查外部资料、组织链接、检查一致性 |
+| knowledge-base | 只保存 reviewed human understanding |
 
-### 5. TUI 从状态摘要升级为学习驾驶舱
+`knowledge-base/` 不再是 Agent 从 notes 自动提取的摘要库，而是用户主动回顾后，经 challenge 和外部资料校准后的长期知识。
 
-`daedalus-tui` 最初只是状态面板。用户指出 next action 被截断、信息无法完整阅读。升级方向变成：
+### 4. 从 closeout 之后才找知识，到滚动 candidate-map
+
+后期发现：如果等到 10-reflection 才挖掘知识点，容易遗漏学习过程中的底层原理、Rust 技能和反复暴露的薄弱点。
+
+因此新增 `reflection/candidate-map.md`：
+
+- 01-09 阶段滚动维护候选。
+- 10-reflection 阶段查漏补缺、降噪、确认状态。
+- knowledge-base 阶段再判断每个候选应该新增、补充、修正、对比还是忽略。
+
+### 5. 从 Markdown 知识库到交互式知识网页
+
+Markdown 适合长期保存和深度阅读，但有些机制更适合用网页表达：
+
+- 状态机
+- 事件流
+- 策略对比
+- scenario walkthrough
+- 代码落点与失败模式的并排查看
+
+因此新增 `apps/knowledge-web`。它不是 Markdown 转 HTML，而是基于 knowledge-base、reflection 和 demo code 重新策展出的学习界面。
+
+这次也暴露了一个教训：网页不能比 Markdown 更浅。后续规范已经要求：
 
 ```text
-overview 第一屏负责定位
-detail/read view 负责完整阅读
-所有写操作仍走 daedalus CLI
+知识网页必须至少和 Markdown 一样有知识密度：
+亮色可读、机制细节、Mermaid 图、决策表、交互、代码落点、失败模式、来源链接。
 ```
 
-这让 TUI 更像学习现场恢复工具，而不是漂亮但没用的状态页。
+## 知识库归档结果
 
-### 6. 指令从“越多越好”转向“轻量门禁”
+本 topic 最终沉淀了五篇 verified knowledge：
 
-在多次“为什么你没有主动更新进度/提交后同步下一步/长任务前给学习指令”的反馈后，daedalus 没有无限堆 prompt，而是增加了轻量协议：
+- `knowledge-base/ai-agents/safety-and-permissions/local-command-execution.md`
+- `knowledge-base/ai-agents/tool-use/react-tool-runtime.md`
+- `knowledge-base/computer-systems/operating-systems/sandbox.md`
+- `knowledge-base/rust/async-runtime/streaming-agent.md`
+- `knowledge-base/rust/cli-and-tui/terminal-agent-ui.md`
 
-- micro-checkpoint
-- checkpoint lifecycle
-- long-task learning handoff
-- post-commit orientation
-- critical lens
-- implementation evidence first
+它们覆盖的不只是 Codex 本身，也包括学习过程中暴露出的可迁移底层能力：
 
-关键经验：强制机制要短、稳定、可检查；太长的全局指令会降低遵循率。
+- 本地命令执行安全
+- ReAct 工具运行时
+- sandbox 第一性原理
+- Tokio / Future / Waker / Stream
+- ratatui / crossterm / terminal event loop
 
-## What Changed In The Demo
+## 方法论教训
 
-Codex mini demo 最终保留了一个核心不变量：
+### 学习材料不是权威
+
+Codex 是高质量案例，但不是唯一真理。学习时要问：
 
 ```text
-model intent
-  != host capability
-  != approval requirement
-  != execution attempt
-  != retry decision
-  != observable event
+现实需求是什么？
+约束是什么？
+Codex 为什么这样做？
+收益是什么？
+代价是什么？
+我的场景应该 copy、simplify、improve 还是 discard？
 ```
 
-### Phase 1: 模拟状态机
+### 图不能贪心
 
-Phase 1 使用 `SimulatedExecutionRunner`，先验证结构：
-
-- `CapabilityRegistry`
-- `ApprovalRequirement`
-- `ApprovalGateway`
-- `ExecutionRunner`
-- `RetryDecision`
-- `StreamEvent`
-- `ToolRuntime`
-- `ReActAgent`
-
-这一步的价值是把安全链路变成可测状态机，而不是一开始陷入 OS sandbox 细节。
-
-### Phase 2A: 真实 OS sandbox
-
-Phase 2A 用 macOS `sandbox-exec` 实现 `OsExecutionRunner`：
-
-- read-only sandbox 能读不能写。
-- workspace-write sandbox 可在 cwd 写入。
-- sandbox denied 映射为统一 `ExecutionFailure::SandboxDenied`。
-- no-sandbox retry 仍走同一个 `ExecutionRunner` 接口。
-
-这证明 Phase 1 的抽象不是纸上设计，可以承接真实执行。
-
-### Phase 2B: 真实 Agent CLI UI
-
-Phase 2B 用 `ratatui` 接入真实 `ReActAgent`：
-
-- prompt 输入
-- Codex-like transcript
-- thinking/text delta 合并
-- tool / command / approval events
-- approval once/session/reject 面板
-- event log 滚动
-- `echo approval-test` 无副作用审批验收
-
-一个关键 bug 是：早期 UI 只有用户输入时才继续吐 agent events。修复后主循环改为：
+closeout 画图时，用户指出一个重要原则：
 
 ```text
-keyboard input thread -> key_rx
-agent stream task     -> ui_rx
-
-run_event_loop:
-  tokio::select!
-    key_rx.recv()
-    ui_rx.recv()
-    sleep tick
+图负责建立空间感：层次、主方向、依赖关系。
+文字负责建立判断力：关键分支、特殊情况、trade-off。
 ```
 
-这让一次 prompt 后事件能持续流到 `Completed`，不依赖键盘输入泵事件。
+如果一张图试图讲完所有异常分支、事件、状态和依赖，它会很完整，但不可读。
 
-## Learning Protocol Lessons
+### 实现进度必须以代码为准
 
-### 1. Agent 不能替用户学习
-
-早期 Agent 曾经主动代写学习记录或 demo 代码，违背了“用户亲手形成理解”的目标。后续规则明确：
-
-- Agent 写 guides。
-- 用户实践和回答进入 notes。
-- Agent 可以校准 notes，但不能把自己推理伪装成用户掌握。
-
-### 2. 学习材料不是权威，是设计案例
-
-用户指出 Agent 过于把 Codex 当唯一事实。后续加入 critical lens：
+多次进度误判来自只读 Markdown 地图。现在规则明确：
 
 ```text
-现实需要 X
-约束迫使 Y
-repo 选择 Z
-Z 的收益是什么
-Z 的代价是什么
-业务迁移时哪些 copy / simplify / discard
-```
-
-这让学习从“复刻 Codex”变成“先忠实模仿核心机制，再判断迁移边界”。
-
-### 3. 实现进度必须以代码为准
-
-多次进度误判来自只读 markdown，不看当前代码。后来形成规则：
-
-```text
-判断实现进度或阶段完成时：
+判断实现状态：
   先看代码
   再看测试
   再看运行证据
@@ -239,70 +216,55 @@ Z 的代价是什么
 
 学习地图是导航，不是事实本身。
 
-### 4. 小闭环后必须同步地图
+### 长任务前要给学习者并行任务
 
-用户多次指出完成一个结构推进后，daedalus 没有更新学习进度。最终形成 micro-checkpoint：
+当 Agent 要跑长检查、重构或提交时，应该先给学习者一个可并行思考的小任务，避免学习节奏断掉。这是 coach 体验的一部分。
 
-- 代码闭环
-- 测试闭环
-- notes/guides/todo/outcome-map 同步
-- commit
-- 提示下一步
+## 当前验证证据
 
-### 5. 长任务前要给学习指令
-
-如果 Agent 预计要工作较久，应先给用户一个可并行学习的小任务，避免用户空等导致节奏断裂。这是 coach 体验的一部分，不是礼貌性提示。
-
-## Evidence
-
-关键提交：
-
-| Commit | 作用 |
-| --- | --- |
-| `b8cc7c1b` | 以终点产物重构学习流程 |
-| `e1ae039e` | repo-learning 重构为多专题项目模型 |
-| `73c39bd1` | 实现复习计划与知识体系 CLI |
-| `eed0720c` | 升级学习驾驶舱详情阅读 |
-| `6f6a28f6` | 加入批判性学习协议 |
-| `d2c3d56a` | 收口 Slice 8 command 事件生命周期 |
-| `d9df73e0` | 收口 Slice 9 多工具并发执行 |
-| `b79d505f` | 实现 approval session 复用 |
-| `b1c60d96` | 完成 OsExecutionRunner 并进入 Phase 2B |
-| `8195efdb` | 接入 ratatui Agent CLI REPL |
-| `b6b5c165` | 收口 Codex 工具权限专题 |
-
-验证命令：
+本次收尾验证包括：
 
 ```bash
-cargo test --manifest-path workspaces/02-learning/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2
-daedalus validate workspaces/02-learning/openai-codex-cli-deep-learning
+make knowledge-web-check
+git diff --check
 ```
 
-最近验证结果：
+浏览器验证包括：
+
+- `apps/knowledge-web` 可以通过 Vite preview 打开。
+- 页面为亮色主题。
+- 5 个学习模块存在。
+- Mermaid 图可以渲染。
+- scenario / module / diagram 交互可用。
+- 每个模块包含代码落点、失败模式和自测问题。
+- 移动端宽度无横向溢出。
+
+Topic lifecycle 当前状态：
 
 ```text
-90 passed; 0 failed; 3 ignored
-ok: workspace valid
+tools-permissions.lifecycle = completed
+current_topic = ""
 ```
 
-## Remaining Risks
+## 仍然保留的边界
 
-- `tools-permissions` topic 已完成，但整个 project 还没有移动到 completed bucket；是否关闭 project 取决于是否继续开新 topic。
-- demo 的 shell parsing 仍然是学习用简化，不适合直接作为复杂 shell 安全边界。
-- `ApprovalPolicy::OnRequest` 的显式 escalation request 尚未完整建模。
-- `ratatui` CLI 已可验证核心逻辑，但不是生产级 Codex UI。
-- daedalus 的指令体系仍需要继续瘦身，避免全局 prompt 过长导致遵循率下降。
+- demo 保留核心机制，但不是生产级 shell parser。
+- `sandbox-exec` 是 macOS 路径，跨平台需要 Linux/Windows 对应 runner。
+- 知识网页已经比第一版深很多，但未来每个新 topic 更新网页时，仍必须按“不能比 Markdown 浅”的标准重新验收。
+- daedalus 的 prompt / skill 仍要继续保持轻量，避免规则太多导致遵循率下降。
 
-## Conclusion
+## 结论
 
-这次 repo learning 最大的成果，不只是学完 Codex 工具权限系统，而是证明 daedalus 可以在真实学习过程中自我改造：
+这次闭环证明 daedalus 的核心不是“帮用户读完一个 repo”，而是：
 
 ```text
-用户提出困惑
-  -> coach 暴露协议缺陷
-  -> daedalus 修改协议和工具
-  -> 学习继续推进
-  -> 产物验证新协议
+真实问题
+  -> 深读材料
+  -> 亲手实现
+  -> 主动回顾
+  -> 知识归档
+  -> 交互式复习
+  -> 方法论反哺系统
 ```
 
-这就是 daedalus 的核心产品形态：不是静态教程，也不是一次性代码生成器，而是一个能把学习过程、实践产物和方法论持续固化到文件系统中的深度学习 coach。
+Codex tools-permissions topic 已经可以收尾。它完成了源码理解、demo 实践、业务迁移、用户 reflection、knowledge-base 归档和知识网页表达；更重要的是，它让 daedalus 自己也长出了一套更清晰的学习闭环。

@@ -47,6 +47,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - Prefer reusable patterns over repo-specific trivia.
 - Do not force every knowledge entry into a fixed template. Write natural notes that fit the topic while preserving first principles, bottom-level mechanism, evidence, trade-off, source links, and review paths.
 - Let the knowledge tree evolve from real entries. Add, merge, move, or rename directories when the user's knowledge structure becomes clearer.
+- Knowledge-web pages are learning products, not decorative summaries. A web page must be at least as useful as the Markdown knowledge it represents: bright and readable by default, rich in mechanism details, diagrams, comparisons, interactions, source links, and validation evidence. If the page is shallower than the Markdown, keep improving it before delivery.
 
 ## Promotion Rules
 

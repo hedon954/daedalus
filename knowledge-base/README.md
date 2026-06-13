@@ -45,3 +45,11 @@ flowchart LR
 ```
 
 机器索引见 [`index.toml`](index.toml)，人可读入口见 [`index.md`](index.md)。
+
+## 交互式知识网站
+
+当某些知识靠 Markdown 难以读懂时，可以把它们产品化成 `apps/knowledge-web` 里的交互式理解页面。这个网站不自动渲染 Markdown，而是由 Agent 基于知识库、topic reflection 和 demo code 重新策展内容，直接在网页组件里表达状态机、事件流、策略对比和来源索引。
+
+```bash
+make web
+```

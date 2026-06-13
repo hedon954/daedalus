@@ -159,6 +159,17 @@ daedalus-tui
 daedalus-tui <project-dir>
 ```
 
+## Knowledge Atlas
+
+`apps/knowledge-web` 是知识库的交互式理解网站。它不是把 Markdown 转成 HTML 的文档站，而是基于 `knowledge-base/`、topic reflection 和 demo 代码重新策展出来的学习界面。
+
+首版围绕 Codex tools-permissions，展示命令执行安全、ReAct 工具闭环、Sandbox 机制和 Rust async/TUI 事件循环。Markdown 仍是长期知识源，网页负责把复杂机制做成可切换、可推进、可对比的理解模型。
+
+```bash
+make web                 # 构建并启动本地知识 atlas
+make knowledge-web-check # 类型检查和静态构建
+```
+
 ## Workspace Structure
 
 ```text

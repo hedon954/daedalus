@@ -1,2 +1,6 @@
 # daedalus: archived projects/topics should stay out of default AI/search context
 workspaces/projects/**/.archive/
+
+# knowledge web generated/dependency artifacts
+apps/knowledge-web/node_modules/
+apps/knowledge-web/dist/
