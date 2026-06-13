@@ -392,6 +392,8 @@ pub struct TuiOverview {
     pub review_summary: Vec<String>,
     /// Knowledge 摘要。
     pub knowledge_summary: Vec<String>,
+    /// 10-archivist 循环摘要。
+    pub archivist_summary: Vec<String>,
     /// 任务关闭信息摘要。
     pub closure_summary: Vec<String>,
 }
@@ -446,6 +448,12 @@ impl TuiOverview {
                     &self.knowledge_summary,
                     "No knowledge-base focus yet.",
                 ));
+                lines.push(String::new());
+                lines.push("Archivist Loop".to_owned());
+                lines.extend(indented_or_empty(
+                    &self.archivist_summary,
+                    "No archivist loop artifacts yet.",
+                ));
                 Ok(self.virtual_detail(
                     "Review / Knowledge Focus",
                     "generated from .daedalus/reviews and knowledge-base signals",
@@ -473,6 +481,7 @@ impl TuiOverview {
             format!("Missing artifacts: {}", self.missing_artifacts.len()),
             format!("Review focus items: {}", self.review_summary.len()),
             format!("Knowledge focus items: {}", self.knowledge_summary.len()),
+            format!("Archivist loop items: {}", self.archivist_summary.len()),
             format!("Transitions recorded: {}", self.recent_transitions.len()),
             format!(
                 "Current guide: {}",
@@ -618,7 +627,8 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         &current_status,
         state_toml::next_action(progress_doc),
     );
-    let current_guide_path = find_action_guide(&artifact_root.join("guides").join(&current_phase));
+    let current_guide_path = find_current_guide(&artifact_root, &current_phase);
+    let archivist_summary = archivist_summary(&artifact_root);
 
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
@@ -642,6 +652,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         recent_transitions,
         review_summary: review_summary(task_dir),
         knowledge_summary: knowledge_summary(task_dir),
+        archivist_summary,
         closure_summary,
     })
 }
@@ -652,6 +663,10 @@ fn build_next_action(
     current_status: &str,
     fallback: String,
 ) -> String {
+    if current_phase == "10-archivist" {
+        return archivist_next_action(artifact_root, current_status, fallback);
+    }
+
     let guide_dir = artifact_root.join("guides").join(current_phase);
     if let Some(guide) = find_action_guide(&guide_dir)
         && let Ok(content) = fs::read_to_string(&guide)
@@ -681,6 +696,40 @@ fn build_next_action(
     }
 
     fallback
+}
+
+fn archivist_next_action(artifact_root: &Path, current_status: &str, fallback: String) -> String {
+    let root = artifact_root.join("guides").join("10-archivist");
+    if !root.exists() {
+        return fallback;
+    }
+    [
+        format!("Current: 10-archivist / {current_status}"),
+        "Loop: draft candidate map -> closeout prompts -> reflection review -> selection -> archive evidence".to_owned(),
+        format!(
+            "Next: {}",
+            if root.join("01-knowledge-candidate-map.md").exists() {
+                "Open draft candidate map and confirm the current loop position"
+            } else {
+                "Create draft candidate map from guides / notes / demo / tests"
+            }
+        ),
+        format!("Guide: {}", relative_display(artifact_root, &root.join("01-knowledge-candidate-map.md"))),
+    ]
+    .join("\n")
+}
+
+fn find_current_guide(artifact_root: &Path, current_phase: &str) -> Option<PathBuf> {
+    if current_phase == "10-archivist" {
+        let candidate_map = artifact_root
+            .join("guides")
+            .join("10-archivist")
+            .join("01-knowledge-candidate-map.md");
+        if candidate_map.exists() {
+            return Some(candidate_map);
+        }
+    }
+    find_action_guide(&artifact_root.join("guides").join(current_phase))
 }
 
 fn find_action_guide(guide_dir: &Path) -> Option<PathBuf> {
@@ -969,6 +1018,23 @@ fn knowledge_summary(task_dir: &Path) -> Vec<String> {
     values
 }
 
+fn archivist_summary(artifact_root: &Path) -> Vec<String> {
+    let root = artifact_root.join("guides").join("10-archivist");
+    [
+        ("candidate map", "01-knowledge-candidate-map.md"),
+        ("closeout prompts", "02-closeout-prompts.md"),
+        ("selection", "03-selection.md"),
+        ("archive evidence", "04-archive-evidence.md"),
+    ]
+    .into_iter()
+    .filter_map(|(label, file)| {
+        let path = root.join(file);
+        path.exists()
+            .then(|| format!("{label}: {}", relative_display(artifact_root, &path)))
+    })
+    .collect()
+}
+
 fn bucket_order(bucket: &str) -> usize {
     WORKSPACE_BUCKETS
         .iter()
@@ -1006,6 +1072,7 @@ mod tests {
             ],
             review_summary: Vec::new(),
             knowledge_summary: vec!["global knowledge-base index present".to_owned()],
+            archivist_summary: Vec::new(),
             closure_summary: Vec::new(),
         }
     }
@@ -1098,6 +1165,19 @@ mod tests {
         assert!(next_action.contains("Next: Define event protocol -> Emit shell runtime events"));
         assert!(next_action.contains("Guide: guides/08-demo-coder/08-slice-8-event-protocol.md"));
         assert!(!next_action.contains("Old completed action"));
+    }
+
+    #[test]
+    fn archivist_phase_uses_candidate_map_as_current_guide() {
+        let temp = tempfile::TempDir::new().expect("temp dir");
+        let root = temp.path();
+        let guide = root.join("guides/10-archivist/01-knowledge-candidate-map.md");
+        fs::create_dir_all(guide.parent().expect("guide parent")).expect("guide dir");
+        fs::write(&guide, "# Draft Knowledge Candidate Map\n").expect("guide");
+
+        let current_guide = find_current_guide(root, "10-archivist").expect("current guide");
+
+        assert_eq!(current_guide, guide);
     }
 
     #[test]

@@ -26,11 +26,11 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 ## Current Position
 
-- 当前阶段：`10-archivist` knowledge-base gate。
-- 当前目标：把已完成且经过对话 challenge 的 `reflection/closeout.md`，转成可归档的 reviewed human understanding。
-- 当前障碍：需要确认哪些内容可以进入 `knowledge-base/`，哪些只保留为 topic closeout 或后续 engineering gap。
-- 当前动作服务的产物：reviewed knowledge-base entry。
-- 当前光标：不是继续写 demo，也不是重新 challenge closeout；下一步是整理可迁移知识、补外部参照和链接，再由用户确认是否归档。
+- 当前阶段：`10-archivist` knowledge candidate loop。
+- 当前目标：先用 draft candidate map 帮用户看见这次 topic 里长出的核心知识、旁路技能、基础薄弱点和学习方法，再由用户筛选。
+- 当前障碍：`guides/10-archivist/01-knowledge-candidate-map.md` 还没有经过用户 selection。
+- 当前动作服务的产物：candidate selection 与 reviewed knowledge-base entry。
+- 当前光标：不是继续写 demo，也不是直接写 knowledge-base；下一步是筛选候选，确认 archive / defer / delete / revise。
 
 ## Artifact Dependency Graph
 
@@ -72,7 +72,8 @@ question-roadmap
 - [x] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 - [x] Business Transfer：已将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
 - [x] Closeout Reflection：用户已完成 `reflection/closeout.md`，并在对话中完成关键 challenge：不变量、demo 暂缓、生产迁移边界、图文分工方法论。
-- [ ] Knowledge Archival：基于 reviewed human understanding 写入 `knowledge-base/`。
+- [ ] Knowledge Candidate Selection：用户确认哪些候选 archive / defer / delete / revise。
+- [ ] Knowledge Archival：只把用户确认后的少数高价值条目写入 `knowledge-base/`。
 
 ## Critical Lens
 

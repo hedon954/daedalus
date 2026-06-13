@@ -7,7 +7,7 @@ kind = "repo-learning-topic"
 parent_project = "../.."
 lifecycle = "awaiting-reflection"
 current_phase = "10-archivist"
-next_action = "用户 closeout reflection 已完成并经过对话 challenge；下一步进入 knowledge-base gate：整理可归档的 reviewed human understanding、补外部参照和链接，然后由用户确认是否归档。"
+next_action = "进入 10-archivist 的 knowledge candidate loop：先用 guides/notes/demo/tests/closeout 生成 draft candidate map，再围绕候选做用户筛选、修订和最终归档。"
 
 [[stages]]
 id = "01-goal-aligner"
@@ -67,7 +67,15 @@ required_artifacts = ["notes/09-biz-solver/README.md"]
 id = "10-archivist"
 title = "闭环 Repo 学习任务"
 status = "active"
-required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md", "reflection/closeout.md"]
+required_artifacts = [
+    ".daedalus/artifact-index.md",
+    ".daedalus/long-context.md",
+    "guides/10-archivist/01-knowledge-candidate-map.md",
+    "guides/10-archivist/02-closeout-prompts.md",
+    "guides/10-archivist/03-selection.md",
+    "guides/10-archivist/04-archive-evidence.md",
+    "reflection/closeout.md",
+]
 
 [[transitions]]
 stage = "01-goal-aligner"

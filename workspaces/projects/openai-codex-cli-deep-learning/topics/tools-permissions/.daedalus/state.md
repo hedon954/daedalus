@@ -8,7 +8,7 @@
 - 生命周期：`awaiting-reflection`
 - 当前阶段：`10-archivist`
 - 状态：`active`
-- 下一步：用户 closeout reflection 已完成并经过对话 challenge；下一步进入 knowledge-base gate：整理可归档的 reviewed human understanding、补外部参照和链接，然后由用户确认是否归档。
+- 下一步：进入 10-archivist 的 knowledge candidate loop：先用 guides/notes/demo/tests/closeout 生成 draft candidate map，再围绕候选做用户筛选、修订和最终归档。
 
 ## 枚举约束
 
@@ -56,5 +56,5 @@
 
 ## 下一步 CLI 建议
 
-- `daedalus state render --topic-dir workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions`
+- `daedalus state render --topic-dir workspaces/closeout-topic`
 - 完成阶段前先运行 `daedalus validate`。

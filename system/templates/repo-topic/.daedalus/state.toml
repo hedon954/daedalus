@@ -81,7 +81,15 @@ required_artifacts = ["notes/09-biz-solver/README.md"]
 id = "10-archivist"
 title = "闭环专题学习"
 status = "pending"
-required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md", "reflection/closeout.md"]
+required_artifacts = [
+    ".daedalus/artifact-index.md",
+    ".daedalus/long-context.md",
+    "guides/10-archivist/01-knowledge-candidate-map.md",
+    "guides/10-archivist/02-closeout-prompts.md",
+    "guides/10-archivist/03-selection.md",
+    "guides/10-archivist/04-archive-evidence.md",
+    "reflection/closeout.md",
+]
 
 [[transitions]]
 stage = "01-goal-aligner"

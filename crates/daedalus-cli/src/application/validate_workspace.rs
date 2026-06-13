@@ -351,6 +351,7 @@ pub fn validate_topic_workspace(topic_dir: &Path, slug: &str) -> Result<Vec<Stri
             issues.push(format!("topic `{slug}` missing required directory: {path}"));
         }
     }
+    issues.extend(validate_archivist_loop(topic_dir, slug));
 
     let state_path = state_toml::state_path(topic_dir);
     let doc = match state_toml::load_state_doc(&state_path) {
@@ -405,6 +406,26 @@ pub fn validate_topic_workspace(topic_dir: &Path, slug: &str) -> Result<Vec<Stri
         }
     }
     Ok(issues)
+}
+
+fn validate_archivist_loop(topic_dir: &Path, slug: &str) -> Vec<String> {
+    let mut issues = Vec::new();
+    for path in [
+        "reflection/README.md",
+        "reflection/closeout.md",
+        "guides/10-archivist/README.md",
+        "guides/10-archivist/01-knowledge-candidate-map.md",
+        "guides/10-archivist/02-closeout-prompts.md",
+        "guides/10-archivist/03-selection.md",
+        "guides/10-archivist/04-archive-evidence.md",
+    ] {
+        if !topic_dir.join(path).exists() {
+            issues.push(format!(
+                "topic `{slug}` missing archivist loop artifact: {path}"
+            ));
+        }
+    }
+    issues
 }
 
 fn stale(source: &Path, generated: &Path) -> Result<bool> {

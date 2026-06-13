@@ -8,4 +8,5 @@
 
 ## Files
 
-- [`closeout.md`](closeout.md)：用户主动回顾总结的起点。进入 `knowledge-base/` 前必须先由用户完成它。
+- [`../guides/10-archivist/01-knowledge-candidate-map.md`](../guides/10-archivist/01-knowledge-candidate-map.md)：进入 closeout 前，daedalus 应先生成 draft 候选地图。
+- [`closeout.md`](closeout.md)：用户主动回顾总结。进入 `knowledge-base/` 前必须先由用户完成它。

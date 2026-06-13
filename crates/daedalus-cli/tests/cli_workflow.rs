@@ -286,6 +286,27 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(topic_dir.join(".daedalus/reviews/README.md").exists());
     assert!(topic_dir.join("demo/.gitkeep").exists());
     assert!(topic_dir.join("guides/.gitkeep").exists());
+    assert!(topic_dir.join("guides/10-archivist/README.md").exists());
+    assert!(
+        topic_dir
+            .join("guides/10-archivist/01-knowledge-candidate-map.md")
+            .exists()
+    );
+    assert!(
+        topic_dir
+            .join("guides/10-archivist/02-closeout-prompts.md")
+            .exists()
+    );
+    assert!(
+        topic_dir
+            .join("guides/10-archivist/03-selection.md")
+            .exists()
+    );
+    assert!(
+        topic_dir
+            .join("guides/10-archivist/04-archive-evidence.md")
+            .exists()
+    );
     assert!(topic_dir.join("notes/.gitkeep").exists());
     assert!(topic_dir.join("reflection/README.md").exists());
     assert!(topic_dir.join("reflection/closeout.md").exists());
