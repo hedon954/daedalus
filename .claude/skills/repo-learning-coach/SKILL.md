@@ -24,6 +24,7 @@ Non-negotiables:
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
 - Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
+- When a discussion produces a reusable learning method, thinking tool, artifact pattern, or Agent operating lesson, promote it to the right durable layer instead of leaving it only in the current topic.
 - Before long-running repo-learning work, make the first working message a small parallel study handoff instead of leaving the learner idle.
 - Before repo-learning commits, run checkpoint lifecycle pre-commit sync; after commits, output post-commit orientation.
 
@@ -142,6 +143,15 @@ If the Agent accidentally writes implementation code, stop, acknowledge it, roll
 - `guides/`: Agent action maps, pre-reading, next-step instructions.
 - `notes/`: user answers, Agent calibration, verified evidence, design decisions, lessons.
 - `demo/`: mini demo implementation and runbook.
+
+When writing or reviewing learning artifacts, check the sedimentation level:
+
+- Topic-specific understanding stays in topic `notes/` or `reflection/`.
+- Cross-topic understanding for one project goes to project `shared/`.
+- Reusable coaching behavior, templates, or artifact rules go to `system/prompts/` or `system/templates/`.
+- Reviewed human understanding after closeout may enter `knowledge-base/`.
+
+Do not promote everything globally, but do not bury general methods in a single topic.
 
 Stage directories should use stable entrypoints:
 

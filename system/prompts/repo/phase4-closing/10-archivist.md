@@ -9,6 +9,7 @@ phase: repo.phase4-closing
 @system/prompts/common/archive-knowledge.md
 @system/prompts/common/compress-context.md
 @system/prompts/common/critical-lens.md
+@system/prompts/common/diagram-guidelines.md
 
 # Close Repo Learning Loop
 
@@ -42,9 +43,11 @@ phase: repo.phase4-closing
 2. 汇总产物清单和位置。
 3. 检查用户是否已经完成 closeout retrospective；没有则先引导用户完成，不要代写。
 4. 区分用户已验证理解、未解决问题和后续建议。
-5. 使用 `Archive Reviewed Human Knowledge` 判断可迁移理解的归档位置。
-6. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
-7. 给出 closing report。
+5. 如果 closeout 需要图，检查图是否只承担分层和主方向，关键决策点是否由文字解释。
+6. 检查学习过程中出现的通用方法、思维工具或 Agent 失败模式是否需要提升到 project shared、system prompts/templates 或 knowledge-base candidate，而不是只留在当前 topic。
+7. 使用 `Archive Reviewed Human Knowledge` 判断可迁移理解的归档位置。
+8. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
+9. 给出 closing report。
 
 ## Output Delta
 
@@ -75,5 +78,6 @@ CLI 操作必须遵守：
 
 - 不要把未验证假设归档为知识库结论。
 - 不要把 repo 的局部最优方案写成通用最佳实践；必须保留它成立的约束、局限和迁移边界。
+- 不要把可复用的学习方法或 Agent 操作教训只埋在 topic closeout 里；应判断是否需要提升到更高层级。
 - 归档必须能帮助下一次学习恢复上下文。
 - 如果任务放弃，也要记录放弃原因和已获得价值。

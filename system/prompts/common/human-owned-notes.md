@@ -82,6 +82,7 @@ AI 不能是：
 - 是否能迁移到新场景。
 - 是否和旧知识冲突、互补或重复。
 - 是否需要搜索业内最佳实践来校准判断。
+- 是否出现了可复用的学习方法、表达方法、设计判断框架或 Agent 失败模式，需要沉淀到 project shared、system prompts/templates 或 knowledge-base candidate。
 
 输出应该是问题、挑战和建议，而不是替用户产出最终理解。
 
@@ -120,6 +121,7 @@ AI 的职责是：
 - challenge 回顾中的含糊和跳步。
 - 搜索外部资料和业内最佳实践作对比。
 - 建议与旧知识的链接。
+- 识别哪些反思只属于当前 topic，哪些应该提升为全局学习方法、模板规则或未来知识库候选。
 - 通过 review 后，协助格式化、链接和一致性检查。
 
 AI 不得在没有用户 closeout retrospective 的情况下生成 knowledge-base 正文。

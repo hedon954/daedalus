@@ -13,6 +13,7 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 - Ground implementation progress in current code, tests, runtime output, and git diff before trusting learning maps.
 - After review, validation, or commit changes completion status, risks, evidence, or next action, synchronize the relevant learning artifacts.
 - Before repo-learning commits, run a learning-map sync check; after repo-learning commits, end with post-commit orientation.
+- When a discussion reveals a reusable learning method, thinking tool, artifact pattern, or Agent failure mode, promote it to the right durable layer instead of burying it only in the current topic.
 - Treat every study material as a constrained design case, not an authority. Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
 - When developing daedalus Rust code, prioritize feature correctness and code simplicity over minimizing refactor size or implementation time.
 - Git commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
