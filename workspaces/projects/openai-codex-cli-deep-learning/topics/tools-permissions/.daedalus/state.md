@@ -5,10 +5,10 @@
 ## 当前状态
 
 - Topic：`tools-permissions` - 工具系统与权限系统
-- 生命周期：`awaiting-reflection`
+- 生命周期：`completed`
 - 当前阶段：`10-reflection`
-- 状态：`active`
-- 下一步：进入 10-reflection：打开 reflection/candidate-map.md，通过对话把候选状态推进为候选中、总结中、已归档或已忽略。
+- 状态：`done`
+- 下一步：所有阶段已完成；复核归档产物并关闭学习任务。
 
 ## 枚举约束
 
@@ -29,7 +29,7 @@
 - `07-demo-architecture`: 设计 Repo Mini Demo (done)
 - `08-demo-coder`: 实现 Repo Mini Demo (done)
 - `09-biz-solver`: 将 Repo 学习迁移到业务问题 (done)
-- `10-reflection`: Repo 学习回顾与知识归档 (active)
+- `10-reflection`: Repo 学习回顾与知识归档 (done)
 
 ## 缺失产物
 
@@ -41,10 +41,8 @@
 
 ## 最近状态流转
 
-> 共 27 条状态流转；下面显示最近 10 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
+> 共 29 条状态流转；下面显示最近 10 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
 
-- `2026-05-16 21:49:16` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `enter`：开始 08-demo-coder：按 guides/08-demo-coder/README.md 的 slice 地图实现 Phase 1 mini demo。
-- `2026-06-09 00:08:02` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `complete`：Phase 1 mini demo 已完成：demo/README.md 已补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移注意事项；cargo test 通过 72 个默认测试。
 - `2026-06-09 00:08:20` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `enter`：进入业务迁移阶段：基于已完成的 Phase 1 demo，抽取安全本地命令执行模式并迁移到用户自有 Agent/CLI 设计。
 - `2026-06-09 00:33:29` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `rollback`：用户决定暂不进入 09-biz-solver，继续在 08-demo-coder 中推进 Phase 2：先规划 OsExecutionRunner 与 ratatui Agent REPL，再从真实 sandbox runner 开始。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `complete`：Phase 2 mini demo 已完成：OsExecutionRunner 接入 sandbox-exec，ratatui Agent CLI REPL 支持持续 streaming、approval 面板和无副作用 approval-test 验收；demo README 已同步。
@@ -53,8 +51,10 @@
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-reflection` 执行 `enter`：进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。
 - `2026-06-12 00:00:00` 由 `agent` 对 `10-reflection` 执行 `rollback`：撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-reflection` 回到 active。
 - `2026-06-12 09:39:39` 由 `daedalus-cli` 对 `topic` 执行 `topic-await-reflection`：主体学习、demo、业务迁移和测试验证已完成；用户将在大块时间里完成 closeout reflection 后再归档知识库。
+- `2026-06-13 21:40:51` 由 `daedalus-cli` 对 `10-reflection` 执行 `complete`：用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成，knowledge validate/link-check 通过。
+- `2026-06-13 21:41:05` 由 `daedalus-cli` 对 `topic` 执行 `topic-complete`：用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成，knowledge validate/link-check 通过。
 
 ## 下一步 CLI 建议
 
-- `daedalus state render --topic-dir workspaces/closeout-topic`
+- `daedalus state render --topic-dir workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions`
 - 完成阶段前先运行 `daedalus validate`。

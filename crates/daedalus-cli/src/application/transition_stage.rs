@@ -91,7 +91,7 @@ impl StateTransition for TransitionStageOptions {
     fn pre_check(&self) -> Result<()> {
         let state_path = state_toml::state_path(&self.task_dir);
         let doc = state_toml::load_state_doc(&state_path)?;
-        ensure_active_topic(&doc)?;
+        ensure_stage_transition_topic_lifecycle(&doc, self)?;
         validate_stage_transition(&doc, self)
     }
 
@@ -163,7 +163,9 @@ fn validate_stage_transition(
     options: &TransitionStageOptions,
 ) -> Result<()> {
     let state = state_toml::stage_state(doc, &options.stage_id)?;
-    state.transition(options.action.kind())?;
+    if !is_awaiting_reflection_final_stage_complete(doc, options, state)? {
+        state.transition(options.action.kind())?;
+    }
 
     match &options.action {
         StageAction::Enter => {}
@@ -186,6 +188,19 @@ fn validate_stage_transition(
     }
 
     Ok(())
+}
+
+fn is_awaiting_reflection_final_stage_complete(
+    doc: &toml_edit::DocumentMut,
+    options: &TransitionStageOptions,
+    state: StageState,
+) -> Result<bool> {
+    Ok(
+        state_toml::topic_lifecycle(doc)? == TopicLifecycle::AwaitingReflection
+            && options.stage_id == "10-reflection"
+            && matches!(options.action, StageAction::Complete { .. })
+            && state == StageState::Pending,
+    )
 }
 
 fn validate_completion_artifacts(
@@ -218,7 +233,10 @@ fn target_state(kind: StageTransitionKind) -> StageState {
     }
 }
 
-fn ensure_active_topic(doc: &toml_edit::DocumentMut) -> Result<()> {
+fn ensure_stage_transition_topic_lifecycle(
+    doc: &toml_edit::DocumentMut,
+    options: &TransitionStageOptions,
+) -> Result<()> {
     let kind = state_toml::state_kind(doc);
     if kind != "topic" {
         return Err(DaedalusError::InvalidStateDocumentKind {
@@ -227,13 +245,19 @@ fn ensure_active_topic(doc: &toml_edit::DocumentMut) -> Result<()> {
         });
     }
     let lifecycle = state_toml::topic_lifecycle(doc)?;
-    if lifecycle != TopicLifecycle::Active {
-        return Err(DaedalusError::InvalidTopicLifecycleTransition(format!(
-            "expected active topic, got {}",
-            lifecycle.as_str()
-        )));
+    if lifecycle == TopicLifecycle::Active {
+        return Ok(());
     }
-    Ok(())
+    if lifecycle == TopicLifecycle::AwaitingReflection
+        && matches!(options.action, StageAction::Complete { .. })
+        && options.stage_id == "10-reflection"
+    {
+        return Ok(());
+    }
+    Err(DaedalusError::InvalidTopicLifecycleTransition(format!(
+        "expected active topic, got {}",
+        lifecycle.as_str()
+    )))
 }
 
 fn validate_force(reason: Option<&str>, approval_source: Option<ApprovalSource>) -> Result<()> {

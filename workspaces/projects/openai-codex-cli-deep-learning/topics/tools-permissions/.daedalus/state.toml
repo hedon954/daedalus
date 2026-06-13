@@ -5,9 +5,9 @@ slug = "tools-permissions"
 title = "工具系统与权限系统"
 kind = "repo-learning-topic"
 parent_project = "../.."
-lifecycle = "awaiting-reflection"
+lifecycle = "completed"
 current_phase = "10-reflection"
-next_action = "进入 10-reflection：打开 reflection/candidate-map.md，通过对话把候选状态推进为候选中、总结中、已归档或已忽略。"
+next_action = "所有阶段已完成；复核归档产物并关闭学习任务。"
 
 [[stages]]
 id = "01-goal-aligner"
@@ -66,7 +66,7 @@ required_artifacts = ["notes/09-biz-solver/README.md"]
 [[stages]]
 id = "10-reflection"
 title = "Repo 学习回顾与知识归档"
-status = "active"
+status = "done"
 required_artifacts = [
     ".daedalus/artifact-index.md",
     ".daedalus/long-context.md",
@@ -263,3 +263,17 @@ action = "topic-await-reflection"
 timestamp = "2026-06-12 09:39:39"
 actor = "daedalus-cli"
 reason = "主体学习、demo、业务迁移和测试验证已完成；用户将在大块时间里完成 closeout reflection 后再归档知识库。"
+
+[[transitions]]
+stage = "10-reflection"
+action = "complete"
+timestamp = "2026-06-13 21:40:51"
+actor = "daedalus-cli"
+reason = "用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成，knowledge validate/link-check 通过。"
+
+[[transitions]]
+stage = "topic"
+action = "topic-complete"
+timestamp = "2026-06-13 21:41:05"
+actor = "daedalus-cli"
+reason = "用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成，knowledge validate/link-check 通过。"

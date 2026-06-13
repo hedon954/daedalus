@@ -1707,6 +1707,88 @@ fn topic_await_reflection_releases_active_slot_and_preserves_closeout_pointer() 
 }
 
 #[test]
+fn awaiting_reflection_topic_can_complete_reflection_stage_and_topic() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "closeout-complete",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/closeout-complete");
+    let topic_dir = active_topic_dir(&task_dir);
+    write_core_topic_artifacts(&topic_dir);
+    write_demo_manifest(&topic_dir, "closeout-complete-demo");
+    complete_core_topic_stages(&repo, &task_dir);
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Core learning is done; user will finish closeout later.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "complete",
+            "10-reflection",
+            "--topic-dir",
+            topic_dir.to_str().expect("utf8"),
+            "--reason",
+            "Closeout reflection and knowledge archival are complete.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "complete",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Closeout reflection and knowledge archival are complete.",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: topic-complete"));
+
+    let project_state = read_toml(&task_dir.join(".daedalus/state.toml"));
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "main").as_deref(),
+        Some("completed")
+    );
+    let topic_state = read_toml(&topic_dir.join(".daedalus/state.toml"));
+    assert_eq!(topic_lifecycle(&topic_state), "completed");
+    assert!(!repo.path().join("workspaces/closeout-topic").exists());
+    let current = read_toml(&repo.path().join("workspaces/.daedalus/current.toml"));
+    assert_eq!(toml_string(&current, "pending_closeout_topic"), "");
+}
+
+#[test]
 fn awaiting_reflection_topic_does_not_block_next_active_topic() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")

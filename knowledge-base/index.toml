@@ -1,2 +1,50 @@
 schema_version = 1
-generated_at = "2026-06-12 00:00:00"
+generated_at = "2026-06-13 21:24:01"
+
+[[entries]]
+kind = "cases"
+title = "Codex Tools-Permissions 学习案例"
+path = "cases/codex-tools-permissions-demo.md"
+status = "verified"
+
+[[entries]]
+kind = "concepts"
+title = "OS Sandbox 与 Shell 执行边界"
+path = "concepts/os-sandbox-and-shell-boundary.md"
+status = "verified"
+
+[[entries]]
+kind = "drills"
+title = "Agent 本地命令安全复习练习"
+path = "drills/agent-command-safety-review.md"
+status = "verified"
+
+[[entries]]
+kind = "patterns"
+title = "Agent 本地命令安全执行链路"
+path = "patterns/agent-command-safety-pipeline.md"
+status = "verified"
+
+[[entries]]
+kind = "patterns"
+title = "工具可观察性与 ReAct 回灌"
+path = "patterns/tool-observability-react-feedback.md"
+status = "verified"
+
+[[entries]]
+kind = "problems"
+title = "Agent 本地命令执行为什么危险"
+path = "problems/agent-local-command-execution.md"
+status = "verified"
+
+[[entries]]
+kind = "skills"
+title = "Rust 异步流式 Agent 实现"
+path = "skills/rust-async-streaming-agent.md"
+status = "verified"
+
+[[entries]]
+kind = "source-maps"
+title = "Codex Tools-Permissions 来源映射"
+path = "source-maps/codex-tools-permissions.md"
+status = "verified"

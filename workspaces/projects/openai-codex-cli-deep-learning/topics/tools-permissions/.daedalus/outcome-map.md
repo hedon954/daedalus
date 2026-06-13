@@ -22,15 +22,15 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 已验证 |
 | [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 将权限/沙箱模式迁移到业务问题 | 已验证 |
 | [`reflection/closeout.md`](../reflection/closeout.md) | 用户主动回顾：理解变化、证据、迁移边界和图示总结 | 已完成 |
-| `knowledge-base entry` | 基于已 review 的用户理解结构化归档 | 待归档 |
+| `knowledge-base entry` | 基于已 review 的用户理解结构化归档 | 已归档 |
 
 ## Current Position
 
-- 当前阶段：`10-reflection` 知识候选表确认。
-- 当前目标：用 `reflection/candidate-map.md` 帮用户快速看见这次 topic 里值得保留的少数候选。
-- 当前障碍：`reflection/candidate-map.md` 的状态还没有经过对话确认。
-- 当前动作服务的产物：经过用户确认的知识库条目。
-- 当前光标：不是继续写 demo，也不是直接写 knowledge-base；下一步是围绕候选表对话确认状态。
+- 当前阶段：`10-reflection` 收尾。
+- 当前目标：关闭已完成知识归档的 `tools-permissions` topic。
+- 当前障碍：无阻塞；knowledge-base 已归档并通过校验。
+- 当前动作服务的产物：topic completed lifecycle。
+- 当前光标：运行 topic complete，让 lifecycle 与 closeout / knowledge-base 状态一致。
 
 ## Artifact Dependency Graph
 
@@ -72,8 +72,8 @@ question-roadmap
 - [x] Slice 13 Closeout：补关键单测、Phase 2B README/runbook、无副作用 approval 验收 capability 取舍和最终手动验收记录。
 - [x] Business Transfer：已将 demo 中验证过的安全执行模式迁移成业务 Agent/CLI 设计方案。
 - [x] Closeout Reflection：用户已完成 `reflection/closeout.md`，并在对话中完成关键 challenge：不变量、demo 暂缓、生产迁移边界、图文分工方法论。
-- [ ] 知识候选表确认：对话确认各候选状态。
-- [ ] Knowledge Archival：只把用户确认后的少数高价值条目写入 `knowledge-base/`。
+- [x] 知识候选表确认：对话确认候选状态，低价值候选已移除，其余候选均进入归档。
+- [x] Knowledge Archival：已写入 8 个 knowledge-base 条目并通过 validate / link-check。
 
 ## Critical Lens
 

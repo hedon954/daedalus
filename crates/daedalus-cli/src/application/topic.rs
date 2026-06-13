@@ -304,14 +304,9 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
         )?,
         TopicLifecycle::Completed | TopicLifecycle::Abandoned => {
             let pending = workspace_fs::pending_closeout_topic_dir(&options.repo_root)?;
-            let topic_dir_for_compare = if topic_dir.is_absolute() {
-                topic_dir.clone()
-            } else {
-                options.repo_root.join(&topic_dir)
-            };
             if pending
                 .as_deref()
-                .is_some_and(|pending| pending == topic_dir_for_compare)
+                .is_some_and(|pending| same_topic_dir(&options.repo_root, pending, &topic_dir))
             {
                 workspace_fs::sync_closeout_workspace(&options.repo_root, None, None)?;
             }
@@ -332,6 +327,19 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
         action: action.to_owned(),
         state_md,
     })
+}
+
+fn same_topic_dir(repo_root: &Path, left: &Path, right: &Path) -> bool {
+    normalize_topic_dir(repo_root, left) == normalize_topic_dir(repo_root, right)
+}
+
+fn normalize_topic_dir(repo_root: &Path, path: &Path) -> PathBuf {
+    let absolute = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        repo_root.join(path)
+    };
+    absolute.canonicalize().unwrap_or(absolute)
 }
 
 /// 校验 topic。
