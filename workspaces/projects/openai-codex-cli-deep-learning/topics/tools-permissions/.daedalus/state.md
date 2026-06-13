@@ -6,9 +6,9 @@
 
 - Topic：`tools-permissions` - 工具系统与权限系统
 - 生命周期：`awaiting-reflection`
-- 当前阶段：`10-archivist`
+- 当前阶段：`10-reflection`
 - 状态：`active`
-- 下一步：进入 10-archivist 的 knowledge candidate loop：先用 guides/notes/demo/tests/closeout 生成 draft candidate map，再围绕候选做用户筛选、修订和最终归档。
+- 下一步：进入 10-reflection：先用学习材料生成 reflection/01-knowledge-candidate-map.md，再围绕候选做用户筛选、修订和最终归档。
 
 ## 枚举约束
 
@@ -29,7 +29,7 @@
 - `07-demo-architecture`: 设计 Repo Mini Demo (done)
 - `08-demo-coder`: 实现 Repo Mini Demo (done)
 - `09-biz-solver`: 将 Repo 学习迁移到业务问题 (done)
-- `10-archivist`: 闭环 Repo 学习任务 (active)
+- `10-reflection`: Repo 学习回顾与知识归档 (active)
 
 ## 缺失产物
 
@@ -50,8 +50,8 @@
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `08-demo-coder` 执行 `complete`：Phase 2 mini demo 已完成：OsExecutionRunner 接入 sandbox-exec，ratatui Agent CLI REPL 支持持续 streaming、approval 面板和无副作用 approval-test 验收；demo README 已同步。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `enter`：进入业务迁移：将 Codex 工具/权限/沙箱链路转化为自有 Agent/CLI 的安全本地命令执行方案。
 - `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `09-biz-solver` 执行 `complete`：notes/09-biz-solver/README.md 已输出业务迁移方案，覆盖现实压力、第一性原理、迁移设计、取舍和验收标准。
-- `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-archivist` 执行 `enter`：进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。
-- `2026-06-12 00:00:00` 由 `agent` 对 `10-archivist` 执行 `rollback`：撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-archivist` 回到 active。
+- `2026-06-10 03:27:21` 由 `daedalus-cli` 对 `10-reflection` 执行 `enter`：进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。
+- `2026-06-12 00:00:00` 由 `agent` 对 `10-reflection` 执行 `rollback`：撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-reflection` 回到 active。
 - `2026-06-12 09:39:39` 由 `daedalus-cli` 对 `topic` 执行 `topic-await-reflection`：主体学习、demo、业务迁移和测试验证已完成；用户将在大块时间里完成 closeout reflection 后再归档知识库。
 
 ## 下一步 CLI 建议

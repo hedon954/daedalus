@@ -4,13 +4,13 @@
 
 当你准备结束一个 topic 时，先别急着让 daedalus 归档知识。请先在这里写下你真实想明白的东西：这次学习到底解决了什么问题，你的理解发生了什么变化，哪些判断有证据，哪些地方还只是模仿或猜测。
 
-进入 closeout 前，daedalus 应先给你一份 draft knowledge candidate map。你不需要照单全收；你要用 closeout 判断哪些真的成为了你的理解，哪些只是路过，哪些应该删掉。
+进入 closeout 前，daedalus 应先给你一份知识候选地图草稿。你不需要照单全收；你要用 closeout 判断哪些真的成为了你的理解，哪些只是路过，哪些应该删掉。
 
 > 完整 topic 的回顾需要高度专注的注意力，你要把几周的源码、demo、争论、失败、设计取舍，压缩成自己的理解。所以推荐你在周末或者有大块连续时间段的时候专注做这件事哦 😄
 
 如果这个 topic 已经进入 `awaiting-reflection`，说明主体学习已经完成，daedalus 只是把它从日常推进队列里移出来，等你有足够注意力时再认真收尾。它不是失败，也不是让你无限拖延；它是一张需要被看见、被安排、被完成的 closeout 小债条。
 
-你不需要套用固定目录结构。不同 topic 的 closeout reflection 可以有不同标题、不同顺序、不同重点。进入 `10-archivist` 时，daedalus 会先阅读当前 topic 的目标、notes、demo、业务迁移、运行证据和遗留问题，然后为你改写一组贴合当前 topic 的回顾提示。
+你不需要套用固定目录结构。不同 topic 的 closeout reflection 可以有不同标题、不同顺序、不同重点。进入 `10-reflection` 时，daedalus 会先阅读当前 topic 的目标、notes、demo、业务迁移、运行证据和遗留问题，然后为你改写一组贴合当前 topic 的回顾提示。
 
 可以大致从这些方向开始想：
 

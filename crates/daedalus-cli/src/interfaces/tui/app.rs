@@ -392,8 +392,8 @@ pub struct TuiOverview {
     pub review_summary: Vec<String>,
     /// Knowledge 摘要。
     pub knowledge_summary: Vec<String>,
-    /// 10-archivist 循环摘要。
-    pub archivist_summary: Vec<String>,
+    /// 10-reflection 循环摘要。
+    pub reflection_summary: Vec<String>,
     /// 任务关闭信息摘要。
     pub closure_summary: Vec<String>,
 }
@@ -413,9 +413,9 @@ impl TuiOverview {
                 self.evidence_lines(),
             )),
             DetailSource::Guide => self.file_detail(
-                "Current Guide",
+                "Current Reading",
                 self.current_guide_path.as_deref(),
-                "No current actionable guide was found. Use todo/outcome-map for the next step.",
+                "No current actionable document was found. Use todo/outcome-map for the next step.",
             ),
             DetailSource::Todo => self.file_detail(
                 "Todo Path Board",
@@ -449,10 +449,10 @@ impl TuiOverview {
                     "No knowledge-base focus yet.",
                 ));
                 lines.push(String::new());
-                lines.push("Archivist Loop".to_owned());
+                lines.push("Reflection Loop".to_owned());
                 lines.extend(indented_or_empty(
-                    &self.archivist_summary,
-                    "No archivist loop artifacts yet.",
+                    &self.reflection_summary,
+                    "No reflection loop artifacts yet.",
                 ));
                 Ok(self.virtual_detail(
                     "Review / Knowledge Focus",
@@ -481,10 +481,10 @@ impl TuiOverview {
             format!("Missing artifacts: {}", self.missing_artifacts.len()),
             format!("Review focus items: {}", self.review_summary.len()),
             format!("Knowledge focus items: {}", self.knowledge_summary.len()),
-            format!("Archivist loop items: {}", self.archivist_summary.len()),
+            format!("Reflection loop items: {}", self.reflection_summary.len()),
             format!("Transitions recorded: {}", self.recent_transitions.len()),
             format!(
-                "Current guide: {}",
+                "Current reading: {}",
                 self.current_guide_path
                     .as_ref()
                     .map(|path| relative_display(&self.artifact_root, path))
@@ -498,7 +498,7 @@ impl TuiOverview {
     pub fn reading_map_lines(&self) -> Vec<String> {
         vec![
             format!(
-                "g  Guide: {}",
+                "g  Current: {}",
                 self.current_guide_path
                     .as_ref()
                     .map(|path| relative_display(&self.artifact_root, path))
@@ -628,7 +628,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         state_toml::next_action(progress_doc),
     );
     let current_guide_path = find_current_guide(&artifact_root, &current_phase);
-    let archivist_summary = archivist_summary(&artifact_root);
+    let reflection_summary = reflection_summary(&artifact_root);
 
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
@@ -652,7 +652,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         recent_transitions,
         review_summary: review_summary(task_dir),
         knowledge_summary: knowledge_summary(task_dir),
-        archivist_summary,
+        reflection_summary,
         closure_summary,
     })
 }
@@ -663,8 +663,8 @@ fn build_next_action(
     current_status: &str,
     fallback: String,
 ) -> String {
-    if current_phase == "10-archivist" {
-        return archivist_next_action(artifact_root, current_status, fallback);
+    if current_phase == "10-reflection" {
+        return reflection_next_action(artifact_root, current_status, fallback);
     }
 
     let guide_dir = artifact_root.join("guides").join(current_phase);
@@ -687,7 +687,7 @@ fn build_next_action(
         if let Some(after) = markdown_value(&content, "After this") {
             lines.push(format!("Unlocks: {after}"));
         }
-        lines.push(format!("Guide: {relative_guide}"));
+        lines.push(format!("Current reading: {relative_guide}"));
         return lines.join("\n");
     }
 
@@ -698,32 +698,35 @@ fn build_next_action(
     fallback
 }
 
-fn archivist_next_action(artifact_root: &Path, current_status: &str, fallback: String) -> String {
-    let root = artifact_root.join("guides").join("10-archivist");
+fn reflection_next_action(artifact_root: &Path, current_status: &str, fallback: String) -> String {
+    let root = artifact_root.join("reflection");
     if !root.exists() {
         return fallback;
     }
     [
-        format!("Current: 10-archivist / {current_status}"),
-        "Loop: draft candidate map -> closeout prompts -> reflection review -> selection -> archive evidence".to_owned(),
+        format!("Current: 10-reflection / {current_status}"),
+        "Loop: 知识候选地图 -> closeout prompts -> 用户回顾与 challenge -> 候选筛选 -> 归档证据"
+            .to_owned(),
         format!(
             "Next: {}",
             if root.join("01-knowledge-candidate-map.md").exists() {
-                "Open draft candidate map and confirm the current loop position"
+                "打开 reflection/01-knowledge-candidate-map.md，确认候选筛选位置"
             } else {
-                "Create draft candidate map from guides / notes / demo / tests"
+                "从 guides / notes / demo / tests / closeout 生成知识候选地图草稿"
             }
         ),
-        format!("Guide: {}", relative_display(artifact_root, &root.join("01-knowledge-candidate-map.md"))),
+        format!(
+            "Current reading: {}",
+            relative_display(artifact_root, &root.join("01-knowledge-candidate-map.md"))
+        ),
     ]
     .join("\n")
 }
 
 fn find_current_guide(artifact_root: &Path, current_phase: &str) -> Option<PathBuf> {
-    if current_phase == "10-archivist" {
+    if current_phase == "10-reflection" {
         let candidate_map = artifact_root
-            .join("guides")
-            .join("10-archivist")
+            .join("reflection")
             .join("01-knowledge-candidate-map.md");
         if candidate_map.exists() {
             return Some(candidate_map);
@@ -1007,24 +1010,23 @@ fn knowledge_summary(task_dir: &Path) -> Vec<String> {
         for topic in state_toml::topics(&doc) {
             let retrospective = task_dir
                 .join(&topic.path)
-                .join("notes")
-                .join("10-archivist")
-                .join("closeout-retrospective.md");
+                .join("reflection")
+                .join("closeout.md");
             if retrospective.exists() {
-                values.push(format!("{}: closeout retrospective", topic.slug));
+                values.push(format!("{}: closeout reflection", topic.slug));
             }
         }
     }
     values
 }
 
-fn archivist_summary(artifact_root: &Path) -> Vec<String> {
-    let root = artifact_root.join("guides").join("10-archivist");
+fn reflection_summary(artifact_root: &Path) -> Vec<String> {
+    let root = artifact_root.join("reflection");
     [
-        ("candidate map", "01-knowledge-candidate-map.md"),
-        ("closeout prompts", "02-closeout-prompts.md"),
-        ("selection", "03-selection.md"),
-        ("archive evidence", "04-archive-evidence.md"),
+        ("候选地图", "01-knowledge-candidate-map.md"),
+        ("回顾提示", "02-closeout-prompts.md"),
+        ("候选筛选", "03-selection.md"),
+        ("归档证据", "04-archive-evidence.md"),
     ]
     .into_iter()
     .filter_map(|(label, file)| {
@@ -1072,7 +1074,7 @@ mod tests {
             ],
             review_summary: Vec::new(),
             knowledge_summary: vec!["global knowledge-base index present".to_owned()],
-            archivist_summary: Vec::new(),
+            reflection_summary: Vec::new(),
             closure_summary: Vec::new(),
         }
     }
@@ -1113,7 +1115,7 @@ mod tests {
         assert!(next_action.contains("Slice: Slice 6 Agent Orchestrator"));
         assert!(next_action.contains("Gap: live path 已跑通"));
         assert!(next_action.contains("Next: Add `max_turns` -> Emit `ToolCallFinished`"));
-        assert!(next_action.contains("Guide: guides/08-demo-coder/slice-6-hardening.md"));
+        assert!(next_action.contains("Current reading: guides/08-demo-coder/slice-6-hardening.md"));
         assert!(!next_action.contains("short fallback"));
     }
 
@@ -1163,19 +1165,22 @@ mod tests {
         assert!(next_action.contains("Slice: Slice 8 Event Protocol Hardening"));
         assert!(next_action.contains("Gap: event protocol is not observable enough"));
         assert!(next_action.contains("Next: Define event protocol -> Emit shell runtime events"));
-        assert!(next_action.contains("Guide: guides/08-demo-coder/08-slice-8-event-protocol.md"));
+        assert!(
+            next_action
+                .contains("Current reading: guides/08-demo-coder/08-slice-8-event-protocol.md")
+        );
         assert!(!next_action.contains("Old completed action"));
     }
 
     #[test]
-    fn archivist_phase_uses_candidate_map_as_current_guide() {
+    fn reflection_phase_uses_candidate_map_as_current_reading() {
         let temp = tempfile::TempDir::new().expect("temp dir");
         let root = temp.path();
-        let guide = root.join("guides/10-archivist/01-knowledge-candidate-map.md");
-        fs::create_dir_all(guide.parent().expect("guide parent")).expect("guide dir");
-        fs::write(&guide, "# Draft Knowledge Candidate Map\n").expect("guide");
+        let guide = root.join("reflection/01-knowledge-candidate-map.md");
+        fs::create_dir_all(guide.parent().expect("reflection parent")).expect("reflection dir");
+        fs::write(&guide, "# 知识候选地图草稿\n").expect("reflection");
 
-        let current_guide = find_current_guide(root, "10-archivist").expect("current guide");
+        let current_guide = find_current_guide(root, "10-reflection").expect("current guide");
 
         assert_eq!(current_guide, guide);
     }

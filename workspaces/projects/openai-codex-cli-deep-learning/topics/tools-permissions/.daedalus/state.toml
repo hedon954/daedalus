@@ -6,8 +6,8 @@ title = "工具系统与权限系统"
 kind = "repo-learning-topic"
 parent_project = "../.."
 lifecycle = "awaiting-reflection"
-current_phase = "10-archivist"
-next_action = "进入 10-archivist 的 knowledge candidate loop：先用 guides/notes/demo/tests/closeout 生成 draft candidate map，再围绕候选做用户筛选、修订和最终归档。"
+current_phase = "10-reflection"
+next_action = "进入 10-reflection：先用学习材料生成 reflection/01-knowledge-candidate-map.md，再围绕候选做用户筛选、修订和最终归档。"
 
 [[stages]]
 id = "01-goal-aligner"
@@ -64,16 +64,16 @@ status = "done"
 required_artifacts = ["notes/09-biz-solver/README.md"]
 
 [[stages]]
-id = "10-archivist"
-title = "闭环 Repo 学习任务"
+id = "10-reflection"
+title = "Repo 学习回顾与知识归档"
 status = "active"
 required_artifacts = [
     ".daedalus/artifact-index.md",
     ".daedalus/long-context.md",
-    "guides/10-archivist/01-knowledge-candidate-map.md",
-    "guides/10-archivist/02-closeout-prompts.md",
-    "guides/10-archivist/03-selection.md",
-    "guides/10-archivist/04-archive-evidence.md",
+    "reflection/01-knowledge-candidate-map.md",
+    "reflection/02-closeout-prompts.md",
+    "reflection/03-selection.md",
+    "reflection/04-archive-evidence.md",
     "reflection/closeout.md",
 ]
 
@@ -247,18 +247,18 @@ actor = "daedalus-cli"
 reason = "notes/09-biz-solver/README.md 已输出业务迁移方案，覆盖现实压力、第一性原理、迁移设计、取舍和验收标准。"
 
 [[transitions]]
-stage = "10-archivist"
+stage = "10-reflection"
 action = "enter"
 timestamp = "2026-06-10 03:27:21"
 actor = "daedalus-cli"
 reason = "进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。"
 
 [[transitions]]
-stage = "10-archivist"
+stage = "10-reflection"
 action = "rollback"
 timestamp = "2026-06-12 00:00:00"
 actor = "agent"
-reason = "撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-archivist` 回到 active。"
+reason = "撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-reflection` 回到 active。"
 
 [[transitions]]
 stage = "topic"

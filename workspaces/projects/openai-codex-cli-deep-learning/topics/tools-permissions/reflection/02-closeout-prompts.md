@@ -1,6 +1,6 @@
-# Closeout Prompts
+# 收尾回顾提示
 
-> 状态：draft。你已经写过 closeout，本文件现在用于复核：哪些候选确实进入了你的理解，哪些还只是做过一次。
+> 状态：草稿。你已经写过 closeout，本文件现在用于复核：哪些候选确实进入了你的理解，哪些还只是做过一次。
 
 ## 主线确认
 
@@ -14,11 +14,11 @@
 - 哪些地方是忠实模仿 Codex，哪些地方是学习 demo 的刻意简化？
 - `ToolRuntime`、`ApprovalGateway`、`ExecutionRunner`、`EventEmitter` 的边界是否足够清楚？
 
-## Trade-off 与边界
+## 取舍与边界
 
 - 当前 demo 能证明什么？不能证明什么？
 - 如果放到生产环境，哪些简化必须被替换？
-- session-scoped approval 的边界未来在哪里可能裂开？
+- 会话级 approval 的边界未来在哪里可能裂开？
 
 ## 旁路知识
 

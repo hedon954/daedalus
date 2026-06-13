@@ -286,29 +286,16 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(topic_dir.join(".daedalus/reviews/README.md").exists());
     assert!(topic_dir.join("demo/.gitkeep").exists());
     assert!(topic_dir.join("guides/.gitkeep").exists());
-    assert!(topic_dir.join("guides/10-archivist/README.md").exists());
-    assert!(
-        topic_dir
-            .join("guides/10-archivist/01-knowledge-candidate-map.md")
-            .exists()
-    );
-    assert!(
-        topic_dir
-            .join("guides/10-archivist/02-closeout-prompts.md")
-            .exists()
-    );
-    assert!(
-        topic_dir
-            .join("guides/10-archivist/03-selection.md")
-            .exists()
-    );
-    assert!(
-        topic_dir
-            .join("guides/10-archivist/04-archive-evidence.md")
-            .exists()
-    );
-    assert!(topic_dir.join("notes/.gitkeep").exists());
     assert!(topic_dir.join("reflection/README.md").exists());
+    assert!(
+        topic_dir
+            .join("reflection/01-knowledge-candidate-map.md")
+            .exists()
+    );
+    assert!(topic_dir.join("reflection/02-closeout-prompts.md").exists());
+    assert!(topic_dir.join("reflection/03-selection.md").exists());
+    assert!(topic_dir.join("reflection/04-archive-evidence.md").exists());
+    assert!(topic_dir.join("notes/.gitkeep").exists());
     assert!(topic_dir.join("reflection/closeout.md").exists());
     assert!(task_dir.join("source/.gitignore").exists());
     assert!(task_dir.join("source/pull_source.sh").exists());
@@ -1238,7 +1225,7 @@ fn final_stage_completion_requires_active_final_stage() {
         .args([
             "state",
             "complete",
-            "10-archivist",
+            "10-reflection",
             "--project-dir",
             task_dir.to_str().expect("utf8"),
             "--reason",
@@ -1276,7 +1263,7 @@ fn final_stage_completion_completes_active_topic_stage_only() {
         .args([
             "state",
             "enter",
-            "10-archivist",
+            "10-reflection",
             "--project-dir",
             task_dir.to_str().expect("utf8"),
             "--reason",
@@ -1291,7 +1278,7 @@ fn final_stage_completion_completes_active_topic_stage_only() {
         .args([
             "state",
             "complete",
-            "10-archivist",
+            "10-reflection",
             "--project-dir",
             task_dir.to_str().expect("utf8"),
             "--reason",
@@ -1300,16 +1287,17 @@ fn final_stage_completion_completes_active_topic_stage_only() {
         .assert()
         .success()
         .stdout(predicates::str::contains("ok: state transition completed"))
-        .stdout(predicates::str::contains("stage: 10-archivist"))
+        .stdout(predicates::str::contains("stage: 10-reflection"))
         .stdout(predicates::str::contains("topic_dir:"));
 
     assert!(task_dir.exists());
     assert!(task_dir.starts_with(repo.path().join("workspaces/projects")));
     let topic_state = fs::read_to_string(active_topic_dir(&task_dir).join(".daedalus/state.toml"))
         .expect("topic state");
-    assert!(topic_state.contains("current_phase = \"10-archivist\""));
+    assert!(topic_state.contains("current_phase = \"10-reflection\""));
     assert!(
-        topic_state.contains("id = \"10-archivist\"\ntitle = \"闭环专题学习\"\nstatus = \"done\"")
+        topic_state
+            .contains("id = \"10-reflection\"\ntitle = \"专题回顾与知识归档\"\nstatus = \"done\"")
     );
 }
 
@@ -1338,7 +1326,7 @@ fn task_complete_marks_project_idle_and_keeps_stable_path() {
         .args([
             "state",
             "enter",
-            "10-archivist",
+            "10-reflection",
             "--project-dir",
             task_dir.to_str().expect("utf8"),
             "--reason",

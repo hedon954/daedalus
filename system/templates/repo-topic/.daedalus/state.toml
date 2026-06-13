@@ -78,16 +78,16 @@ status = "pending"
 required_artifacts = ["notes/09-biz-solver/README.md"]
 
 [[stages]]
-id = "10-archivist"
-title = "闭环专题学习"
+id = "10-reflection"
+title = "专题回顾与知识归档"
 status = "pending"
 required_artifacts = [
     ".daedalus/artifact-index.md",
     ".daedalus/long-context.md",
-    "guides/10-archivist/01-knowledge-candidate-map.md",
-    "guides/10-archivist/02-closeout-prompts.md",
-    "guides/10-archivist/03-selection.md",
-    "guides/10-archivist/04-archive-evidence.md",
+    "reflection/01-knowledge-candidate-map.md",
+    "reflection/02-closeout-prompts.md",
+    "reflection/03-selection.md",
+    "reflection/04-archive-evidence.md",
     "reflection/closeout.md",
 ]
 

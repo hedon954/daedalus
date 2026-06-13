@@ -179,7 +179,7 @@ Topic files in `guides/` and `notes/` use ordered prefixes by default: `01-`, `0
 | 7 Demo Design  | `system/prompts/repo/phase3-practice/07-demo-architecture.md`                                      | finalize mini demo architecture and verification |
 | 8 Demo Code    | `system/prompts/repo/phase3-practice/08-demo-coder.md`                                             | coach user-led implementation slices             |
 | 9 Business     | `system/prompts/repo/phase3-practice/09-biz-solver.md`                                             | transfer verified pattern to the user problem    |
-| 10 Archive     | `system/prompts/repo/phase4-closing/10-archivist.md` plus common summarize/export/compress prompts | archive verified learning and close              |
+| 10 Reflection  | `system/prompts/repo/phase4-closing/10-reflection.md` plus closeout and archive prompts             | review, challenge, select candidates, and archive |
 
 ## Resume Checklist
 

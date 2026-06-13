@@ -681,7 +681,7 @@ system/prompts/repo/phase2-learning/06-code-reader.md
 system/prompts/repo/phase3-practice/07-demo-architecture.md
 system/prompts/repo/phase3-practice/08-demo-coder.md
 system/prompts/repo/phase3-practice/09-biz-solver.md
-system/prompts/repo/phase4-closing/10-archivist.md
+system/prompts/repo/phase4-closing/10-reflection.md
 system/templates/README.md
 crates/docs/repo-learning-stage-state-flow.md
 ```
@@ -692,7 +692,7 @@ crates/docs/repo-learning-stage-state-flow.md
 所有“task stage”表述改为“project + active topic + topic stage”。
 所有“读取 task outcome-map/todo”改为“先读 project-map/topic-board，再读 active topic outcome-map/todo”。
 所有“state command 更新当前任务阶段”改为“state command 更新 active topic 阶段”。
-所有“task complete 代表完成 10-archivist”改为“topic complete 完成专题；task complete 关闭 project”。
+所有“task complete 代表完成 10-reflection”改为“topic complete 完成专题；task complete 关闭 project”。
 ```
 
 ### CLI Command Contract For Agents
@@ -847,7 +847,7 @@ Before starting a source reading or demo design step, declare whether the result
 - 每轮阅读必须声明它补 topic artifact，还是提升 shared evidence。
 - 若要提升 shared evidence，必须写明跨 topic 适用边界。
 
-`10-archivist`：
+`10-reflection`：
 
 - topic 归档时必须反向检查 shared context：
   - 新增哪些 evidence？

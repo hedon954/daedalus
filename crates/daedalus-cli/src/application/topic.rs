@@ -364,7 +364,7 @@ fn validate_topic_awaiting_reflection(topic_dir: &std::path::Path, slug: &str) -
     let topic_doc = state_toml::load_state_doc(&state_toml::state_path(topic_dir))?;
     let unfinished: Vec<_> = state_toml::stages(&topic_doc)
         .into_iter()
-        .filter(|stage| stage.id != "10-archivist" && stage.status != "done")
+        .filter(|stage| stage.id != "10-reflection" && stage.status != "done")
         .map(|stage| format!("{} ({})", stage.id, stage.status))
         .collect();
     if !unfinished.is_empty() {

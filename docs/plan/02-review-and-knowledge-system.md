@@ -11,7 +11,7 @@ daedalus 当前已经支持 repo learning 的主学习闭环：
 Learning Project -> Topic Track -> 01..10 stages -> demo / biz transfer / archive
 ```
 
-但它还没有把“学完以后如何复习”和“如何从学习证据中萃取知识体系”建模成一等能力。现有 `10-archivist` 与 `export-knowledge` 能在关闭阶段做知识归档，但它们更像尾声动作：
+但它还没有把“学完以后如何复习”和“如何从学习证据中萃取知识体系”建模成一等能力。现有 `10-reflection` 与 `export-knowledge` 能在关闭阶段做知识归档，但它们更像尾声动作：
 
 - 只在任务收尾时触发。
 - 偏向总结和归档，不负责长期掌握。
@@ -592,14 +592,14 @@ system/prompts/common/knowledge-system-extraction.md
 .claude/skills/repo-learning-coach/SKILL.md
 system/prompts/common/resume.md
 system/prompts/common/export-knowledge.md
-system/prompts/repo/phase4-closing/10-archivist.md
+system/prompts/repo/phase4-closing/10-reflection.md
 ```
 
 关键规则：
 
 - 用户说“复习一下”“帮我回顾”“启动复习计划”时，不要进入 repo-learning 10-stage，而是进入 Review System。
 - 复习 completed topic/project 时，不修改原 topic/project lifecycle。
-- `10-archivist` 完成 topic 时要提示是否创建 review seed，但不自动创建长期计划。
+- `10-reflection` 完成 topic 时要提示是否创建 review seed，但不自动创建长期计划。
 - `export-knowledge` 不再只输出单篇知识条目，还要能输出 relation map 和 promotion candidate。
 
 ### Skill description 更新

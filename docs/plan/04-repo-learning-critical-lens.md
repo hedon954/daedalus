@@ -193,7 +193,7 @@ understand what the source does, why it works, where it fails, and what should o
 | `07-demo-architecture` | demo 设计必须说明哪里忠实模仿 repo，哪里刻意简化、改进或丢弃。 |
 | `08-demo-coder` | 每个 slice closeout 必须做一次批判性 checkpoint。 |
 | `09-biz-solver` | 业务迁移必须重新验证现实约束，不能默认 repo 方案成立。 |
-| `10-archivist` | 知识条目必须包含 transfer boundary、failure mode 和 not-to-copy。 |
+| `10-reflection` | 知识条目必须包含 transfer boundary、failure mode 和 not-to-copy。 |
 
 ## Filesystem Changes
 
@@ -216,7 +216,7 @@ system/prompts/repo/phase2-learning/06-code-reader.md
 system/prompts/repo/phase3-practice/07-demo-architecture.md
 system/prompts/repo/phase3-practice/08-demo-coder.md
 system/prompts/repo/phase3-practice/09-biz-solver.md
-system/prompts/repo/phase4-closing/10-archivist.md
+system/prompts/repo/phase4-closing/10-reflection.md
 system/prompts/common/review-guidance.md
 system/prompts/common/knowledge-system-extraction.md
 ```
@@ -436,7 +436,7 @@ flowchart LR
 07-demo-architecture
 08-demo-coder
 09-biz-solver
-10-archivist
+10-reflection
 ```
 
 然后再补：

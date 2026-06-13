@@ -12,7 +12,7 @@ use crate::domain::{
 };
 use crate::infrastructure::{clock, state_toml, workspace_fs};
 
-const FINAL_STAGE_ID: &str = "10-archivist";
+const FINAL_STAGE_ID: &str = "10-reflection";
 
 /// 任务生命周期关闭动作。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

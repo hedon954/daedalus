@@ -463,9 +463,9 @@ fn review_knowledge_preview(overview: &TuiOverview) -> Vec<String> {
     );
     values.extend(
         overview
-            .archivist_summary
+            .reflection_summary
             .iter()
-            .map(|value| format!("archivist: {value}")),
+            .map(|value| format!("reflection: {value}")),
     );
     values
 }

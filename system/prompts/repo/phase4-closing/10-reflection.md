@@ -1,5 +1,5 @@
 ---
-title: Close Repo Learning Loop
+title: Repo Learning Reflection Loop
 description: 检查 repo 学习是否闭环，并归档产物、验证结论和可迁移知识。用于完成、暂停或放弃学习任务时。
 phase: repo.phase4-closing
 ---
@@ -12,7 +12,7 @@ phase: repo.phase4-closing
 @system/prompts/common/diagram-guidelines.md
 @system/prompts/common/closeout-flow.md
 
-# Close Repo Learning Loop
+# Repo Learning Reflection Loop
 
 ## Layer Contract
 

@@ -6,7 +6,7 @@
 - 删除 `daedalus-knowledge-*` AI 知识提取型 skills 和跨 agent skill 软链接。
 - 删除 `Knowledge System Extraction` prompt 和 `system/templates/knowledge-system/` 旧模板。
 - 删除 project shared 下的 `knowledge-system/` scaffold，不再维护 topic candidate -> shared candidate 的 AI 提取链路。
-- 改写 repo-learning coach、archivist、operating contract、README 和 CLI contract，统一为 human-owned notes / reviewed human retrospective understanding。
+- 改写 repo-learning coach、reflection、operating contract、README 和 CLI contract，统一为 human-owned notes / reviewed human retrospective understanding。
 
 ## 决策
 

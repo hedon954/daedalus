@@ -28,7 +28,7 @@
 | complete 02 with artifact | 产物存在后正常完成 | 通过 |
 | 03-09 连续推进 | enter → create artifact → complete | 全部通过 |
 | state.md 渲染 | 01-09 全部 done，10 pending | 正确 |
-| next_action 更新 | 指向 `10-archivist` | 正确 |
+| next_action 更新 | 指向 `10-reflection` | 正确 |
 
 ### 观察
 
@@ -57,7 +57,7 @@
 | block pending stage | 拒绝：pending cannot block | 拒绝 | 通过 |
 | enter done stage | 拒绝：done cannot enter | 拒绝 | 通过 |
 | complete done stage | 拒绝：done cannot complete | 拒绝 | 通过 |
-| task complete without 10-archivist active | 拒绝：pending cannot complete | 拒绝 | 通过 |
+| task complete without 10-reflection active | 拒绝：pending cannot complete | 拒绝 | 通过 |
 | WIP 限制：已有 active task 时 init | 拒绝 | 正确拒绝 | 通过 |
 | task abandon | 允许，lifecycle 和 bucket 一致 | 一致 | 通过 |
 
@@ -78,12 +78,12 @@
 | 步骤 | 结果 |
 |---|---|
 | 01-09 正常推进 | 全部通过 |
-| enter 10-archivist | 通过 |
+| enter 10-reflection | 通过 |
 | task complete | 通过 |
 | 目录移动到 03-completed | 正确 |
 | state.toml lifecycle = completed | 正确 |
 | state.toml workspace_bucket = 03-completed | 正确 |
-| 10-archivist status = done | 正确 |
+| 10-reflection status = done | 正确 |
 | validate completed task | 通过 |
 | decision-log 记录关闭原因 | 正确 |
 | state.md 显示关闭时间和原因 | 正确 |

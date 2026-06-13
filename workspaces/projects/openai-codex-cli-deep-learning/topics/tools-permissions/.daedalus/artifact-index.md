@@ -32,7 +32,8 @@
 | [`notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md`](../notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md) | 08-demo-coder | Phase 2B CLI UI 收口、approval-test 和测试边界 | 已验证 |
 | [`notes/08-demo-coder/14-assert-result-denied-boundary.md`](../notes/08-demo-coder/14-assert-result-denied-boundary.md) | 08-demo-coder | assert / Result / Denied 边界判断 | 已验证 |
 | [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 09-biz-solver | 安全本地命令执行模式的业务迁移方案 | 已验证 |
-| [`reflection/closeout.md`](../reflection/closeout.md) | 10-archivist | 用户主动回顾：真实理解变化、证据、迁移边界和待 challenge 问题 | 待补充 |
+| [`reflection/closeout.md`](../reflection/closeout.md) | 10-reflection | 用户主动回顾：真实理解变化、证据、迁移边界和待 challenge 问题 | 已完成 |
+| [`reflection/01-knowledge-candidate-map.md`](../reflection/01-knowledge-candidate-map.md) | 10-reflection | 知识候选地图草稿，等待用户筛选 | 待确认 |
 
 ## 验证记录
 
