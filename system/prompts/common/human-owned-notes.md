@@ -124,6 +124,13 @@ AI 的职责是：
 - 识别哪些反思只属于当前 topic，哪些应该提升为全局学习方法、模板规则或未来知识库候选。
 - 通过 review 后，协助格式化、链接和一致性检查。
 
+推进规则：
+
+- 用户完成 retrospective 后，Agent 必须判断当前 closeout gate，而不是继续开放式追问。
+- 如果 challenge 已经在对话中完成，直接承认并同步地图。
+- 如果没有阻塞性理解缺口，下一步必须进入 knowledge-base gate。
+- 不要让用户反复提醒“更新进度、提交、下一步是什么”。
+
 AI 不得在没有用户 closeout retrospective 的情况下生成 knowledge-base 正文。
 
 ## Knowledge-Base Gate

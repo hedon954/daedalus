@@ -19,6 +19,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - Before a repo-learning commit, run a learning-map sync check. After a repo-learning commit, output a post-commit orientation.
 - When a discussion produces a reusable learning method, thinking tool, artifact pattern, or Agent operating rule, do not bury it only in the current topic. Decide its level: topic note, project shared context, prompt/template rule, or knowledge-base candidate.
 - Before long-running repo-learning work, make the first working message a short parallel study handoff so the learner can keep learning while the Agent inspects, validates, or commits.
+- Treat topic closeout as a push-driven state machine, not an open-ended review chat. When a closeout gate is satisfied, synchronize maps and move to the next gate.
 - Study materials are constrained design cases, not authorities. Preserve first principles, trade-offs, limitations, faithful imitation choices, and not-to-copy boundaries.
 - Principle explanations must expose the mechanism below the abstraction when it affects design: language/runtime/library first, then OS/protocol/hardware as needed, with clear stop rules.
 - Mini demos should consciously imitate the source repo's core mechanism where implementation friction teaches the trade-off, then decide what to simplify, improve, or discard.

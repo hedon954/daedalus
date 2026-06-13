@@ -69,6 +69,8 @@ Lifecycle distinction:
 - `awaiting-reflection` means stages 01-09 are done and the topic is waiting for user closeout reflection; it does not occupy the active learning slot.
 - `completed` means closeout reflection, Agent challenge, user confirmation, and knowledge archival are complete.
 
+Closeout progression must follow `system/prompts/common/closeout-flow.md`: once a closeout gate is satisfied, update maps and push to the next gate instead of asking the user to rediscover the next action.
+
 ## Prompt Loading Strategy
 
 Load only the prompt(s) needed for the current action:
@@ -81,6 +83,7 @@ Load only the prompt(s) needed for the current action:
 - Critical lens and trade-off analysis: `system/prompts/common/critical-lens.md`
 - Review plan/session: `system/prompts/common/review-guidance.md`
 - Knowledge archival: `system/prompts/common/archive-knowledge.md`
+- Topic closeout progression: `system/prompts/common/closeout-flow.md`
 - Stage work: load the matching stage prompt from the stage index below.
 
 ## Learning Navigation

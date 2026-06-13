@@ -25,3 +25,15 @@
 如果你需要画图，不要试图用一张图讲完所有细节。图优先画清楚分层和主方向；关键决策点、异常分支、取舍原因，放在图后的文字里解释。daedalus 会帮你检查图和文字是否互相支撑，而不是让图变成不可读的全量流程。
 
 你负责写正文；daedalus 会负责提问、challenge、搜索外部最佳实践、补链接、检查一致性和组织结构。没有你的主动回顾，这个 topic 就不能进入 `knowledge-base/`。
+
+你写完并确认后，daedalus 应该主动推进：
+
+```text
+reflection done
+-> challenge resolved
+-> knowledge-base gate
+-> archive confirmed
+-> topic completed
+```
+
+如果某一步已经在对话中完成，daedalus 应该承认完成、同步地图并进入下一步，而不是让你重复提醒。

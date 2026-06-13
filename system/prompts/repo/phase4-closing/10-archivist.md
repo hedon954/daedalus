@@ -10,6 +10,7 @@ phase: repo.phase4-closing
 @system/prompts/common/compress-context.md
 @system/prompts/common/critical-lens.md
 @system/prompts/common/diagram-guidelines.md
+@system/prompts/common/closeout-flow.md
 
 # Close Repo Learning Loop
 
@@ -39,15 +40,19 @@ phase: repo.phase4-closing
 
 ## Repo-Specific Workflow
 
-1. 检查 active topic 是否满足 completed 条件；如要关闭 project，必须确认所有 topic 都已 completed 或 abandoned。
-2. 汇总产物清单和位置。
-3. 检查用户是否已经完成 closeout retrospective；没有则先引导用户完成，不要代写。
-4. 区分用户已验证理解、未解决问题和后续建议。
-5. 如果 closeout 需要图，检查图是否只承担分层和主方向，关键决策点是否由文字解释。
-6. 检查学习过程中出现的通用方法、思维工具或 Agent 失败模式是否需要提升到 project shared、system prompts/templates 或 knowledge-base candidate，而不是只留在当前 topic。
-7. 使用 `Archive Reviewed Human Knowledge` 判断可迁移理解的归档位置。
-8. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
-9. 给出 closing report。
+先按 `Closeout Push Protocol` 判断当前状态，不要从头重走所有步骤。
+
+1. 判断当前 closeout gate：`AwaitingReflection`、`ReflectionWritten`、`ChallengeResolved`、`KnowledgeGate`、`ArchiveReady`、`TopicCompleted`。
+2. 只执行当前 gate 需要的动作；如果上一 gate 已经在对话中完成，承认完成并推进，不要让用户重复证明。
+3. 检查 active topic 是否满足 completed 条件；如要关闭 project，必须确认所有 topic 都已 completed 或 abandoned。
+4. 汇总产物清单和位置。
+5. 检查用户是否已经完成 closeout retrospective；没有则先引导用户完成，不要代写。
+6. 区分用户已验证理解、未解决问题和后续建议。
+7. 如果 closeout 需要图，检查图是否只承担分层和主方向，关键决策点是否由文字解释。
+8. 检查学习过程中出现的通用方法、思维工具或 Agent 失败模式是否需要提升到 project shared、system prompts/templates 或 knowledge-base candidate，而不是只留在当前 topic。
+9. 使用 `Archive Reviewed Human Knowledge` 判断可迁移理解的归档位置。
+10. 提醒是否需要创建 review seed，但不要自动创建长期复习计划。
+11. 给出 closing report 或下一 gate 的唯一行动。
 
 ## Output Delta
 
