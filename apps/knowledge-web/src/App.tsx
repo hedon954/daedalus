@@ -1,4 +1,5 @@
 import mermaid from "mermaid";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 type AtlasModule = "command" | "react" | "sandbox" | "async" | "tui";
@@ -662,11 +663,11 @@ function App() {
             {module.sections.map((section) => (
               <section className="deep-card" key={section.title}>
                 <h3>{section.title}</h3>
-                <p>{section.body}</p>
+                <p>{renderInlineCode(section.body)}</p>
                 {section.bullets && (
                   <ul>
                     {section.bullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
+                      <li key={bullet}>{renderInlineCode(bullet)}</li>
                     ))}
                   </ul>
                 )}
@@ -683,7 +684,7 @@ function App() {
             </div>
             <ol>
               {module.checks.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item}>{renderInlineCode(item)}</li>
               ))}
             </ol>
           </section>
@@ -739,8 +740,8 @@ function CommandScenarioExplorer({
         <section className="command-card">
           <span className="eyebrow">Command</span>
           <h4>{scenario.command}</h4>
-          <p>{scenario.context}</p>
-          <blockquote>{scenario.warning}</blockquote>
+          <p>{renderInlineCode(scenario.context)}</p>
+          <blockquote>{renderInlineCode(scenario.warning)}</blockquote>
         </section>
         <section className="policy-stack" aria-label="scenario-picker policy path">
           <PolicyRow label="Capability" value={scenario.capability} />
@@ -758,7 +759,7 @@ function PolicyRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="policy-row">
       <strong>{label}</strong>
-      <span>{value}</span>
+      <span>{renderInlineCode(value)}</span>
     </div>
   );
 }
@@ -817,7 +818,7 @@ function TwoColumnEvidence({ module }: { module: KnowledgeModule }) {
           {module.codeAnchors.map(([file, responsibility]) => (
             <div key={file}>
               <code>{file}</code>
-              <span>{responsibility}</span>
+              <span>{renderInlineCode(responsibility)}</span>
             </div>
           ))}
         </div>
@@ -834,13 +835,29 @@ function TwoColumnEvidence({ module }: { module: KnowledgeModule }) {
         {module.failureModes.map(([mode, problem, fix]) => (
           <div className="table-row" key={mode}>
             <strong>{mode}</strong>
-            <span>{problem}</span>
-            <span>{fix}</span>
+            <span>{renderInlineCode(problem)}</span>
+            <span>{renderInlineCode(fix)}</span>
           </div>
         ))}
       </section>
     </section>
   );
+}
+
+function renderInlineCode(text: string): ReactNode {
+  const parts = text.split(/(`[^`]+`)/g).filter(Boolean);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code className="inline-code" key={`${part}-${index}`}>
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
+    return part;
+  });
 }
 
 export default App;

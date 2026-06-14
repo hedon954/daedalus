@@ -532,6 +532,20 @@ a:hover {
   font-size: 13px;
 }
 
+.inline-code {
+  display: inline;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 0.08em 0.38em;
+  white-space: break-spaces;
+}
+
 @media (max-width: 1180px) {
   .atlas-layout,
   .hero-grid,

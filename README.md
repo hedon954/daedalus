@@ -1,309 +1,248 @@
 # daedalus
 
-daedalus 是一个 filesystem-first 的深度学习 coach。它把一次真实学习/业务问题推进成可恢复、可验证、可迁移的文件系统产物：目标卡片、问题路线图、运行记录、源码证据、mini demo、业务迁移方案、复习计划和知识库条目。
+daedalus 是一个 filesystem-first 的深度学习 coach。
 
-当前最成熟的能力是 repo learning：围绕一个真实代码仓库建立长期学习 project，再把不同学习方向拆成多个 topic。每个 topic 都能独立完成 10-stage 闭环，同时复用 project 级 shared context。
+它不是自动摘要工具，也不是替你读书、读论文、读源码的笔记生成器。它更像一个长期陪你学习的工作台：帮你把一个真实问题拆成学习路径，引导你阅读材料、实现 mini demo、做迁移思考、完成主动回顾，并最终把真正掌握的内容沉淀进知识库。
 
-## Why
+名字来自希腊神话里的 Daedalus：那个造迷宫，也造翅膀的工匠。这个项目想做的事情也类似：帮学习者走进复杂系统的迷宫，再带着可迁移的能力飞出来。
 
-很多源码学习会失败，不是因为读得不够多，而是因为缺少终点、证据和迁移目标：
+## 为什么做
 
-- 不知道最终要产出什么。
-- 不知道当前问题服务哪个产物。
-- 很容易陷入源码细节沼泽。
-- Agent 容易替用户总结，用户没有形成自己的理解。
-- 学完后没有 demo、业务迁移和知识归档。
+很多深度学习失败，不是因为材料不够好，而是因为学习过程缺少几个关键东西：
 
-daedalus 的核心判断是：
+- 没有终点，不知道最后要产出什么。
+- 没有证据，读完之后很难证明自己真的懂了。
+- 没有实践，理解停留在“我知道它这么设计”。
+- 没有主动回顾，知识没有经过自己的表达和摩擦。
+- 没有迁移，学完之后不知道怎么用到自己的问题里。
+
+daedalus 的判断是：
 
 ```text
-输出物决定输入路径。
-学习不是泛读材料，而是围绕现实问题构建可迁移能力。
+学习不是收集材料，而是围绕真实问题构建可迁移能力。
 ```
 
-## Learning Model
+## 它如何工作
 
-```mermaid
-flowchart TD
-    Problem["现实问题"] --> Project["Learning Project"]
-    Project --> Shared["Shared Context"]
-    Project --> TopicA["Topic: tools-permissions"]
-    Project --> TopicB["Topic: prompt-engineering"]
-    Project --> TopicC["Topic: sub-agent-scheduling"]
-
-    TopicA --> Loop["10-stage learning loop"]
-    Loop --> Demo["Mini Demo"]
-    Loop --> Transfer["Business Transfer"]
-    Loop --> Knowledge["Knowledge Archive"]
-```
-
-- **Project**：长期学习同一个 repo、book、course 或 paper 的工作区。
-- **Topic**：一个可闭环的专题，例如 Codex 的工具/权限系统。
-- **Shared Context**：跨 topic 复用的 source index、runbook、architecture map、glossary、evidence registry 和 transfer patterns。
-- **Knowledge Base**：只收纳已验证、能解释现实约束和 trade-off 的可迁移知识。
-
-## Repo Learning Flow
-
-每个 repo-learning topic 走同一条 10-stage 路线：
+一次学习不是直线推进。最外层是一条主线，内部有两个反复校准的小循环：
 
 ```mermaid
 flowchart LR
-    S01["01 目标对齐"] --> S02["02 选择 Repo"]
-    S02 --> S03["03 问题路线图"]
-    S03 --> S04["04 运行调试"]
-    S04 --> S05["05 架构分析"]
-    S05 --> S06["06 核心代码"]
-    S06 --> S07["07 Demo 设计"]
-    S07 --> S08["08 Demo 实现"]
-    S08 --> S09["09 业务迁移"]
-    S09 --> S10["10 知识归档"]
+    Problem["真实问题"]
+    Scope["选择 / 裁剪学习材料"]
+
+    subgraph Topic["topic 内部学习循环"]
+        direction LR
+        Roadmap["问题路线图"]
+        Study["阅读 / 调试 / notes"]
+        Demo["mini demo 验证"]
+
+        Roadmap --> Study
+        Study --> Demo
+        Demo -. "暴露理解缺口" .-> Roadmap
+    end
+
+    subgraph Reflection["reflection 循环"]
+        direction LR
+        Closeout["closeout reflection"]
+        Challenge["challenge / 补资料 / 找矛盾"]
+        Revise["修正理解与候选知识"]
+
+        Closeout --> Challenge
+        Challenge --> Revise
+        Revise -. "仍不清楚" .-> Closeout
+    end
+
+    KB["knowledge-base"]
+    Next["复习 / 迁移 / 新问题"]
+
+    Problem --> Scope
+    Scope --> Topic
+    Topic --> Reflection
+    Reflection --> KB
+    KB --> Next
 ```
 
-每一步都必须回答：
+图里有两个反馈含义：
 
-- 推进哪个最终产物？
-- 填补哪个缺口？
-- 需要什么证据？
-- 完成后解锁什么？
+- `复习 / 迁移 / 新问题` 会成为下一轮学习的真实问题。
+- 如果 reflection 发现范围过大、问题偏移或材料不合适，就回到 `选择 / 裁剪学习材料`。
 
-核心产物：
+这个结构里最重要的是三条角色边界：
 
-```text
-.daedalus/outcome-map.md     终点地图
-.daedalus/todo.md            当前路径看板
-guides/                      Agent 给用户的行动指南
-notes/                       用户实践和思考后的学习证据
-reflection/                  用户完成 topic 后的主动回顾总结
-demo/                        可运行、可测试、可讲解的 mini demo
-notes/09-biz-solver/         业务迁移方案
-knowledge-base/              长期知识归档
-```
+- **你负责形成理解**：写 notes、做 demo、写 closeout、决定哪些知识值得留下。
+- **daedalus 负责推进理解**：提问题、给 guide、challenge 模糊答案、补外部资料、帮你组织和校验。
+- **knowledge-base 只存 reviewed understanding**：不是 AI 自动摘要，而是经过你主动回顾和确认后的长期知识。
 
-## First Principles And Critical Lens
+## 学习对象
 
-daedalus 不把学习材料当权威。每个 repo、book 或 project 都只是一个受约束的设计案例。
+daedalus 不只服务 repo learning。它可以用于：
+
+- 源码项目：例如 Codex、数据库、中间件、框架。
+- 技术书：例如 DDIA、操作系统、编译原理。
+- 论文：围绕一个问题拆解背景、方法、假设、实验与迁移价值。
+- 课程：把课程内容变成练习、demo、复习计划和知识库。
+- 真实业务问题：从现实约束出发，寻找可复用的工程模式。
+
+当前跑通最完整的是 repo learning；第一个完整样本是 Codex CLI 的 `tools-permissions` topic。
+
+## Project 与 Topic
+
+daedalus 用 Project / Topic 来组织长期学习。
 
 ```mermaid
-flowchart TD
-    Reality["现实需要 X"] --> Constraints["约束迫使 Y"]
-    Constraints --> Choice["材料选择 Z"]
-    Choice --> Benefit["收益"]
-    Choice --> Cost["代价"]
-    Benefit --> Transfer["可迁移部分"]
-    Cost --> Boundary["不应照抄的部分"]
+flowchart LR
+    Project["Learning Project"] --> Shared["Shared Context"]
+    Project --> TopicA["Topic A"]
+    Project --> TopicB["Topic B"]
+    TopicA --> Demo["Demo"]
+    TopicA --> Reflection["Reflection"]
+    TopicA --> Knowledge["Knowledge"]
 ```
 
-学习时要先忠实模仿核心机制，获得实现手感；然后再判断哪些应该 copy、simplify、improve 或 discard。
 
-## Agent And User Boundary
 
-daedalus 是 coach，不是替用户学习的代工器。
+- **Project**：一个长期学习对象，例如一个 repo、一本书、一门课。
+- **Topic**：Project 下一个可以闭环的专题，例如 Codex 的工具与权限系统。
+- **Shared Context**：同一个 Project 下跨 Topic 复用的背景、术语、运行方式和证据。
 
-- Agent 写 `guides/`：问题引导、阅读路径、实现提示、验收清单。
-- 用户写或确认 `notes/`：回答、观察、源码证据、实践结论。
-- Agent 可以校准 notes，但不能把自己的推理伪装成用户已经掌握。
-- 实现进度必须先看代码、测试和运行证据，再参考学习地图。
-- 小闭环完成后要同步进度、提交代码并提示下一步。
-
-## CLI And TUI
-
-Rust crate 位于 `crates/daedalus-cli`，提供两个 binary：
-
-- `daedalus`：Agent-friendly CLI，负责 project/topic lifecycle、stage flow、validate、review、knowledge、migration 和 IDE 派生配置。
-- `daedalus-tui`：human-friendly 只读学习驾驶舱，用于恢复现场、查看下一步、阅读 todo/outcome/guide/detail。
-
-构建：
-
-```bash
-make build
-```
-
-常用命令：
-
-```bash
-# 新建 repo-learning project，并创建初始 topic
-daedalus init repo-learning <project-name> --topic <topic-slug> --title "<topic-title>"
-
-# topic lifecycle
-daedalus topic list --project-dir <project-dir>
-daedalus topic new <topic-slug> --title "<topic-title>" --project-dir <project-dir>
-daedalus topic activate <topic-slug> --project-dir <project-dir>
-daedalus topic complete <topic-slug> --project-dir <project-dir> --reason "<reason>"
-
-# stage flow，默认作用于 active topic
-daedalus state enter 08-demo-coder --project-dir <project-dir> --reason "<reason>"
-daedalus state complete 08-demo-coder --project-dir <project-dir> --reason "<reason>"
-daedalus state rollback 06-code-reader --project-dir <project-dir> --reason "<reason>"
-daedalus state render --project-dir <project-dir>
-
-# validation
-daedalus validate <project-dir>
-daedalus validate <project-dir> --all-topics --reviews --knowledge
-
-# review
-daedalus review start --project-dir <project-dir> --topic <topic-slug> --goal "<goal>"
-daedalus review session start --project-dir <project-dir> <review-id>
-
-# knowledge: CLI 只做确定性的知识库底座，不生成学习内容
-daedalus knowledge template <knowledge-base-relative-path> --title "<title>"
-daedalus knowledge index
-daedalus knowledge list
-daedalus knowledge link-check
-daedalus knowledge validate
-
-# IDE
-daedalus ide sync-rust-analyzer
-
-# TUI
-daedalus-tui
-daedalus-tui <project-dir>
-```
-
-## Knowledge Atlas
-
-`apps/knowledge-web` 是知识库的交互式理解网站。它不是把 Markdown 转成 HTML 的文档站，而是基于 `knowledge-base/`、topic reflection 和 demo 代码重新策展出来的学习界面。
-
-首版围绕 Codex tools-permissions，展示命令执行安全、ReAct 工具闭环、Sandbox 机制和 Rust async/TUI 事件循环。Markdown 仍是长期知识源，网页负责把复杂机制做成可切换、可推进、可对比的理解模型。
-
-```bash
-make web                 # 构建并启动本地知识 atlas
-make knowledge-web-check # 类型检查和静态构建
-```
-
-## Workspace Structure
+目录大致是：
 
 ```text
 workspaces/
-  current-project -> projects/<project>
-  current-topic -> projects/<project>/topics/<topic>
-  .daedalus/
-    current.toml           当前学习现场的机器真相
-    project-index.toml     project 索引
-  backlog/                 候选学习任务，不承载 active learning state
-  projects/                稳定 project 路径；状态变化不移动目录
-
-workspaces/projects/<project-name>/
-  CLAUDE.md
-  .daedalus/
-    state.toml             project lifecycle、active topic、topic list
-    state.md               project 摘要，由 CLI 派生
-    project-map.md
-    topic-board.md
-    long-context.md
-  shared/
-    source-index.md
-    runbook.md
-    architecture-map.md
-    glossary.md
-    evidence-registry.md
-    transfer-patterns.md
-  source/
-    pull_source.sh
-  topics/
-    <topic-slug>/
-      .daedalus/
-        state.toml         topic 10-stage 状态
-        outcome-map.md
-        todo.md
-        artifact-index.md
-        long-context.md
-        reviews/
-      guides/
-      notes/
-      reflection/
-      demo/
+  current-topic        当前正在学习的 topic 入口
+  closeout-topic       等待回顾总结的 topic 入口
+  backlog/             未来可能学习的候选项
+  projects/
+    <project>/
+      shared/
+      source/
+      topics/
+        <topic>/
+          guides/      daedalus 给你的学习引导
+          notes/       你的学习记录与证据
+          demo/        用来验证理解的 mini demo
+          reflection/  topic 收尾回顾
 ```
 
-Project/topic 的 `.daedalus/state.toml` 和 `workspaces/.daedalus/current.toml` 是事实源；`state.md` 与 `current-project/current-topic` 是派生视图，不手动编辑。
+你平时最常点开的入口通常只有两个：
 
-## Review And Human-Owned Knowledge
+- `workspaces/current-topic`
+- `workspaces/closeout-topic`
 
-Review 是挂载在 topic/project 上的独立生命周期，不重新打开 learning stage。它用于：
+## 一次 Topic 会产出什么
 
-- 从第一性原理重建理解。
-- 发现薄弱点。
-- 生成复习 session。
-- 更新 mastery map。
+一个 topic 不是“读完一些材料”就结束。它至少应该留下这些东西：
 
-```mermaid
-flowchart LR
-    Material["Learning material"] --> Notes["Human rough notes"]
-    Notes --> Challenge["AI challenge / external references"]
-    Challenge --> Reflection["Human reflection/closeout.md"]
-    Reflection --> Organize["AI organize / link / consistency check"]
-    Organize --> KB["knowledge-base"]
-```
+- `guides/`：下一步怎么学、怎么读、怎么实现。
+- `notes/`：你在阅读、调试、实现中的理解和证据。
+- `demo/`：一个可运行、可测试、可讲解的 mini demo。
+- `reflection/closeout.md`：你对整个 topic 的主动回顾。
+- `reflection/candidate-map.md`：学习过程中不断积累的知识候选。
+- `knowledge-base/`：最终筛选后值得长期保留的可迁移知识。
 
-## Current Learning Sample
+其中最关键的是 `reflection/closeout.md`。它不是形式化总结，而是你把几周的源码、demo、争论、失败和设计取舍压缩成自己理解的过程。
 
-当前主样本是：
+## 知识库
 
-```text
-workspaces/projects/openai-codex-cli-deep-learning
-topic: tools-permissions
-```
+`knowledge-base/` 是 daedalus 的长期知识层。
 
-这个 topic 已完成源码学习、demo 和业务迁移，但还没有完成用户 closeout reflection，因此尚不能进入最终知识库归档：
+它不是固定模板，也不是自动摘要集合，而是一棵会随着学习不断演化的知识树。新的 topic 完成后，daedalus 会帮助你从 closeout、notes、guides、demo 和外部资料里挖掘高价值知识候选；但是否归档、如何归档、哪些忽略，最终要经过你的确认。
 
-- Codex CLI 工具/权限/沙箱源码阅读。
-- 以 `CommandRequest -> ApprovalRequirement -> sandbox first -> retry -> event -> observation` 为核心的 mini demo。
-- `SimulatedExecutionRunner` 状态机验证。
-- macOS `sandbox-exec` backed `OsExecutionRunner`。
-- `ratatui` Agent CLI REPL，支持 prompt、streaming transcript、approval once/session/reject 和无副作用 `echo approval-test` 验收。
-- 业务迁移方案：安全本地命令执行模式。
-- 待完成：用户填写 `reflection/closeout.md`，Agent review / challenge / 补外部参照，用户确认后再归档 `knowledge-base/`。
+第一批知识来自 Codex `tools-permissions` topic，覆盖：
 
-验证：
+- Agent 本地命令执行安全
+- ReAct 工具运行时
+- Sandbox 的第一性原理
+- Rust 流式 Agent 与 Tokio 运行时
+- 终端 Agent UI 的事件循环
+
+## 知识网页
+
+Markdown 适合长期保存，但有些机制更适合做成交互式页面。
+
+`apps/knowledge-web` 是 daedalus 的知识网页，用来把知识库里的复杂机制做成更容易复习的界面：状态机、流程图、场景切换、失败模式、代码落点和自测问题。
+
+启动方式：
 
 ```bash
-cargo test --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2
-daedalus validate workspaces/projects/openai-codex-cli-deep-learning
+make web
 ```
 
-最近结果：
+网页不是 Markdown 的替代品。Markdown 是知识源，网页是理解界面。
+
+## 当前样本
+
+当前第一个完整样本是：
 
 ```text
-90 passed; 0 failed; 3 ignored
-ok: workspace valid
+Project: openai-codex-cli-deep-learning
+Topic: tools-permissions
 ```
 
-完整项目复盘见：[docs/evolution/2026-06-10-first-repo-learning-retrospective.md](docs/evolution/2026-06-10-first-repo-learning-retrospective.md)。
+这个 topic 已经完成：
 
-## Development
+- Codex 工具、权限、sandbox、retry、事件和 ReAct loop 的源码学习。
+- Rust mini demo。
+- OpenAI-compatible 流式模型接入。
+- Simulated sandbox runner。
+- macOS `sandbox-exec` backed runner。
+- 多 tool call 并发执行。
+- ratatui Agent CLI。
+- 用户 closeout reflection。
+- knowledge-base 归档。
+- knowledge web 策展。
 
-```bash
-make fmt
-make check
-make clippy
-make test
-make ci
-make build
-```
+完整进化报告见：
 
-专项验证：
+[docs/evolution/2026-06-14-daedalus-first-topic-evolution.md](docs/evolution/2026-06-14-daedalus-first-topic-evolution.md)
 
-```bash
-system/bin/audit-daedalus-agent-instructions .
-daedalus validate workspaces/projects/openai-codex-cli-deep-learning --all-topics --reviews --knowledge
-```
+## 常用入口
 
-## Repository Layout
+日常使用时，你通常只需要关心这些：
 
 ```text
+workspaces/current-topic
+workspaces/closeout-topic
+workspaces/backlog
+knowledge-base
+apps/knowledge-web
+```
+
+如果你只是想看当前学习状态，可以打开：
+
+```bash
+daedalus-tui
+```
+
+如果你想看知识网页：
+
+```bash
+make web
+```
+
+如果你要继续学习，就从当前 topic 的 guide、todo、outcome map 和 demo 开始；如果你要收尾，就进入 `reflection/closeout.md`。
+
+## 目录结构
+
+```text
+apps/
+  knowledge-web/       知识网页
 crates/
-  daedalus-cli/          Rust CLI/TUI，一 crate 两个 bin
+  daedalus-cli/        daedalus 与 daedalus-tui
 docs/
-  plan/                  技术方案
-  changelog/             能力落地报告
-  evolution/             学习系统演化复盘
-knowledge-base/          长期知识库
+  plan/                重要设计方案
+  changelog/           能力落地记录
+  evolution/           daedalus 自身进化复盘
+knowledge-base/        长期知识库
 system/
-  bin/                   本地脚本
-  prompts/               reusable learning prompts
-  templates/             project/topic/review/knowledge templates
-workspaces/              backlog / stable projects / current symlinks
+  prompts/             学习协议
+  templates/           workspace 模板
+workspaces/            学习现场
 ```
 
-## Status
+## 当前状态
 
-daedalus 已完成第一轮真实 repo-learning 闭环。下一步重点不是盲目扩基础设施，而是基于 Codex 这次样本继续压缩指令复杂度、提升 coach 主动性，并开启新的 topic 或 review 来验证多 topic 学习模型。
+daedalus 已经完成第一次真实 repo-learning 闭环验证。
+
+下一步不是继续堆功能，而是用更多学习材料继续压测它：新的 repo topic、一本书、一篇论文、一门课程，或者一个真实业务问题。每一次学习都应该反过来继续打磨 daedalus 自己。
