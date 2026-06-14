@@ -24,6 +24,16 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - Principle explanations must expose the mechanism below the abstraction when it affects design: language/runtime/library first, then OS/protocol/hardware as needed, with clear stop rules.
 - Mini demos should consciously imitate the source repo's core mechanism where implementation friction teaches the trade-off, then decide what to simplify, improve, or discard.
 
+## Daedalus CLI Usage
+
+`daedalus` is the general deterministic CLI for learning workspaces, not only for repo-learning. Use the installed global `daedalus` command for lifecycle, render, validate, review, knowledge, and workspace operations across all learning material types.
+
+- Do not use `cargo run` as the normal way to invoke daedalus from inside this repository.
+- Before falling back to any build flow, check availability with `command -v daedalus`.
+- If `daedalus` exists, run the intended command directly, for example `daedalus validate --all-topics`.
+- If `daedalus` is missing or clearly stale for the current workspace schema, refresh it once with the repo-standard `make build` target. Do not bypass the Makefile with direct `cargo build`.
+- After `make build`, rerun the intended operation through the global `daedalus` command.
+
 ## Engineering Rules
 
 - Keep prompt files concise and composable.

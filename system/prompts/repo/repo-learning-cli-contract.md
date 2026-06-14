@@ -6,6 +6,10 @@ Use this contract when an Agent needs deterministic daedalus lifecycle, topic, r
 
 The CLI manages structure, state, indexes, and validation. It does not generate learning conclusions by itself; durable learning content comes from user-owned notes, user closeout retrospective, and Agent challenge/organization.
 
+## Invocation Rule
+
+Follow the global daedalus CLI usage rule in `system/prompts/common/agent-operating-contract.md`: use the installed global `daedalus` binary directly; if it is missing or stale, refresh it once with `make build`; do not use `cargo run` or direct `cargo build` as the normal operational path.
+
 ## Project And Topic Commands
 
 ```text
