@@ -18,8 +18,9 @@ scope: common
 
 ## Inputs
 
-- 新任务的学习目标。
+- 新任务的学习目标，优先来自已确认的 discovery summary 或 task card。
 - backlog candidate 文件（如适用）。
+- discovery 文件（如适用）。
 - 用户当前 WIP。
 - 现实问题和预期产出。
 - 学习材料质量和可访问性。
@@ -29,6 +30,7 @@ scope: common
 
 - 是否服务于明确的现实问题或长期能力主线。
 - 是否有可交付输出物，而不是泛泛“了解一下”。
+- 目标是否已经由用户确认，而不是 Agent 从材料热度或项目历史中推断。
 - 当前是否已有进行中的学习任务未闭环。
 - 用户是否具备进入该材料的最低前置知识。
 - 材料质量是否足够好，是否值得深度投入。
@@ -54,6 +56,7 @@ scope: common
 
 - 必须给出理由和下一步动作。
 - 不要为了迎合用户而默认开启新任务。
+- 不要用 gatekeeper 代替 discovery；如果真实诉求尚不清楚，输出 `defer` 并要求先进入 `Discover Learning Need`。
 - 不要在 gatekeeper 中捕获新的 backlog candidate；新候选项使用 `Capture Backlog Candidate`。
 - 如果 active project 已存在，优先判断这是当前 project 的新 topic，还是应该关闭/暂停/归档当前 project。
 - 如果只是同一 repo/source 下的新学习方向，优先使用 `daedalus topic new`，不要新建第二个 project。

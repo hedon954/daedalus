@@ -10,6 +10,7 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 - Keep WIP strict: `workspaces/projects` may contain many stable projects, but at most one topic can be active through `workspaces/.daedalus/current.toml`.
 - Resolve active learning context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` first. Resolve pending closeout context from `pending_closeout_topic` or `workspaces/closeout-topic`. Do not look for `.daedalus/state.toml` at the repository root.
 - Treat project/topic `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` / `current-topic` are active-learning entry symlinks and should only appear when an active topic exists; `closeout-topic` is the pending reflection entry.
+- Treat `workspaces/discovery` as pre-topic exploration space: use it to preserve unclear motivations, need hypotheses, and selection questions before creating backlog candidates or active topics.
 - Ground implementation progress in current code, tests, runtime output, and git diff before trusting learning maps.
 - After review, validation, or commit changes completion status, risks, evidence, or next action, synchronize the relevant learning artifacts.
 - Before repo-learning commits, run a learning-map sync check; after repo-learning commits, end with post-commit orientation.
@@ -24,6 +25,7 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 - Treat every study material as a constrained design case, not an authority. Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
 - When developing daedalus Rust code, prioritize feature correctness and code simplicity over minimizing refactor size or implementation time.
 - Write daedalus implementation plans as target outcomes, not "first version" compromises, unless the user explicitly asks for phased delivery.
+- Put detailed daedalus implementation plans in `docs/plan/`; use `.codex/plans/` only as Codex tracking cards with `status` and `todos` that link to the canonical `docs/plan/` plan.
 - Git commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
 - Tests should assert stable behavior, not incidental wording.
 

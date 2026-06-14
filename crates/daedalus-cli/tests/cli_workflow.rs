@@ -309,6 +309,7 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
             .join("workspaces/.daedalus/project-index.toml")
             .exists()
     );
+    assert!(repo.path().join("workspaces/discovery").exists());
     assert!(repo.path().join("workspaces/current-project").exists());
     assert!(repo.path().join("workspaces/current-topic").exists());
     assert!(!repo.path().join("workspaces/02-learning").exists());

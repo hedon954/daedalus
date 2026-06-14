@@ -48,6 +48,11 @@ pub fn backlog_root(repo_root: &Path) -> PathBuf {
     workspaces_root(repo_root).join("backlog")
 }
 
+/// 返回全局 topic discovery 根目录。
+pub fn discovery_root(repo_root: &Path) -> PathBuf {
+    workspaces_root(repo_root).join("discovery")
+}
+
 /// 返回 workspace 级 daedalus 状态目录。
 pub fn workspace_state_root(repo_root: &Path) -> PathBuf {
     workspaces_root(repo_root).join(".daedalus")
@@ -227,6 +232,7 @@ pub fn topic_dir_by_slug(project_dir: &Path, slug: &str) -> Result<PathBuf> {
 pub fn ensure_stable_workspace_layout(repo_root: &Path) -> Result<()> {
     ensure_dir(&projects_root(repo_root))?;
     ensure_dir(&backlog_root(repo_root))?;
+    ensure_dir(&discovery_root(repo_root))?;
     ensure_dir(&workspace_state_root(repo_root))?;
     write_archive_ignore_files(repo_root)?;
     Ok(())
