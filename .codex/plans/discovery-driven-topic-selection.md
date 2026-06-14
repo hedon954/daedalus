@@ -1,7 +1,7 @@
 ---
 name: discovery-driven-topic-selection
 overview: 追踪 daedalus 选题发现能力改进和 LoRA Fine-tuning Feedback Loop Lab 启动计划；详细方案以 docs/plan 为准。
-status: active
+status: completed
 todos:
   - id: formalize-plan-location-rule
     content: 确认正式详细计划放在 docs/plan，.codex/plans 只做带 status/todos 的 Codex 追踪卡并引用正式计划。
@@ -17,13 +17,13 @@ todos:
     status: completed
   - id: start-lora-topic
     content: 按 docs/plan/14 使用 daedalus lifecycle 创建新 project/topic。
-    status: pending
+    status: completed
 isProject: false
 ---
 
 # Codex Tracking Card
 
-详细计划不在此处展开。本文件只用于 Codex `status` / `todos` 追踪。
+详细计划不在此处展开。本文件只用于 Codex `status` / `todos` 追踪。当前 daedalus 改进和新 topic 初始化均已完成。
 
 ## Canonical Plans
 

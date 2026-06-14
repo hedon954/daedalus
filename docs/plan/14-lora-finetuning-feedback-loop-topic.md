@@ -5,13 +5,13 @@
 
 ## 背景
 
-用户当前不是单纯想“学 Hugging Face Course”，而是在 AI 浪潮、岗位压力和长期能力信仰之间寻找新的学习主旋律。
+用户当前不是单纯想“学 Hugging Face LLM Course”，而是在 AI 浪潮、岗位压力和长期能力信仰之间寻找新的学习主旋律。
 
 短期现实压力是：下一份工作的岗位市场明显偏向 AI 开发，用户当前做 AI Agent，但主要停留在应用层，缺少模型机制、fine-tuning、post-training 等介于算法和工程之间的能力。
 
 长期能力张力是：用户相信 DDIA 这类系统设计知识更接近“道”，更可能学一通百；但在 AI 浪潮下，用户也怀疑传统底层能力是否仍有职业意义。
 
-因此，新 topic 不应被定义为“读 Hugging Face Course”，而应定义为一个能同时提升短期岗位竞争力和长期工程自信的可验证实践闭环。
+因此，新 topic 不应被定义为“读完 Hugging Face LLM Course”，而应以这个课程为主学习材料，形成一个能同时提升短期岗位竞争力和长期工程自信的可验证实践闭环。
 
 ## 选题结论
 
@@ -23,7 +23,7 @@ LoRA Fine-tuning Feedback Loop Lab
 
 材料入口：
 
-- Hugging Face Course / TRL / PEFT / Transformers / Datasets 等官方材料。
+- Hugging Face LLM Course / TRL / PEFT / Transformers / Datasets 等官方材料。
 - 必要时补充论文、官方文档和成熟开源示例。
 
 学习姿态：
@@ -97,10 +97,10 @@ DDIA 的当前作用是维持系统设计直觉，而不是承担完整学习闭
 
 这不是现有 `openai-codex-cli-deep-learning` project 的后续 topic，因为学习材料和最终产物不再是 Codex repo。
 
-建议新建一个 learning project，例如：
+建议新建一个 learning project：
 
 ```text
-ai-tech-stack-deep-learning
+hugging-face-llm-course
 ```
 
 初始 topic：
@@ -198,7 +198,7 @@ active WIP 只承认 LoRA lab。DDIA 不制造待办压力。
 1. 具体选择哪个小模型作为教学对象。
 2. 数据集任务选择：分类、摘要、指令跟随、格式化输出，还是某个贴近用户业务的 agent 子任务。
 3. 训练环境：本地 Mac、个人 GPU、云 GPU、Colab，或公司外的其他环境。
-4. 是否使用 Hugging Face Course 作为顺序教材，还是以 lab 需求反向读取对应章节和官方文档。
+4. 是否使用 Hugging Face LLM Course 作为顺序教材，还是以 lab 需求反向读取对应章节和官方文档。
 
 ## 建议启动动作
 

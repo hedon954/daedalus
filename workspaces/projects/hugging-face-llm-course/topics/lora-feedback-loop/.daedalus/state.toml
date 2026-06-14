@@ -1,0 +1,96 @@
+# daedalus repo learning topic state. 保留注释；确定性字段由 CLI 更新。
+#
+# Topic state 承载 10-stage 专题学习进度。Project state 只负责 project lifecycle
+# 和 active topic 指针。
+#
+# 枚举约束：
+# - topic.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
+# - stage.status 只能是：pending、active、blocked、paused、done。
+# - transition.action 只能是：init、enter、complete、block、resume、rollback、topic-await-reflection、topic-complete、topic-abandon。
+# - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
+# Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+# required_artifacts 表示阶段完成所需文件。CLI 只校验文件存在；
+# Agent 仍需确认 notes 是否包含用户确认、亲自实践或手写笔记后的证据。
+
+[topic]
+slug = "lora-feedback-loop"
+title = "LoRA 微调与数据反馈闭环"
+kind = "repo-learning-topic"
+parent_project = "../.."
+lifecycle = "active"
+current_phase = "01-goal-aligner"
+next_action = "澄清专题学习目标，引导用户确认边界，并填写 [`.daedalus/task-card.md`](task-card.md)。"
+
+[[stages]]
+id = "01-goal-aligner"
+title = "对齐专题学习目标"
+status = "active"
+required_artifacts = [".daedalus/task-card.md", ".daedalus/outcome-map.md"]
+
+[[stages]]
+id = "02-repo-scout"
+title = "确认专题学习素材"
+status = "pending"
+required_artifacts = ["guides/02-repo-scout/README.md"]
+completion_mode = "inherited"
+inherited_from = "../../shared/source-index.md"
+
+[[stages]]
+id = "03-socratic-coach"
+title = "提出专题递进问题"
+status = "pending"
+required_artifacts = ["notes/03-socratic-coach/README.md"]
+
+[[stages]]
+id = "04-debugger-guide"
+title = "运行并调试专题路径"
+status = "pending"
+required_artifacts = ["notes/04-debugger-guide/README.md"]
+
+[[stages]]
+id = "05-arch-analyzer"
+title = "分析专题相关架构"
+status = "pending"
+required_artifacts = ["notes/05-arch-analyzer/README.md"]
+
+[[stages]]
+id = "06-code-reader"
+title = "深读专题核心代码"
+status = "pending"
+required_artifacts = ["notes/06-code-reader/README.md"]
+
+[[stages]]
+id = "07-demo-architecture"
+title = "设计专题 Mini Demo"
+status = "pending"
+required_artifacts = ["demo/design.md"]
+
+[[stages]]
+id = "08-demo-coder"
+title = "实现专题 Mini Demo"
+status = "pending"
+required_artifacts = ["demo/README.md"]
+
+[[stages]]
+id = "09-biz-solver"
+title = "将专题学习迁移到业务问题"
+status = "pending"
+required_artifacts = ["notes/09-biz-solver/README.md"]
+
+[[stages]]
+id = "10-reflection"
+title = "专题回顾与知识归档"
+status = "pending"
+required_artifacts = [
+    ".daedalus/artifact-index.md",
+    ".daedalus/long-context.md",
+    "reflection/candidate-map.md",
+    "reflection/closeout.md",
+]
+
+[[transitions]]
+stage = "01-goal-aligner"
+action = "init"
+timestamp = "2026-06-14 14:42:45"
+actor = "daedalus-cli"
+reason = "初始化 repo learning topic。"
