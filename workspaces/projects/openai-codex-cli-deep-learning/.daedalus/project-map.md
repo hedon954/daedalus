@@ -6,7 +6,7 @@ Project Map 是长期 repo learning project 的导航仪表盘。它描述整个
 
 - 长期学习素材：
 - 共享源码位置：[`source/`](../source)
-- 当前 active topic：`tools-permissions`
+- 当前 active topic：`none`
 - 最终希望沉淀的跨专题能力：
 
 ## Shared Context
@@ -22,10 +22,8 @@ Project Map 是长期 repo learning project 的导航仪表盘。它描述整个
 
 ## Active Topic
 
-- slug：`tools-permissions`
-- title：工具系统与权限系统
-- topic workspace：[`topics/tools-permissions`](../topics/tools-permissions)
-- topic outcome map：[`topics/tools-permissions/.daedalus/outcome-map.md`](../topics/tools-permissions/.daedalus/outcome-map.md)
+- 无 active topic。
+- 下一步：复盘 project，或用 `daedalus topic new` / `daedalus topic activate` 启动新专题。
 
 ## Project Stop Rules
 

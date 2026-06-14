@@ -9,7 +9,7 @@
 | [`.daedalus/task-card.md`](task-card.md) | 01-goal-aligner | 学习目标与验收标准 | 已验证 |
 | [`.daedalus/outcome-map.md`](outcome-map.md) | all | 全程导航：最终产物、当前位置、demo 缺口、停止规则 | 已验证 |
 | [`.daedalus/todo.md`](todo.md) | all | 动态路径看板和下一步行动 | 已验证 |
-| [`.daedalus/long-context.md`](long-context.md) | all | 可恢复长期上下文 | 待补充 |
+| [`.daedalus/long-context.md`](long-context.md) | all | 可恢复长期上下文 | 已验证 |
 | [`notes/02-repo-scout/README.md`](../notes/02-repo-scout/README.md) | 02-repo-scout | repo 选择、风险接受和源码准备证据 | 已验证 |
 | [`notes/03-socratic-coach/README.md`](../notes/03-socratic-coach/README.md) | 03-socratic-coach | 递进问题路线图和用户回答 | 已验证 |
 | [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 04-debugger-guide | 本地运行、测试和调试证据 | 已验证 |
@@ -32,8 +32,8 @@
 | [`notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md`](../notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md) | 08-demo-coder | Phase 2B CLI UI 收口、approval-test 和测试边界 | 已验证 |
 | [`notes/08-demo-coder/14-assert-result-denied-boundary.md`](../notes/08-demo-coder/14-assert-result-denied-boundary.md) | 08-demo-coder | assert / Result / Denied 边界判断 | 已验证 |
 | [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 09-biz-solver | 安全本地命令执行模式的业务迁移方案 | 已验证 |
-| [`reflection/closeout.md`](../reflection/closeout.md) | 10-reflection | 用户主动回顾：真实理解变化、证据、迁移边界和待 challenge 问题 | 已完成 |
-| [`reflection/candidate-map.md`](../reflection/candidate-map.md) | all | 滚动知识候选表，10-reflection 负责查漏补缺、降噪和确认状态 | 待补充 |
+| [`reflection/closeout.md`](../reflection/closeout.md) | 10-reflection | 用户主动回顾：真实理解变化、证据、迁移边界和待 challenge 问题 | 已验证 |
+| [`reflection/candidate-map.md`](../reflection/candidate-map.md) | all | 滚动知识候选表，10-reflection 已完成确认并归档候选 | 已验证 |
 
 ## 验证记录
 

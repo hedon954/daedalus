@@ -1795,6 +1795,107 @@ fn awaiting_reflection_topic_can_complete_reflection_stage_and_topic() {
     assert!(!repo.path().join("workspaces/closeout-topic").exists());
     let current = read_toml(&repo.path().join("workspaces/.daedalus/current.toml"));
     assert_eq!(toml_string(&current, "pending_closeout_topic"), "");
+
+    let project_map =
+        fs::read_to_string(task_dir.join(".daedalus/project-map.md")).expect("project map");
+    assert!(project_map.contains("- 当前 active topic：`none`"));
+    assert!(project_map.contains("- 无 active topic。"));
+    let topic_board =
+        fs::read_to_string(task_dir.join(".daedalus/topic-board.md")).expect("topic board");
+    assert!(topic_board.contains("- 无 active topic。"));
+    assert!(
+        topic_board
+            .contains("| `main` | Main Topic | completed | [`topics/main`](../topics/main) | - |")
+    );
+}
+
+#[test]
+fn validate_rejects_stale_project_navigation() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "stale-project-nav",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/stale-project-nav");
+    let topic_dir = active_topic_dir(&task_dir);
+    write_core_topic_artifacts(&topic_dir);
+    write_demo_manifest(&topic_dir, "stale-project-nav-demo");
+    complete_core_topic_stages(&repo, &task_dir);
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "await-reflection",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Core learning is done; user will finish closeout later.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "state",
+            "complete",
+            "10-reflection",
+            "--topic-dir",
+            topic_dir.to_str().expect("utf8"),
+            "--reason",
+            "Closeout reflection and knowledge archival are complete.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "complete",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Closeout reflection and knowledge archival are complete.",
+        ])
+        .assert()
+        .success();
+
+    fs::write(
+        task_dir.join(".daedalus/topic-board.md"),
+        "# Topic Board\n\n## Active Topic\n\n- `main`：Main Topic\n\n## Topics\n\n| Topic | Title | Lifecycle | Path | Inherits |\n| --- | --- | --- | --- | --- |\n| `main` | Main Topic | active | [`topics/main`](../topics/main) | - |\n",
+    )
+    .expect("stale topic board");
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate", task_dir.to_str().expect("utf8")])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "topic-board.md Active Topic section is stale",
+        ))
+        .stderr(predicates::str::contains(
+            "topic-board.md topic row is stale or missing",
+        ));
 }
 
 #[test]

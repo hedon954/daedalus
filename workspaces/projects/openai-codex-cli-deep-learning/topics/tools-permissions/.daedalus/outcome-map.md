@@ -26,11 +26,11 @@ Outcome Map 是当前 Codex 学习任务的导航仪表盘。它回答：最终�
 
 ## Current Position
 
-- 当前阶段：`10-reflection` 收尾。
-- 当前目标：关闭已完成知识归档的 `tools-permissions` topic。
+- 当前阶段：completed topic。
+- 当前目标：作为已完成专题供复习、drills、知识库回看或后续 topic 继承。
 - 当前障碍：无阻塞；knowledge-base 已归档并通过校验。
-- 当前动作服务的产物：topic completed lifecycle。
-- 当前光标：运行 topic complete，让 lifecycle 与 closeout / knowledge-base 状态一致。
+- 当前动作服务的产物：无 active WIP；后续动作应是复习或新 topic。
+- 当前光标：topic completion lifecycle、project navigation 和 workspace validation 均已同步。
 
 ## Artifact Dependency Graph
 
@@ -104,7 +104,7 @@ Critical Lens 用来防止把 Codex 当成唯一事实。当前 demo 要先忠�
 
 ## Why This Step Matters
 
-当前步骤不再服务于继续扩展 demo UI。下一步只服务于用户主动回顾：把 `demo/README.md` 和 `notes/09-biz-solver/README.md` 中验证过的内容，转成你自己的理解变化、证据、取舍和迁移边界。
+当前步骤不再服务于继续扩展 demo UI，也不再服务于 closeout。这个 topic 已完成；后续只应做复习、drills、知识库回看，或启动新的学习 topic。
 
 ## Stop Rules
 

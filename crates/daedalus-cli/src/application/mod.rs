@@ -12,6 +12,8 @@ pub mod init_task;
 pub mod knowledge;
 /// workspace 迁移 use cases。
 pub mod migrate;
+/// 同步和校验 project-level 学习导航。
+pub mod project_navigation;
 /// 从 `state.toml` 渲染 Agent 友好的 `state.md`。
 pub mod render;
 /// 管理复习计划。

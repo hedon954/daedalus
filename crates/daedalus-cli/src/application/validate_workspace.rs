@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::application::knowledge::validate_project_knowledge;
+use crate::application::project_navigation::validate_project_navigation;
 use crate::application::review::validate_all_reviews;
 use crate::domain::{DaedalusError, Result, TaskLifecycle, WorkspaceBucket};
 use crate::infrastructure::{state_toml, workspace_fs};
@@ -103,6 +104,7 @@ pub fn validate_workspace(
     if stale(&state_path, &state_md)? {
         issues.push("state.md is stale or missing".to_owned());
     }
+    issues.extend(validate_project_navigation(task_dir, &doc)?);
 
     let active_count = state_toml::active_topic_count(&doc);
     if active_count > 1 {

@@ -15,11 +15,11 @@
 
 围绕 OpenAI Codex CLI 建立长期 repo learning project，允许按 topic 学习工具系统与权限系统、sub-agent 调度、prompt/context engineering 等方向，并让 topic 之间共享源码索引、运行手册和可迁移模式。
 
-## Active Topic
+## Current Project State
 
-- `tools-permissions`：工具系统与权限系统。
-- 当前阶段：`08-demo-coder`。
-- 当前下一步：继续 mini demo Slice 6 Agent Orchestrator，补齐 parser / loop 侧集成。
+- 当前没有 active topic，project lifecycle 为 `idle`。
+- `tools-permissions`：工具系统与权限系统，已完成 10 个阶段、用户 closeout reflection、candidate-map 确认和 knowledge-base 归档。
+- 当前下一步：复盘已完成 topic，或用 `daedalus topic new` / `daedalus topic activate` 启动新专题。
 
 ## Topic 路线
 
@@ -45,4 +45,4 @@
 
 ## 恢复上下文提示
 
-恢复时先读 project `.daedalus/state.md` 和 `.daedalus/topic-board.md`，再读 active topic `topics/tools-permissions/.daedalus/state.md`、`outcome-map.md` 和 `todo.md`。
+恢复时先读 project `.daedalus/state.md` 和 `.daedalus/topic-board.md` 判断是否存在 active topic；若没有 active topic，则不要把 `tools-permissions` 当作当前 WIP，只能作为已完成专题复盘。

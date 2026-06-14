@@ -12,22 +12,22 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Current Path
 
-当前处于 `10-reflection` 收尾。Phase 1/2 demo、业务迁移、用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成；下一步是关闭 `tools-permissions` topic。
+`tools-permissions` 已完成。Phase 1/2 demo、业务迁移、用户 closeout reflection、candidate-map 确认、knowledge-base 归档和 topic completion lifecycle 均已完成；当前不再占用 active learning WIP。
 
 ## Now
 
-- 当前问题：knowledge-base 已归档并通过校验，topic 可以进入 completed。
-- 为什么现在做它：学习闭环必须让 lifecycle、candidate-map 和 knowledge-base 状态一致。
+- 当前问题：无 active topic；`tools-permissions` 作为 completed topic 可用于复习、drills 或作为后续 topic 的继承证据。
+- 为什么现在做它：恢复上下文时必须以 `state.toml` / `state.md` 为生命周期事实源，避免旧 todo 文案把 completed topic 误判为 WIP。
 - 完成后解锁：可以从 Codex tools-permissions topic 退出，后续通过 review/drills 复习，或启动新的学习 topic。
 - 当前已做：新增 `FakeLlm` test double；`react.rs` 已补 `max_turns`、`ToolCallFinished` 透出、fake LLM deterministic tests 和同进程短期 messages memory；`openai.rs` 已补 SSE / parser fixture tests；`ToolRuntime` 已覆盖 pure function path、command path、multi-tool batch；`run_shell_command` 已覆盖 approval、sandbox、retry、session persistence；`run_command` 已对复杂 shell syntax fail closed；`OsExecutionRunner` 已接入 `/usr/bin/sandbox-exec` 并增加 execution timeout；`ratatui` REPL 已接入真实 `ReActAgent` 和 `OsExecutionRunner`，支持 prompt 输入、Codex-like transcript、thinking/text delta 合并、assistant/thinking Markdown 渲染、GFM table 终端兜底、按视觉行自动滚动到底部、approval once/session/reject 面板；UI 已从大框仪表盘重写为 transcript-first 风格；`echo approval-test` 提供无副作用 approval 验收入口；`demo/README.md` 已同步 Phase 2B runbook。
-- 当前待解决：关闭 topic。另记录一个后续 engineering gap：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
+- 当前待解决：无阻塞。另记录一个后续 engineering gap：当前 `ApprovalPolicy::OnRequest` 只表达“初始 capability prompt 可询问”，还没有建模“调用方显式请求 no-sandbox / escalation”的 request 字段；后续可考虑给 `CommandRequest` 增加 `requested_escalation` 或 `require_no_sandbox`，让 `OnRequest` 语义更贴近 Codex。`Default` 缺少 env 时 panic 作为 demo 约束暂时接受。
 
 ## Current Cursor
 
-- Code frontier：Phase 2B 已收口，`09-biz-solver` 业务迁移方案、用户 closeout reflection 和 knowledge-base 归档已完成。下一处生命周期光标是完成 topic。
+- Code frontier：Phase 2B 已收口，`09-biz-solver` 业务迁移方案、用户 closeout reflection、knowledge-base 归档和 topic completion lifecycle 已完成。
 - Already wired：`run_command` tool name、`RunCommandArgs`、`build_command_request`、capability matching、`ToolRuntimePlan::RunCommand`、`execute_plan -> run_shell_command`、`ExecutionRunner`、`SimulatedExecutionRunner` 已打通，并已通过 `run_shell_command` 编排测试、`ToolRuntime` command path 直接测试和 ReAct observation 测试验证。
 - Current decision：`ApprovalPersistence::Session` 对齐 CLI session。一个进程初始化一个 `ApprovalGateway`，多个 ReAct runs 共享它；`ApprovalScopeKey` 不含 `session_id`，因为 session 边界由 gateway/store 生命周期承载。
-- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”“实现 Slice 10 session approval store”“补 Phase 1 demo README”“从零实现 OsExecutionRunner”“补 OsExecutionRunner hardening”“先做 plain stdout REPL”“从零开始实现 ratatui 壳”“继续打磨完整 Codex TUI”或“由 Agent 直接生成 knowledge-base”；当前应先确认 `reflection/candidate-map.md`。
+- Do not suggest：不要再建议“先把 command path 接入 ToolRuntime”“补 RetryPolicy”“实现 run_execution_attempt”“实现第一版 multi-tool independent execution”“hard-deny 后跳过后续工具”“再把 batch 调度从 ReAct loop 中抽出”“给 `ApprovalScopeKey` 直接塞 `session_id`”“实现 Slice 10 session approval store”“补 Phase 1 demo README”“从零实现 OsExecutionRunner”“补 OsExecutionRunner hardening”“先做 plain stdout REPL”“从零开始实现 ratatui 壳”“继续打磨完整 Codex TUI”“确认 reflection/candidate-map.md”“关闭 topic”或“由 Agent 直接生成 knowledge-base”。
 
 ## Critical Checkpoint
 

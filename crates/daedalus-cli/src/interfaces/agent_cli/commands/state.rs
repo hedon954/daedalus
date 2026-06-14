@@ -4,6 +4,7 @@ use clap::{Args, Subcommand};
 use enum_dispatch::enum_dispatch;
 use tracing::debug;
 
+use crate::application::project_navigation::sync_project_navigation;
 use crate::application::render::render_state;
 use crate::application::transition_stage::{StageAction, TransitionStageOptions, transition_stage};
 use crate::domain::{ApprovalSource, DaedalusError, Result};
@@ -261,6 +262,9 @@ impl CmdExecutor for RenderArgs {
         } else {
             workspace_fs::default_topic_dir(self.topic_dir, self.project_dir, self.topic)?
         };
+        if self.project {
+            sync_project_navigation(&dir)?;
+        }
         let output = render_state(&dir)?;
         print_render(&output, ctx.format);
         Ok(())

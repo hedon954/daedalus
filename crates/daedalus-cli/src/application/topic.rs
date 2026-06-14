@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::application::ide::sync_rust_analyzer_linked_projects;
+use crate::application::project_navigation::sync_project_navigation;
 use crate::application::render::render_state;
 use crate::application::validate_workspace::validate_topic_workspace;
 use crate::domain::transition::Transition;
@@ -114,6 +115,7 @@ pub fn new_topic(options: NewTopicOptions) -> Result<TopicOutput> {
         },
     );
     state_toml::save_state_doc(&state_path, &project_doc)?;
+    sync_project_navigation(&project_dir)?;
     let _ = render_state(&project_dir)?;
     let state_md = render_state(&topic_dir)?.path;
     workspace_fs::rebuild_project_index(&options.repo_root)?;
@@ -157,6 +159,7 @@ pub fn activate_topic(options: ActivateTopicOptions) -> Result<TopicOutput> {
         },
     );
     state_toml::save_state_doc(&state_path, &project_doc)?;
+    sync_project_navigation(&project_dir)?;
 
     let topic_state_path = state_toml::state_path(&topic_dir);
     let mut topic_doc = state_toml::load_state_doc(&topic_state_path)?;
@@ -283,6 +286,7 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
         state_toml::save_state_doc(&project_state_path, &project_doc)?;
     }
 
+    sync_project_navigation(&project_dir)?;
     let _ = render_state(&project_dir)?;
     let current_topic = if state_toml::active_topic(&project_doc).is_some() {
         state_toml::active_topic(&project_doc)

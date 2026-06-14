@@ -127,7 +127,7 @@ pub fn print_validation(output: &ValidationOutput, format: OutputFormat) {
                 println!("ok: workspace valid");
                 println!("task_dir: {}", output.task_dir.display());
                 println!(
-                    "note: validate checks structure and required files only; notes still need user-owned evidence"
+                    "note: validate checks structure, required files, and lifecycle navigation consistency; notes still need user-owned evidence"
                 );
             } else {
                 println!("error: workspace validation failed");
@@ -147,7 +147,7 @@ pub fn print_validation(output: &ValidationOutput, format: OutputFormat) {
                 "error": if output.is_ok() { serde_json::Value::Null } else { json!("workspace_validation_failed") },
                 "task_dir": output.task_dir,
                 "issues": output.issues,
-                "note": "validate checks structure and required files only; notes still need user-owned evidence",
+                    "note": "validate checks structure, required files, and lifecycle navigation consistency; notes still need user-owned evidence",
                 "next": if output.is_ok() { "continue" } else { "fix listed issues or regenerate derived state with daedalus state render" }
             })
         ),

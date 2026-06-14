@@ -4,13 +4,13 @@ Topic Board 记录当前 repo learning project 的专题列表、状态和继承
 
 ## Active Topic
 
-- `tools-permissions`：工具系统与权限系统
+- 无 active topic。
 
 ## Topics
 
 | Topic | Title | Lifecycle | Path | Inherits |
 | --- | --- | --- | --- | --- |
-| `tools-permissions` | 工具系统与权限系统 | active | [`topics/tools-permissions`](../topics/tools-permissions) | - |
+| `tools-permissions` | 工具系统与权限系统 | completed | [`topics/tools-permissions`](../topics/tools-permissions) | - |
 
 ## Parking Lot
 
