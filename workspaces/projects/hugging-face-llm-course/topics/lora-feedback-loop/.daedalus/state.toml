@@ -18,19 +18,19 @@ title = "LoRA 微调与数据反馈闭环"
 kind = "repo-learning-topic"
 parent_project = "../.."
 lifecycle = "active"
-current_phase = "01-goal-aligner"
-next_action = "澄清专题学习目标，引导用户确认边界，并填写 [`.daedalus/task-card.md`](task-card.md)。"
+current_phase = "03-socratic-coach"
+next_action = "进入 `03-socratic-coach`：提出专题递进问题，准备产物：notes/03-socratic-coach/README.md。"
 
 [[stages]]
 id = "01-goal-aligner"
 title = "对齐专题学习目标"
-status = "active"
+status = "done"
 required_artifacts = [".daedalus/task-card.md", ".daedalus/outcome-map.md"]
 
 [[stages]]
 id = "02-repo-scout"
 title = "确认专题学习素材"
-status = "pending"
+status = "done"
 required_artifacts = ["guides/02-repo-scout/README.md"]
 completion_mode = "inherited"
 inherited_from = "../../shared/source-index.md"
@@ -38,7 +38,7 @@ inherited_from = "../../shared/source-index.md"
 [[stages]]
 id = "03-socratic-coach"
 title = "提出专题递进问题"
-status = "pending"
+status = "active"
 required_artifacts = ["notes/03-socratic-coach/README.md"]
 
 [[stages]]
@@ -94,3 +94,31 @@ action = "init"
 timestamp = "2026-06-14 14:42:45"
 actor = "daedalus-cli"
 reason = "初始化 repo learning topic。"
+
+[[transitions]]
+stage = "01-goal-aligner"
+action = "complete"
+timestamp = "2026-06-14 20:44:11"
+actor = "daedalus-cli"
+reason = "用户确认 fine-tuning suitability、第一轮手机品类和 suggestion next action 质量标准，01 目标对齐完成。"
+
+[[transitions]]
+stage = "02-repo-scout"
+action = "enter"
+timestamp = "2026-06-14 20:44:11"
+actor = "daedalus-cli"
+reason = "进入 Hugging Face LLM Course source/material scout，选择支持 baseline + LoRA 对照实验的最小材料集合。"
+
+[[transitions]]
+stage = "02-repo-scout"
+action = "complete"
+timestamp = "2026-06-14 21:32:51"
+actor = "daedalus-cli"
+reason = "完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "enter"
+timestamp = "2026-06-14 21:32:51"
+actor = "daedalus-cli"
+reason = "进入问题路线图阶段，将默认方案转成数据生成标准、审核问题和 demo 设计前置问题。"
