@@ -13,6 +13,7 @@ scope: common
 ## Trigger
 
 - 用户说“继续”“恢复”“接着上次”。
+- 用户说“复习一下”“回顾一下”“考我一下”。
 - 当前会话缺少完整上下文。
 - 需要从 `workspaces` 或长期上下文文件恢复任务。
 
@@ -20,26 +21,61 @@ scope: common
 
 - 当前 active workspace。
 - 学习任务卡。
+- Outcome map。
 - 长期上下文。
 - Todo 状态。
 - 最近产物和未解决问题。
 
 ## Workflow
 
-1. 读取当前 workspace 中的学习任务卡、长期上下文、todo 和最近产物。
-2. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
-3. 用 5-8 行摘要告诉用户：我们在学什么、已经完成什么、下一步是什么。
-4. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
+如果用户请求的是复习，而不是继续推进学习 stage：
+
+1. 先定位复习 target：project、topic 或 checkpoint。
+2. 读取对应 outcome map、artifact index、mastery map、review sessions 和 source artifacts。
+3. 输出 `Review Navigation`，不要输出普通 stage navigation。
+4. 按 `system/prompts/common/review-guidance.md` 先问 1-3 个问题，等待用户回答。
+5. 不修改原 project/topic lifecycle。
+
+普通学习恢复时：
+
+1. 先从 repo root 读取 `workspaces/.daedalus/current.toml`，或通过 `workspaces/current-topic` symlink 定位 active topic；不要在 repo root 查找 `.daedalus/state.toml`。
+2. 同时检查 `pending_closeout_topic` 或 `workspaces/closeout-topic`。它表示已完成主体学习、等待用户主动回顾的 closeout debt，不是当前日常推进主线。
+3. 再读取 active project 的 `.daedalus/project-map.md`、`.daedalus/topic-board.md` 和 project `.daedalus/state.toml`，确认 active topic。
+4. 再读取 active topic 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
+5. 如果 todo 有 `Current Cursor`，把它当作恢复光标，而不是完成事实；先快速读取对应代码或产物确认它是否仍然成立。
+6. 如果当前阶段涉及实现、测试、运行或 review，必须读取相关源码、测试、最近 diff / TODO，并在可行时运行最小验证；不要只根据 markdown 学习地图判断进度。
+7. 判断当前阶段：目标对齐、材料选择、问题路线图、深入学习、实践验证、应用迁移、知识归档。
+8. 用路径坐标告诉用户：最终产物是什么、当前在哪个阶段、正在补哪个缺口、为什么这个缺口重要、哪些细节本轮停止阅读、完成后解锁什么；如果存在 closeout debt，也要一句话提醒。
+9. 如果发现代码证据和 `.daedalus/todo.md`、`outcome-map.md` 或 guides/notes 不一致，明确标注“学习地图可能过期”，以当前代码/测试证据为准，并把地图同步列为下一步。
+10. 如果用户只是说“继续学习”，恢复后优先提出下一轮 coaching question；不要直接进入 Agent-led 源码验证。
+11. 如果上下文缺失，主动列出缺口，并建议一个最小恢复动作。
 
 ## Output
 
+复习恢复：
+
 ```markdown
-## 恢复状态
-- 当前学习目标：
-- 当前阶段：
-- 已完成：
-- 下一步：
-- 需要用户确认：
+## Review Navigation
+- Target:
+- Mode:
+- Review goal:
+- Source artifacts:
+- Current weak spots:
+- After this:
+```
+
+普通学习恢复：
+
+```markdown
+## 你现在在哪里
+- Final artifact:
+- Current stage:
+- Current gap:
+- Current cursor:
+- Pending closeout:
+- Why this gap matters:
+- What we will stop reading:
+- What becomes possible after this:
 ```
 
 ## Constraints
@@ -47,3 +83,5 @@ scope: common
 - 恢复后优先推进一个最小行动。
 - 不要重新展开完整规划，除非上下文已经不可恢复。
 - 明确区分“已验证结论”和“待验证假设”。
+- 文档是导航，不是实现事实源；阶段完成度必须优先由当前代码、测试、运行输出和用户已验证观察支撑。
+- 不要把 topic `todo.md` 中的 next action 当作自动执行许可；先定位 project、active topic、topic stage 和 current gap，再按 coaching gate 问用户。

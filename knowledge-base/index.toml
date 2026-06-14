@@ -1,0 +1,32 @@
+schema_version = 1
+generated_at = "2026-06-13 23:19:15"
+
+[[entries]]
+level = "ai-agents/safety-and-permissions"
+title = "Agent 本地命令执行安全"
+path = "ai-agents/safety-and-permissions/local-command-execution.md"
+status = "verified"
+
+[[entries]]
+level = "ai-agents/tool-use"
+title = "ReAct 工具运行时"
+path = "ai-agents/tool-use/react-tool-runtime.md"
+status = "verified"
+
+[[entries]]
+level = "computer-systems/operating-systems"
+title = "Sandbox 的第一性原理"
+path = "computer-systems/operating-systems/sandbox.md"
+status = "verified"
+
+[[entries]]
+level = "rust/async-runtime"
+title = "Rust 流式 Agent 与 Tokio 运行时"
+path = "rust/async-runtime/streaming-agent.md"
+status = "verified"
+
+[[entries]]
+level = "rust/cli-and-tui"
+title = "终端 Agent UI 的事件循环"
+path = "rust/cli-and-tui/terminal-agent-ui.md"
+status = "verified"

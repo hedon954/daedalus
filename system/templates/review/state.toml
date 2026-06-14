@@ -1,0 +1,21 @@
+# daedalus review state. Review lifecycle is independent from project/topic lifecycle.
+
+[review]
+id = "{{review_id}}"
+target_type = "{{target_type}}"
+target = "{{target}}"
+mode = "{{review_mode}}"
+lifecycle = "active"
+goal = "{{review_goal}}"
+created_at = "{{created_at}}"
+next_action = "开始第一轮 review session：先让用户回答，不先总结。"
+
+[[source_artifacts]]
+path = ""
+kind = ""
+
+[[transitions]]
+action = "start"
+timestamp = "{{created_at}}"
+actor = "daedalus-cli"
+reason = "初始化 review plan。"

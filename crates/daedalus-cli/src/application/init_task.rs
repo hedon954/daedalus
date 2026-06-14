@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use crate::application::ide::sync_rust_analyzer_linked_projects;
 use crate::application::render::render_state;
 use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::{clock, template_fs, workspace_fs};
@@ -11,6 +12,10 @@ pub struct InitTaskOptions {
     pub repo_root: PathBuf,
     /// 用户提供的学习任务名称。
     pub name: String,
+    /// 初始专题 slug。
+    pub topic_slug: String,
+    /// 初始专题标题。
+    pub topic_title: String,
     /// 是否允许在已有 active task 时继续创建任务。
     pub allow_existing_active: bool,
     /// 使用绕过选项时必须提供的具体原因。
@@ -22,19 +27,22 @@ pub struct InitTaskOptions {
 pub struct InitTaskOutput {
     /// 新建学习任务目录。
     pub task_dir: PathBuf,
+    /// 新建初始专题目录。
+    pub topic_dir: PathBuf,
     /// 生成后的 `.daedalus/state.md` 路径。
     pub state_md: PathBuf,
+    /// 生成后的 topic `.daedalus/state.md` 路径。
+    pub topic_state_md: PathBuf,
 }
 
-/// 初始化一个 repo learning workspace。
+/// 初始化一个 repo learning project 和初始 topic。
 ///
-/// 该 use case 会复制 `system/templates/repo` 模板、创建 `source`/`demo`/`notes`/`guides`
-/// 目录，并立即从 `state.toml` 渲染 `state.md`。
+/// 该 use case 会复制 project 模板、创建初始 topic，并立即分别渲染 project/topic
+/// `state.md`。
 pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
-    let learning_root = workspace_fs::learning_root(&options.repo_root);
-    workspace_fs::ensure_dir(&learning_root)?;
+    workspace_fs::ensure_stable_workspace_layout(&options.repo_root)?;
 
-    let active = workspace_fs::active_tasks(&learning_root)?;
+    let active = workspace_fs::active_projects(&options.repo_root)?;
     if !active.is_empty() && !options.allow_existing_active {
         return Err(DaedalusError::TaskAlreadyActive(active[0].clone()));
     }
@@ -42,14 +50,22 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
         return Err(DaedalusError::ForceRequiresApproval);
     }
 
-    let task_dir = unique_task_dir(&learning_root, &options.name);
+    let task_dir = unique_task_dir(
+        &workspace_fs::projects_root(&options.repo_root),
+        &options.name,
+    );
     workspace_fs::ensure_dir(&task_dir)?;
     workspace_fs::ensure_dir(&task_dir.join("source"))?;
-    workspace_fs::ensure_dir(&task_dir.join("demo"))?;
-    workspace_fs::ensure_dir(&task_dir.join("notes"))?;
-    workspace_fs::ensure_dir(&task_dir.join("guides"))?;
+    workspace_fs::ensure_dir(&task_dir.join("shared"))?;
+    workspace_fs::ensure_dir(&task_dir.join("topics"))?;
 
     let created_at = clock::now_local_timestamp();
+    let topic_slug = sanitize_name(&options.topic_slug);
+    let topic_title = if options.topic_title.trim().is_empty() {
+        topic_slug.clone()
+    } else {
+        options.topic_title.trim().to_owned()
+    };
     let template_dir = options
         .repo_root
         .join("system")
@@ -61,11 +77,38 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
         &[
             ("{{TASK_NAME}}", &options.name),
             ("{{CREATED_AT}}", &created_at),
+            ("{{TOPIC_SLUG}}", &topic_slug),
+            ("{{TOPIC_TITLE}}", &topic_title),
+        ],
+    )?;
+    let topic_dir = task_dir.join("topics").join(&topic_slug);
+    workspace_fs::ensure_dir(&topic_dir)?;
+    let topic_template_dir = options
+        .repo_root
+        .join("system")
+        .join("templates")
+        .join("repo-topic");
+    template_fs::copy_template_dir(
+        &topic_template_dir,
+        &topic_dir,
+        &[
+            ("{{TASK_NAME}}", &options.name),
+            ("{{CREATED_AT}}", &created_at),
+            ("{{TOPIC_SLUG}}", &topic_slug),
+            ("{{TOPIC_TITLE}}", &topic_title),
         ],
     )?;
     let state_md = render_state(&task_dir)?.path;
+    let topic_state_md = render_state(&topic_dir)?.path;
+    workspace_fs::sync_current_workspace(&options.repo_root, Some(&task_dir), Some(&topic_dir))?;
+    sync_rust_analyzer_linked_projects(&options.repo_root)?;
 
-    Ok(InitTaskOutput { task_dir, state_md })
+    Ok(InitTaskOutput {
+        task_dir,
+        topic_dir,
+        state_md,
+        topic_state_md,
+    })
 }
 
 fn unique_task_dir(root: &Path, name: &str) -> PathBuf {

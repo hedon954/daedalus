@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+import re
+import sys
+from pathlib import Path
+
+
+ALLOWED_TYPES = (
+    "feat",
+    "fix",
+    "docs",
+    "style",
+    "refactor",
+    "perf",
+    "test",
+    "build",
+    "ci",
+    "chore",
+    "revert",
+)
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        print("usage: check-commit-msg <commit-msg-file>")
+        return 2
+
+    message_path = Path(sys.argv[1])
+    subject = first_non_empty_line(message_path)
+
+    if not subject:
+        print("Invalid commit message: empty subject.")
+        return 1
+
+    if subject.startswith(("Merge ", "Revert ")):
+        return 0
+
+    pattern = re.compile(
+        r"^("
+        + "|".join(ALLOWED_TYPES)
+        + r")(\([a-z0-9-]+\))?: .+"
+    )
+
+    if pattern.match(subject):
+        return 0
+
+    print("Invalid commit message.")
+    print("Expected: type(scope): Chinese description")
+    print("     or: type: Chinese description")
+    print("Example: docs(learning): 增加当前光标同步机制")
+    print(f"Actual:   {subject}")
+    return 1
+
+
+def first_non_empty_line(path: Path) -> str:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            return line
+    return ""
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

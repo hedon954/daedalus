@@ -1,0 +1,56 @@
+# 产物索引
+
+记录 `tools-permissions` topic 的关键学习产物，以及它们服务的学习目的。
+
+> `状态` 列只能使用 `草稿`、`已验证`、`待补充`、`不适用`。
+
+| 产物 | 阶段 | 目的 | 状态 |
+| --- | --- | --- | --- |
+| [`.daedalus/task-card.md`](task-card.md) | 01-goal-aligner | 学习目标与验收标准 | 已验证 |
+| [`.daedalus/outcome-map.md`](outcome-map.md) | all | 全程导航：最终产物、当前位置、demo 缺口、停止规则 | 已验证 |
+| [`.daedalus/todo.md`](todo.md) | all | 动态路径看板和下一步行动 | 已验证 |
+| [`.daedalus/long-context.md`](long-context.md) | all | 可恢复长期上下文 | 待补充 |
+| [`notes/02-repo-scout/README.md`](../notes/02-repo-scout/README.md) | 02-repo-scout | repo 选择、风险接受和源码准备证据 | 已验证 |
+| [`notes/03-socratic-coach/README.md`](../notes/03-socratic-coach/README.md) | 03-socratic-coach | 递进问题路线图和用户回答 | 已验证 |
+| [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 04-debugger-guide | 本地运行、测试和调试证据 | 已验证 |
+| [`notes/05-arch-analyzer/README.md`](../notes/05-arch-analyzer/README.md) | 05-arch-analyzer | 架构阶段标准入口 | 已验证 |
+| [`notes/05-arch-analyzer/01-codex-agent-loop-architecture.md`](../notes/05-arch-analyzer/01-codex-agent-loop-architecture.md) | 05-arch-analyzer | Codex agent loop、工具、权限、沙箱和事件流架构 | 已验证 |
+| [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 06-code-reader | code-reader 阶段 notes 入口 | 已验证 |
+| [`notes/06-code-reader/01-context-and-compaction.md`](../notes/06-code-reader/01-context-and-compaction.md) | 06-code-reader | 上下文管理、工具结果回灌、compact 和 rollout 恢复 | 已验证 |
+| [`notes/06-code-reader/02-auth-approval-sandbox.md`](../notes/06-code-reader/02-auth-approval-sandbox.md) | 06-code-reader | auth / approval / sandbox 源码阅读综合 | 已验证 |
+| [`notes/06-code-reader/03-runtime-request-assembly.md`](../notes/06-code-reader/03-runtime-request-assembly.md) | 06-code-reader | Shell / unified exec request 组装上下文 | 已验证 |
+| [`notes/06-code-reader/04-orchestrator-retry.md`](../notes/06-code-reader/04-orchestrator-retry.md) | 06-code-reader | sandbox denied 后 retry / approval 状态机 | 已验证 |
+| [`demo/design.md`](../demo/design.md) | 07-demo-architecture | mini demo 蓝图、状态机、事件协议和验收测试 | 已验证 |
+| [`notes/07-demo-architecture/README.md`](../notes/07-demo-architecture/README.md) | 07-demo-architecture | demo 设计阶段 notes 入口 | 已验证 |
+| [`notes/07-demo-architecture/01-design-method-from-source-to-demo.md`](../notes/07-demo-architecture/01-design-method-from-source-to-demo.md) | 07-demo-architecture | 从源码学习到可迁移 demo 设计的方法 | 已验证 |
+| [`guides/08-demo-coder/README.md`](../guides/08-demo-coder/README.md) | 08-demo-coder | 08 阶段 slice 子地图 | 已验证 |
+| [`demo/README.md`](../demo/README.md) | 08-demo-coder | demo 架构、运行方式、Phase 2B CLI 验收说明 | 已验证 |
+| [`demo/src/`](../demo/src) | 08-demo-coder | Codex 工具/权限/沙箱 mini demo 实现 | 已验证 |
+| [`demo/examples/os_execution_runner.rs`](../demo/examples/os_execution_runner.rs) | 08-demo-coder | OS sandbox runner 手动验收入口 | 已验证 |
+| [`demo/examples/os_tool_runtime.rs`](../demo/examples/os_tool_runtime.rs) | 08-demo-coder | ToolRuntime + OsExecutionRunner smoke 验收入口 | 已验证 |
+| [`notes/08-demo-coder/README.md`](../notes/08-demo-coder/README.md) | 08-demo-coder | demo 实现阶段 notes 索引 | 已验证 |
+| [`notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md`](../notes/08-demo-coder/13-slice-13-codex-like-cli-closeout.md) | 08-demo-coder | Phase 2B CLI UI 收口、approval-test 和测试边界 | 已验证 |
+| [`notes/08-demo-coder/14-assert-result-denied-boundary.md`](../notes/08-demo-coder/14-assert-result-denied-boundary.md) | 08-demo-coder | assert / Result / Denied 边界判断 | 已验证 |
+| [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 09-biz-solver | 安全本地命令执行模式的业务迁移方案 | 已验证 |
+| [`reflection/closeout.md`](../reflection/closeout.md) | 10-reflection | 用户主动回顾：真实理解变化、证据、迁移边界和待 challenge 问题 | 已完成 |
+| [`reflection/candidate-map.md`](../reflection/candidate-map.md) | all | 滚动知识候选表，10-reflection 负责查漏补缺、降噪和确认状态 | 待补充 |
+
+## 验证记录
+
+```bash
+cargo test --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml -j 2
+```
+
+结果：
+
+```text
+90 passed; 0 failed; 3 ignored
+```
+
+TUI 验证：
+
+```bash
+cargo run --manifest-path workspaces/projects/openai-codex-cli-deep-learning/topics/tools-permissions/demo/Cargo.toml
+```
+
+已验证 TUI 能启动、绘制 ready 页面、通过 `q` 正常退出；事件驱动 loop 已改为 agent event / keyboard event 双 channel，避免 streaming 事件依赖键盘输入触发刷新。Transcript tail scroll 已改为按视觉行计算，避免长 assistant 文本换行后遮住最终 `turn completed`。

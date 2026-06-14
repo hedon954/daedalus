@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="${1:-.}"
+
+cd "$ROOT"
+
+TARGETS=(
+  ".claude/skills/repo-learning-coach"
+  "system/prompts"
+)
+
+PATTERN='daedalus init repo-learning <task-name>|daedalus init repo-learning <name>|--task-dir <old-task-dir>|root `\.daedalus/outcome-map\.md`|默认创建 `demo/|默认写入 `demo/|直接读 root `\.daedalus/outcome-map\.md`'
+
+echo "auditing daedalus agent instructions..."
+
+if rg -n "$PATTERN" "${TARGETS[@]}"; then
+  echo
+  echo "error: found stale repo-learning project/topic instructions"
+  exit 1
+fi
+
+echo "ok: no stale repo-learning project/topic instructions found"

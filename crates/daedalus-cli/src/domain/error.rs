@@ -72,6 +72,41 @@ pub enum DaedalusError {
     /// 状态文件中出现多个 active 阶段。
     #[error("multiple active stages")]
     MultipleActiveStages,
+    /// Project 中没有 active topic。
+    #[error("no active topic found")]
+    NoActiveTopic,
+    /// Project 中存在多个 active topic。
+    #[error("multiple active topics")]
+    MultipleActiveTopics,
+    /// Topic 不存在。
+    #[error("topic not found: {0}")]
+    TopicNotFound(String),
+    /// Review 不存在。
+    #[error("review not found: {0}")]
+    ReviewNotFound(String),
+    /// Review 已存在。
+    #[error("review already exists: {0}")]
+    ReviewAlreadyExists(PathBuf),
+    /// Review 操作不合法。
+    #[error("invalid review operation: {0}")]
+    InvalidReviewOperation(String),
+    /// Knowledge 操作不合法。
+    #[error("invalid knowledge operation: {0}")]
+    InvalidKnowledgeOperation(String),
+    /// IDE 投影同步操作不合法。
+    #[error("invalid ide operation: {0}")]
+    InvalidIdeOperation(String),
+    /// Topic lifecycle 状态不允许当前流转。
+    #[error("invalid topic lifecycle transition: {0}")]
+    InvalidTopicLifecycleTransition(String),
+    /// 当前 state 文件类型不符合命令要求。
+    #[error("invalid state document kind: expected {expected}, got {actual}")]
+    InvalidStateDocumentKind {
+        /// 期望类型。
+        expected: String,
+        /// 实际类型。
+        actual: String,
+    },
     /// 状态文件中出现不支持的阶段状态。
     #[error("invalid stage state `{state}` for stage `{stage}`")]
     InvalidStageState {
@@ -123,5 +158,14 @@ pub enum DaedalusError {
         #[source]
         /// `toml_edit` 返回的解析错误。
         source: toml_edit::TomlError,
+    },
+    /// JSON 解析或序列化失败。
+    #[error("json error in {path}: {source}")]
+    Json {
+        /// 发生错误的 JSON 文件路径。
+        path: PathBuf,
+        #[source]
+        /// `serde_json` 返回的解析或序列化错误。
+        source: serde_json::Error,
     },
 }

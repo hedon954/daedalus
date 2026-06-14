@@ -1,30 +1,43 @@
 use serde_json::json;
 
 use crate::application::close_task::CloseTaskOutput;
+use crate::application::ide::RustAnalyzerSyncOutput;
 use crate::application::init_task::InitTaskOutput;
+use crate::application::knowledge::{
+    KnowledgeListOutput, KnowledgeOutput, KnowledgeValidationOutput,
+};
+use crate::application::migrate::MigrateRepoLearningOutput;
 use crate::application::render::RenderedState;
+use crate::application::review::{
+    ReviewListOutput, ReviewOutput, ReviewSessionOutput, ReviewValidationOutput,
+};
+use crate::application::topic::TopicOutput;
 use crate::application::transition_stage::TransitionStageOutput;
 use crate::application::validate_workspace::ValidationOutput;
-use crate::domain::DaedalusError;
+use crate::domain::{DaedalusError, TopicSnapshot};
 use crate::interfaces::agent_cli::args::OutputFormat;
 
 /// 输出初始化任务成功结果。
 pub fn print_init(output: &InitTaskOutput, format: OutputFormat) {
     match format {
         OutputFormat::Text => {
-            println!("ok: initialized repo learning task");
-            println!("task_dir: {}", output.task_dir.display());
+            println!("ok: initialized repo learning project");
+            println!("project_dir: {}", output.task_dir.display());
+            println!("topic_dir: {}", output.topic_dir.display());
             println!("state_md: {}", output.state_md.display());
-            println!("next: fill .daedalus/task-card.md and run daedalus validate");
+            println!("topic_state_md: {}", output.topic_state_md.display());
+            println!("next: fill active topic .daedalus/task-card.md and run daedalus validate");
         }
         OutputFormat::Json => println!(
             "{}",
             json!({
                 "ok": true,
                 "action": "init",
-                "task_dir": output.task_dir,
+                "project_dir": output.task_dir,
+                "topic_dir": output.topic_dir,
                 "state_md": output.state_md,
-                "next": "fill .daedalus/task-card.md and run daedalus validate"
+                "topic_state_md": output.topic_state_md,
+                "next": "fill active topic .daedalus/task-card.md and run daedalus validate"
             })
         ),
     }
@@ -37,7 +50,7 @@ pub fn print_transition(output: &TransitionStageOutput, format: OutputFormat) {
             println!("ok: state transition completed");
             println!("action: {}", output.action);
             println!("stage: {}", output.stage_id);
-            println!("task_dir: {}", output.task_dir.display());
+            println!("topic_dir: {}", output.task_dir.display());
             println!("state_md: {}", output.state_md.display());
         }
         OutputFormat::Json => println!(
@@ -46,7 +59,7 @@ pub fn print_transition(output: &TransitionStageOutput, format: OutputFormat) {
                 "ok": true,
                 "action": output.action,
                 "stage": output.stage_id,
-                "task_dir": output.task_dir,
+                "topic_dir": output.task_dir,
                 "state_md": output.state_md
             })
         ),
@@ -113,6 +126,9 @@ pub fn print_validation(output: &ValidationOutput, format: OutputFormat) {
             if output.is_ok() {
                 println!("ok: workspace valid");
                 println!("task_dir: {}", output.task_dir.display());
+                println!(
+                    "note: validate checks structure and required files only; notes still need user-owned evidence"
+                );
             } else {
                 println!("error: workspace validation failed");
                 println!("task_dir: {}", output.task_dir.display());
@@ -131,7 +147,338 @@ pub fn print_validation(output: &ValidationOutput, format: OutputFormat) {
                 "error": if output.is_ok() { serde_json::Value::Null } else { json!("workspace_validation_failed") },
                 "task_dir": output.task_dir,
                 "issues": output.issues,
+                "note": "validate checks structure and required files only; notes still need user-owned evidence",
                 "next": if output.is_ok() { "continue" } else { "fix listed issues or regenerate derived state with daedalus state render" }
+            })
+        ),
+    }
+}
+
+/// 输出 rust-analyzer linkedProjects 同步结果。
+pub fn print_rust_analyzer_sync(output: &RustAnalyzerSyncOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: rust-analyzer linkedProjects synced");
+            println!("settings: {}", output.settings_path.display());
+            for project in &output.linked_projects {
+                println!("linked_project: {project}");
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "ide-sync-rust-analyzer",
+                "settings": output.settings_path,
+                "linked_projects": output.linked_projects
+            })
+        ),
+    }
+}
+
+/// 输出 topic 操作结果。
+pub fn print_topic(output: &TopicOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: topic operation completed");
+            println!("action: {}", output.action);
+            println!("topic: {}", output.slug);
+            println!("project_dir: {}", output.project_dir.display());
+            println!("topic_dir: {}", output.topic_dir.display());
+            println!("state_md: {}", output.state_md.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "topic": output.slug,
+                "project_dir": output.project_dir,
+                "topic_dir": output.topic_dir,
+                "state_md": output.state_md
+            })
+        ),
+    }
+}
+
+/// 输出 topic 列表。
+pub fn print_topic_list(
+    project_dir: &std::path::Path,
+    topics: &[TopicSnapshot],
+    format: OutputFormat,
+) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: topics");
+            println!("project_dir: {}", project_dir.display());
+            for topic in topics {
+                println!(
+                    "topic: {} | {} | {} | {}",
+                    topic.slug, topic.title, topic.lifecycle, topic.path
+                );
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "project_dir": project_dir,
+                "topics": topics.iter().map(|topic| {
+                    json!({
+                        "slug": &topic.slug,
+                        "title": &topic.title,
+                        "lifecycle": &topic.lifecycle,
+                        "path": &topic.path,
+                        "inherits": &topic.inherits
+                    })
+                }).collect::<Vec<_>>()
+            })
+        ),
+    }
+}
+
+/// 输出 topic 校验结果。
+pub fn print_topic_validation(project_dir: &std::path::Path, slug: &str, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: topic valid");
+            println!("project_dir: {}", project_dir.display());
+            println!("topic: {slug}");
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "topic-validate",
+                "project_dir": project_dir,
+                "topic": slug
+            })
+        ),
+    }
+}
+
+/// 输出 review 操作结果。
+pub fn print_review(output: &ReviewOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: review operation completed");
+            println!("action: {}", output.action);
+            println!("review: {}", output.review_id);
+            println!("project_dir: {}", output.project_dir.display());
+            println!("review_dir: {}", output.review_dir.display());
+            if let Some(state_md) = &output.state_md {
+                println!("state_md: {}", state_md.display());
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "review": output.review_id,
+                "project_dir": output.project_dir,
+                "review_dir": output.review_dir,
+                "state_md": output.state_md
+            })
+        ),
+    }
+}
+
+/// 输出 review 列表。
+pub fn print_review_list(output: &ReviewListOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: reviews");
+            println!("project_dir: {}", output.project_dir.display());
+            for review in &output.reviews {
+                println!(
+                    "review: {} | {}:{} | {} | {} | {}",
+                    review.id,
+                    review.target_type,
+                    review.target,
+                    review.mode,
+                    review.lifecycle,
+                    review.path
+                );
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "project_dir": output.project_dir,
+                "reviews": output.reviews.iter().map(|review| {
+                    json!({
+                        "id": &review.id,
+                        "target_type": &review.target_type,
+                        "target": &review.target,
+                        "mode": &review.mode,
+                        "lifecycle": &review.lifecycle,
+                        "path": &review.path,
+                        "next_action": &review.next_action
+                    })
+                }).collect::<Vec<_>>()
+            })
+        ),
+    }
+}
+
+/// 输出 review session 操作结果。
+pub fn print_review_session(output: &ReviewSessionOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: review session operation completed");
+            println!("action: {}", output.action);
+            println!("review: {}", output.review_id);
+            println!("session: {}", output.session_id);
+            println!("project_dir: {}", output.project_dir.display());
+            println!("review_dir: {}", output.review_dir.display());
+            println!("session_path: {}", output.session_path.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "review": output.review_id,
+                "session": output.session_id,
+                "project_dir": output.project_dir,
+                "review_dir": output.review_dir,
+                "session_path": output.session_path
+            })
+        ),
+    }
+}
+
+/// 输出 review 校验结果。
+pub fn print_review_validation(output: &ReviewValidationOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: review valid");
+            println!("project_dir: {}", output.project_dir.display());
+            println!("review: {}", output.review_id);
+            println!("review_dir: {}", output.review_dir.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "review-validate",
+                "project_dir": output.project_dir,
+                "review": output.review_id,
+                "review_dir": output.review_dir
+            })
+        ),
+    }
+}
+
+/// 输出 knowledge 操作结果。
+pub fn print_knowledge(output: &KnowledgeOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: knowledge operation completed");
+            println!("action: {}", output.action);
+            println!("path: {}", output.path.display());
+            println!("next: {}", output.next);
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "path": output.path,
+                "next": output.next
+            })
+        ),
+    }
+}
+
+/// 输出 knowledge 列表。
+pub fn print_knowledge_list(output: &KnowledgeListOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: knowledge items");
+            println!("root: {}", output.root.display());
+            for item in &output.items {
+                println!(
+                    "knowledge: {} | {} | {} | {}",
+                    item.level, item.name, item.status, item.path
+                );
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "root": output.root,
+                "items": output.items.iter().map(|item| {
+                    json!({
+                        "level": &item.level,
+                        "name": &item.name,
+                        "path": &item.path,
+                        "status": &item.status
+                    })
+                }).collect::<Vec<_>>()
+            })
+        ),
+    }
+}
+
+/// 输出 knowledge 校验结果。
+pub fn print_knowledge_validation(output: &KnowledgeValidationOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: knowledge valid");
+            println!("action: {}", output.action);
+            println!("root: {}", output.root.display());
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": output.action,
+                "root": output.root
+            })
+        ),
+    }
+}
+
+/// 输出迁移结果。
+pub fn print_migration(output: &MigrateRepoLearningOutput, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            if output.execute {
+                println!("ok: migration completed");
+            } else {
+                println!("ok: migration dry-run");
+            }
+            println!("project_dir: {}", output.project_dir.display());
+            println!("topic_dir: {}", output.topic_dir.display());
+            if let Some(backup_dir) = &output.backup_dir {
+                println!("backup_dir: {}", backup_dir.display());
+            }
+            if let Some(state_md) = &output.state_md {
+                println!("state_md: {}", state_md.display());
+            }
+            if let Some(topic_state_md) = &output.topic_state_md {
+                println!("topic_state_md: {}", topic_state_md.display());
+            }
+            for action in &output.planned_actions {
+                println!("action: {action}");
+            }
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "migrate-repo-learning-multi-topic",
+                "execute": output.execute,
+                "project_dir": &output.project_dir,
+                "topic_dir": &output.topic_dir,
+                "backup_dir": &output.backup_dir,
+                "state_md": &output.state_md,
+                "topic_state_md": &output.topic_state_md,
+                "planned_actions": &output.planned_actions
             })
         ),
     }
@@ -186,7 +533,9 @@ fn print_text_error(error: &DaedalusError) {
         DaedalusError::InvalidTaskLifecycleTransition(message) => {
             eprintln!("error: invalid task lifecycle transition");
             eprintln!("detail: {message}");
-            eprintln!("next: inspect .daedalus/state.toml and run daedalus validate");
+            eprintln!(
+                "next: inspect workspaces/.daedalus/current.toml plus the active project/topic .daedalus/state.toml, then run daedalus validate"
+            );
         }
         DaedalusError::TaskLifecycleLocationMismatch(message) => {
             eprintln!("error: task lifecycle location mismatch");
@@ -255,7 +604,7 @@ fn print_json_error(error: &DaedalusError) {
             "ok": false,
             "error": "invalid_task_lifecycle_transition",
             "detail": message,
-            "next": "inspect .daedalus/state.toml and run daedalus validate"
+            "next": "inspect workspaces/.daedalus/current.toml plus the active project/topic .daedalus/state.toml, then run daedalus validate"
         }),
         DaedalusError::TaskLifecycleLocationMismatch(message) => json!({
             "ok": false,

@@ -1,18 +1,17 @@
-# Daedalus 验证日志
+# Project 验证日志
 
-记录本学习任务对 daedalus 教学引导能力的反向验证结果。
+记录 daedalus 在 project/topic 编排层面的引导效果。
 
 ## 使用规则
 
-- 不要把普通学习笔记写到这里；学习笔记写入 [`notes/`](../notes)。
-- 这里只记录 daedalus 本身的引导效果、缺口和改进建议。
-- 每完成一个阶段，至少复盘一次“Agent 是否代替用户做太多”。
+- 普通学习笔记写入 active topic 的 `notes/`。
+- 专题阶段复盘写入 active topic 的 `.daedalus/validation-log.md`。
+- 这里只记录 project 层问题：topic 切换、shared context 复用、WIP 管理、迁移和归档。
 
 ## {{CREATED_AT}}
 
-- 阶段：`01-goal-aligner`
+- 事件：初始化 repo learning project。
 - 有效引导：
 - 用户亲自完成的实践：
 - Agent 代替用户过多的地方：
-- Prompt/template/CLI/docs 改进建议：
-- 是否足以进入下一阶段：
+- Project/topic/template/CLI 改进建议：

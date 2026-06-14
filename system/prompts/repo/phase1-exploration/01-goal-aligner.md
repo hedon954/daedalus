@@ -6,6 +6,8 @@ phase: repo.phase1-exploration
 
 @system/prompts/common/clarify-goal.md
 @system/prompts/common/gatekeeper.md
+@system/prompts/common/coach-questioning.md
+@system/prompts/common/critical-lens.md
 
 # Align Repo Learning Goal
 
@@ -28,11 +30,14 @@ phase: repo.phase1-exploration
 
 ## Repo-Specific Workflow
 
-1. 继承 `Clarify Learning Goal` 生成通用学习任务卡。
-2. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
-3. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
-4. 如果目标无法导向 repo 选择或 mini demo，先要求用户收窄。
-5. 生成给用户的目标澄清指南时，写入 `guides/01-goal-alignment-guide.md`；用户确认后的任务目标和验收标准写入 `.daedalus/task-card.md`。
+1. 如果这是新的 repo learning project，先检查 WIP，然后直接用 `daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>` 初始化；不要手写 `.daedalus`、`state.toml`、`todo.md` 等模板文件。
+2. 如果 CLI 不可用，先报告阻塞原因，不要自动 fallback 到手写模板。
+3. 继承 `Clarify Learning Goal` 生成通用学习任务卡。
+4. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
+5. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
+6. 用 critical lens 检查：用户是为了获得可迁移能力而学习，还是只是因为素材流行、权威或被推荐。
+7. 如果目标无法导向 repo 选择、mini demo 或业务迁移，先要求用户收窄。
+8. 生成给用户的目标澄清指南时，写入 active topic 的 `guides/01-goal-aligner/README.md`；用户确认后的专题目标和验收标准写入 active topic 的 `.daedalus/task-card.md`。
 
 ## Output Delta
 
@@ -43,6 +48,8 @@ phase: repo.phase1-exploration
 - Repo 选择约束：
 - 运行/调试要求：
 - Mini demo 方向：
+- 为什么这个素材值得学：
+- 可能不适合照搬的边界：
 - 暂不学习：
 - 用户确认：
 ```
@@ -51,7 +58,7 @@ phase: repo.phase1-exploration
 ## Role Split
 - daedalus 应该做：提出澄清问题、解释为什么需要收窄目标、给出任务卡草案。
 - 用户必须亲自做：确认现实目标、学习边界、验收标准和暂不学习内容。
-- daedalus 可以协助但不能代替：把用户口述内容整理成 `.daedalus/task-card.md`。
+- daedalus 可以协助但不能代替：把用户口述内容整理成 active topic 的 `.daedalus/task-card.md`。
 
 ## Before Completion
 - 用户已经确认/回答：
@@ -65,5 +72,7 @@ phase: repo.phase1-exploration
 - 只在必要时提问，每次最多 3 个问题。
 - 不要在目标未明确时推荐 repo。
 - 学习目标必须能导向 mini demo 或业务方案。
+- 不要把“某个 repo 很优秀”当成学习理由；必须说明它服务哪个现实目标、它的约束和用户目标是否相近。
 - 不要替用户直接决定学习目标；如果只能靠 Agent 猜测，应保持 `01-goal-aligner` active。
-- 完成阶段前，在 `.daedalus/validation-log.md` 记录本阶段 daedalus 的引导效果和缺口。
+- 新任务初始化必须 CLI-first；不要为了省事手写模板结构。
+- 完成阶段前，在 active topic 的 `.daedalus/validation-log.md` 记录本阶段 daedalus 的引导效果和缺口。

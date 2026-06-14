@@ -6,7 +6,7 @@
 
 repo learning 里有两层状态：
 
-- **Stage**：学习流程骨架，表示“要经历哪些教学阶段”。例如 `01-goal-aligner`、`02-repo-scout`、`10-archivist`。
+- **Stage**：学习流程骨架，表示“要经历哪些教学阶段”。例如 `01-goal-aligner`、`02-repo-scout`、`10-reflection`。
 - **StageState**：某个 stage 在具体学习任务里的运行时状态，写在 `.daedalus/state.toml` 的 `status` 字段里。
 
 也就是说，10 个 stage 是稳定的学习路径；`pending/active/blocked/paused/done` 是每个 stage 在执行过程中的状态。
@@ -17,7 +17,7 @@ flowchart TD
     repoLearning --> runtimeState["StageState：运行时状态"]
     stageDefinitions --> stage01["01-goal-aligner"]
     stageDefinitions --> stage02["02-repo-scout"]
-    stageDefinitions --> stage10["10-archivist"]
+    stageDefinitions --> stage10["10-reflection"]
     runtimeState --> pending["pending"]
     runtimeState --> active["active"]
     runtimeState --> blocked["blocked"]
@@ -39,15 +39,15 @@ flowchart LR
     s06 --> s07["07-demo-architecture：设计 Repo Mini Demo"]
     s07 --> s08["08-demo-coder：实现 Repo Mini Demo"]
     s08 --> s09["09-biz-solver：将 Repo 学习迁移到业务问题"]
-    s09 --> s10["10-archivist：闭环 Repo 学习任务"]
+    s09 --> s10["10-reflection：闭环 Repo 学习任务"]
 ```
 
 每个 stage 都会声明它完成前需要存在的产物，例如：
 
 - `01-goal-aligner` 需要 [`.daedalus/task-card.md`](../../system/templates/repo/.daedalus/task-card.md)
-- `02-repo-scout` 需要 `notes/repo-selection.md`
+- `02-repo-scout` 需要 `guides/02-repo-selection-guide.md`
 - `08-demo-coder` 需要 `demo/README.md`
-- `10-archivist` 需要 `.daedalus/artifact-index.md` 和 `.daedalus/long-context.md`
+- `10-reflection` 需要 `.daedalus/artifact-index.md` 和 `.daedalus/long-context.md`
 
 这些产物不是装饰性文件，而是 daedalus 用来判断“学习是否真的发生了”的确定性证据。`complete` 某个 stage 时，CLI 会检查 required artifacts；缺失时拒绝完成，除非用户明确允许 `--force` 并提供可追溯的批准来源。
 
@@ -97,7 +97,7 @@ flowchart TD
     enterNext --> nextActive["next_stage.status = active"]
     nextActive --> workStage
 
-    markDone --> finalCheck["是否完成 10-archivist"]
+    markDone --> finalCheck["是否完成 10-reflection"]
     finalCheck --> closeTask["daedalus task complete"]
     closeTask --> completedBucket["移动到 workspaces/03-completed"]
 ```
@@ -115,7 +115,7 @@ flowchart TD
 sequenceDiagram
     participant User as 用户
     participant Agent as Agent
-    participant Cli as daedalus CLI
+    participant Cli as "daedalus CLI"
     participant State as state.toml
     participant Files as 学习产物
 
@@ -128,11 +128,11 @@ sequenceDiagram
     Cli->>State: 更新 next_action 指向 02-repo-scout
     Agent->>Cli: state enter 02-repo-scout
     Cli->>State: 标记 02 为 active
-    Agent->>Files: 产出 repo-selection.md
+    Agent->>Files: 产出 02-repo-selection-guide.md
     Agent->>Cli: state complete 02-repo-scout
     Cli->>State: 标记 02 为 done
     Agent->>Agent: 持续推进 03 到 09
-    Agent->>Cli: state enter 10-archivist
+    Agent->>Cli: state enter 10-reflection
     Agent->>Files: 更新 artifact-index.md 和 long-context.md
     Agent->>Cli: task complete
     Cli->>State: 完成 10，设置 lifecycle = completed
@@ -170,16 +170,16 @@ flowchart LR
     learning --> abandoned["task abandon 后 lifecycle = abandoned, workspace_bucket = 04-abandoned"]
 ```
 
-完成任务时，`10-archivist` 必须已经是 `active`，然后才能被完成并关闭任务。这能避免 Agent 跳过最终归档阶段，直接把任务移动到 completed。
+完成任务时，`10-reflection` 必须已经是 `active`，然后才能被完成并关闭任务。这能避免 Agent 跳过最终归档阶段，直接把任务移动到 completed。
 
 ```mermaid
 flowchart TD
-    s10Pending["10-archivist.status = pending"] --> invalidComplete["task complete: 拒绝"]
-    s10Pending --> enterS10["state enter 10-archivist"]
-    enterS10 --> s10Active["10-archivist.status = active"]
+    s10Pending["10-reflection.status = pending"] --> invalidComplete["task complete: 拒绝"]
+    s10Pending --> enterS10["state enter 10-reflection"]
+    enterS10 --> s10Active["10-reflection.status = active"]
     s10Active --> archiveArtifacts["补齐 artifact-index.md 和 long-context.md"]
     archiveArtifacts --> taskComplete["task complete"]
-    taskComplete --> s10Done["10-archivist.status = done"]
+    taskComplete --> s10Done["10-reflection.status = done"]
     s10Done --> taskClosed["task.lifecycle = completed"]
     taskClosed --> moveCompleted["移动到 workspaces/03-completed"]
 ```
@@ -214,7 +214,7 @@ learning-xxx/
 - `guides/` 保存 Agent 生成的行动指南、问题引导、运行说明和验收清单。
 - `notes/` 保存用户亲自实践、观察、回答和总结后的学习笔记。
 - `source/` 保存外部源码缓存，默认不提交到 daedalus 仓库；用 `source/pull_source.sh` 复现拉取。
-- `artifact-index.md` 和 `long-context.md` 在 `10-archivist` 阶段沉淀学习成果。
+- `artifact-index.md` 和 `long-context.md` 在 `10-reflection` 阶段沉淀学习成果。
 - `decision-log.md` 记录关键决策，尤其是关闭、放弃、强制通过等需要审计的动作。
 - `validation-log.md` 记录 daedalus 自身教学引导效果和改进点。
 
@@ -224,6 +224,7 @@ learning-xxx/
 - Agent 不应该发明新的 `stage.status` 枚举值；如需新增，必须同步修改 Rust 领域模型、模板和测试。
 - `complete` 需要 required artifacts 存在；这些产物应尽量包含用户参与后的学习证据，而不只是 Agent 自动生成的文件。
 - Agent 应默认指导用户亲自实践，再协助验收和排障；不要把代跑命令、代写笔记伪装成用户已经掌握。
+- Agent 推测性的完整图示应优先放入 `guides/`；写入 `notes/` 的 Mermaid 图应来自用户已经验证过的链路，并遵守 Typora 兼容规则。
 - `--force` 只能在用户明确批准或存在等价证据时使用。
-- `task complete` 和 `state complete 10-archivist` 都必须遵守最终阶段状态机，不能从 `pending` 直接关闭任务。
+- `task complete` 和 `state complete 10-reflection` 都必须遵守最终阶段状态机，不能从 `pending` 直接关闭任务。
 - `state.toml` 保留原始结构和注释，CLI 通过 `toml_edit` 更新，尽量避免破坏人工可读性。

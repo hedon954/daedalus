@@ -1,115 +1,208 @@
 ---
 name: repo-learning-coach
-description: Guides the full 10-stage daedalus code repo learning loop: align goal, select repo, ask roadmap questions, run/debug, analyze architecture, read core code, design mini demo, implement mini demo, transfer to business, and archive knowledge. Use when the user starts, continues, resumes, summarizes, or closes a repository learning task.
+description: Guides daedalus repo learning projects, topic tracks, post-learning review plans, human-owned notes, and verified knowledge archival. Use when the user starts, continues, resumes, reviews, writes notes, revisits, tests memory, prepares closeout retrospective, or closes a repository learning task.
 ---
 
 # Repo Learning Coach
 
-Use this skill when the user wants to learn a code repository deeply through daedalus. The repo can come from GitHub, GitLab, an internal Git service, an archive, or a local filesystem checkout.
+Use this skill when the user wants to learn, review, write human-owned notes, or archive reviewed understanding from a code repository through daedalus.
 
-## Core Rule
-
-Repo learning is a long-running, filesystem-first coaching process. Prefer prompt files and workspace artifacts over hidden chat memory. Keep `workspaces/02-learning` WIP = 1.
-
-## 10-Stage Workflow
-
-### 1. Align Repo Learning Goal
+## Core Contract
 
 Load:
 
-- `system/prompts/repo/phase1-exploration/01-goal-aligner.md`
+- `system/prompts/common/agent-operating-contract.md`
 
-Confirm the real-world problem, current level, expected output, acceptance criteria, and whether the task deserves active learning.
+Repo learning is a long-running, filesystem-first coaching process. The user learns; the Agent coaches, validates, asks sharper questions, keeps the learning map current, and only implements demo code when explicitly asked.
 
-### 2. Select Study Repo
+Non-negotiables:
 
-Load:
+- Keep stable projects under `workspaces/projects`; complete context lives in `workspaces/.daedalus/current.toml`, while top-level symlinks show only action entries: `current-project` / `current-topic` for active learning and `closeout-topic` for pending reflection.
+- Resolve active context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading project/topic state. Resolve pending closeout from `pending_closeout_topic` or `workspaces/closeout-topic`. The repo root intentionally has no `.daedalus/state.toml`.
+- Keep at most one active topic and at most one pending closeout topic. When no active topic exists, do not treat a selected project as the current learning entry.
+- Prefer workspace artifacts over chat memory.
+- Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
+- Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
+- Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
+- Keep closeout focused on core goals, demo decisions, trade-offs, architecture, transfer boundaries, and important weak foundations; make knowledge extraction greedy across closeout, guides, notes, demo, tests, external references, and first-principles side quests.
+- Knowledge-base entries are natural notes in an evolving knowledge tree, not fixed templates or type buckets.
+- A knowledge-base entry must be deep enough to stand alone as a technical blog post or lesson; do not archive shallow summaries.
+- When summaries or knowledge archival fill technical details, verify them with external sources when possible; prefer official docs, papers, source repos, or established best-practice references.
+- When a discussion produces a reusable learning method, thinking tool, artifact pattern, or Agent operating lesson, promote it to the right durable layer instead of leaving it only in the current topic.
+- Before long-running repo-learning work, make the first working message a small parallel study handoff instead of leaving the learner idle.
+- Before repo-learning commits, run checkpoint lifecycle pre-commit sync; after commits, output post-commit orientation.
 
-- `system/prompts/repo/phase1-exploration/02-repo-scout.md`
+## Project / Topic Model
 
-Recommend or compare at most 3 repos. Select the one most suitable for deep reading, local running, and mini demo extraction.
+Repo learning uses a project/topic/stage model:
 
-### 3. Ask Repo Socratic Questions
+```text
+Learning Project = one long-running repo/source learning workspace
+Topic Track = one focused learning objective inside the project
+Stage = the 10-stage learning loop inside a topic
+Shared Context = verified cross-topic knowledge under shared/
+```
 
-Load:
+Project root owns project-level state:
 
-- `system/prompts/repo/phase1-exploration/03-socratic-coach.md`
+```text
+.daedalus/state.toml
+.daedalus/project-map.md
+.daedalus/topic-board.md
+shared/
+source/
+topics/
+```
 
-Generate layered questions before explaining answers. Use questions to drive hypotheses about production constraints, architecture, core path, and demo invariants.
+Topic root owns stage-level learning:
 
-### 4. Run And Debug Repo
+```text
+topics/<slug>/.daedalus/state.toml
+topics/<slug>/.daedalus/outcome-map.md
+topics/<slug>/.daedalus/todo.md
+topics/<slug>/guides/
+topics/<slug>/notes/
+topics/<slug>/demo/
+```
 
-Load:
+Do not write topic stage progress into project root. Do not treat project root `.daedalus/state.toml` as a 10-stage task state.
 
-- `system/prompts/repo/phase2-learning/04-debugger-guide.md`
+Lifecycle distinction:
 
-Create a runbook, start the repo locally when possible, and trace the core path from an entry point with logs, tests, or debugger breakpoints.
+- `active` means the topic is the daily learning WIP.
+- `awaiting-reflection` means stages 01-09 are done and the topic is waiting for user closeout reflection; it does not occupy the active learning slot.
+- `completed` means closeout reflection, Agent challenge, user confirmation, and knowledge archival are complete.
 
-### 5. Analyze Architecture
+Closeout progression must follow `system/prompts/common/closeout-flow.md`: once a closeout gate is satisfied, update maps and push to the next gate instead of asking the user to rediscover the next action.
 
-Load:
+## Prompt Loading Strategy
 
-- `system/prompts/repo/phase2-learning/05-arch-analyzer.md`
+Load only the prompt(s) needed for the current action:
 
-Map boundaries, layers, data flow, control flow, extension points, and trade-offs. Prefer diagrams when they clarify the system.
+- CLI lifecycle, render, validate, review, and deterministic knowledge checks: `system/prompts/repo/repo-learning-cli-contract.md`
+- Human-owned notes, notes review, topic closeout retrospective, and knowledge-base gate: `system/prompts/common/human-owned-notes.md`
+- Resume or "where are we": `system/prompts/common/resume.md`
+- Checkpoint, cursor sync, pre-commit sync, post-commit orientation: `system/prompts/common/checkpoint-lifecycle.md`
+- First-principles explanation or deep mechanism guide: `system/prompts/common/first-principles.md`
+- Critical lens and trade-off analysis: `system/prompts/common/critical-lens.md`
+- Review plan/session: `system/prompts/common/review-guidance.md`
+- Knowledge archival: `system/prompts/common/archive-knowledge.md`
+- Topic closeout progression: `system/prompts/common/closeout-flow.md`
+- Stage work: load the matching stage prompt from the stage index below.
 
-### 6. Read Core Code
+## Learning Navigation
 
-Load:
+At the start of resume, code-reading, stage transition, or implementation guidance, orient the learner:
 
-- `system/prompts/repo/phase2-learning/06-code-reader.md`
+```markdown
+## Learning Navigation
 
-Read only the code that serves the core path and key architecture questions. Extract invariants, design choices, and reusable implementation patterns.
+- Final artifact:
+- Current stage:
+- Current gap:
+- Evidence needed:
+- After this:
 
-### 7. Design Mini Demo
+## Critical Lens
 
-Load:
+- Source assumption under test:
+- Possible limitation / failure mode:
+- Faithful imitation / transfer decision:
+```
 
-- `system/prompts/repo/phase3-practice/07-demo-architecture.md`
+If a proposed step cannot map to a final artifact or blocked decision, move it to stop rules or defer it.
 
-Design a focused mini demo that preserves the repo's core architectural decision. Define verification before coding.
+## Coaching Boundary
 
-### 8. Implement Mini Demo
+For architecture analysis, code reading, and demo-invariant extraction, the user should form a hypothesis before the Agent writes conclusions.
 
-Load:
+For "continue", "resume", or "restart this round":
 
-- `system/prompts/repo/phase3-practice/08-demo-coder.md`
+1. Restore context from filesystem artifacts.
+2. Identify the next learning question.
+3. Ask at most 1-3 questions.
+4. Wait for the user's answer unless the user explicitly asks for direct explanation or Agent-led work.
 
-Implement the mini demo in small verified steps. Run the smallest validation after meaningful changes.
+Agent-only pre-reading belongs in `guides/` as a pending reading map.
 
-### 9. Transfer To Business
+`notes/` are human-owned. If the user asks the Agent to create new notes or summarize directly into notes, the Agent must refuse to ghostwrite and instead provide questions, an empty template, or `AI Questions` / `AI Challenge` blocks. After the user writes rough notes, the Agent may review, challenge, link, and organize without replacing the user's understanding.
 
-Load:
+## Implementation Practice Boundary
 
-- `system/prompts/repo/phase3-practice/09-biz-solver.md`
+In `08-demo-coder`, default to guide-only coaching:
 
-Map the verified repo/demo pattern back to the user's original business or engineering problem. Re-check constraints before proposing an application plan.
+- Explain the next small implementation step.
+- Ask the user to create or edit files.
+- Provide snippets only as examples for the user to type or adapt.
+- Validate user-created code and update learning artifacts.
 
-### 10. Archive And Close
+Do not create or modify demo implementation files unless the user explicitly says "你来实现", "帮我直接写代码", "代写这个 slice", "apply the patch", or equivalent.
 
-Load:
+Ambiguous confirmations such as "继续", "可以", "ok", or "开始吧" are not implementation permission.
 
-- `system/prompts/common/summarize.md`
-- `system/prompts/common/export-knowledge.md`
-- `system/prompts/common/compress-context.md`
-- `system/prompts/repo/phase4-closing/10-archivist.md`
+If the Agent accidentally writes implementation code, stop, acknowledge it, roll back its own edits, and strengthen the relevant instructions before continuing.
 
-Summarize verified learning, compress recoverable context, decide where knowledge belongs, and close the task as completed, paused, or abandoned.
+## Artifact Rules
 
-## Cross-Stage Context
+- `.daedalus/outcome-map.md`: topic dashboard and final-artifact dependency map.
+- `.daedalus/todo.md`: dynamic path board, current cursor, blockers, next action.
+- `.daedalus/long-context.md`: durable recovery context only.
+- `guides/`: Agent action maps, pre-reading, next-step instructions.
+- `notes/`: user answers, Agent calibration, verified evidence, design decisions, lessons.
+- `demo/`: mini demo implementation and runbook.
 
-For long-running work:
+When writing or reviewing learning artifacts, check the sedimentation level:
 
-- Load `system/prompts/common/resume.md` when resuming.
-- Load `system/prompts/common/compress-context.md` before pausing or switching stages.
-- Keep `done`, `doing`, `next`, and `blocked` explicit.
+- Topic-specific understanding stays in topic `notes/` or `reflection/`.
+- Cross-topic understanding for one project goes to project `shared/`.
+- Reusable coaching behavior, templates, or artifact rules go to `system/prompts/` or `system/templates/`.
+- Reviewed human understanding after closeout may enter `knowledge-base/`.
+
+Do not promote everything globally, but do not bury general methods in a single topic.
+
+Stage directories should use stable entrypoints:
+
+```text
+guides/<stage-id>/README.md
+notes/<stage-id>/README.md
+```
+
+Topic files in `guides/` and `notes/` use ordered prefixes by default: `01-`, `02-`, `03-`. Avoid frequent renumbering; if order changes, update links in the same checkpoint.
+
+## Stage Index
+
+| Stage          | Prompt                                                                                             | Purpose                                          |
+| -------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 1 Goal         | `system/prompts/repo/phase1-exploration/01-goal-aligner.md`                                        | clarify real-world problem, output, acceptance   |
+| 2 Repo         | `system/prompts/repo/phase1-exploration/02-repo-scout.md`                                          | compare at most 3 repos and choose one           |
+| 3 Questions    | `system/prompts/repo/phase1-exploration/03-socratic-coach.md`                                      | generate production-driven learning questions    |
+| 4 Run          | `system/prompts/repo/phase2-learning/04-debugger-guide.md`                                         | run/debug core path and create runbook           |
+| 5 Architecture | `system/prompts/repo/phase2-learning/05-arch-analyzer.md`                                          | map boundaries, invariants, trade-offs           |
+| 6 Code         | `system/prompts/repo/phase2-learning/06-code-reader.md`                                            | read code only for blocked artifact decisions    |
+| 7 Demo Design  | `system/prompts/repo/phase3-practice/07-demo-architecture.md`                                      | finalize mini demo architecture and verification |
+| 8 Demo Code    | `system/prompts/repo/phase3-practice/08-demo-coder.md`                                             | coach user-led implementation slices             |
+| 9 Business     | `system/prompts/repo/phase3-practice/09-biz-solver.md`                                             | transfer verified pattern to the user problem    |
+| 10 Reflection  | `system/prompts/repo/phase4-closing/10-reflection.md` plus closeout and archive prompts             | review, challenge, select candidates, and archive |
+
+## Resume Checklist
+
+When resuming long-running work:
+
+1. Resolve active project/topic from `workspaces/.daedalus/current.toml` or `workspaces/current-topic`; do not infer from repo root.
+2. Read project `.daedalus/project-map.md`, `.daedalus/topic-board.md`, and state.
+3. Read active topic `.daedalus/outcome-map.md`, `.daedalus/todo.md`, and `.daedalus/long-context.md`.
+4. Read relevant stage `guides/<stage-id>/README.md` or `notes/<stage-id>/README.md`.
+5. Verify implementation status from current code/tests when status matters.
+6. Treat "next action" as the next coaching question unless the user asks for direct execution.
 
 ## Rules
 
-- Keep WIP = 1 in `workspaces/02-learning`.
-- Prefer filesystem state over chat memory.
-- Treat `.daedalus/state.toml` as the only lifecycle fact source; completed and abandoned directories are projections of `task.lifecycle` and `task.workspace_bucket`.
 - Ask at most 3 high-value questions at a time.
-- Tie every reading step to a future output artifact.
-- Do not mark the task complete until demo/business transfer/knowledge archival are addressed.
-- Do not archive unverified summaries as knowledge.
+- Do not create complete code-reading notes from Agent-only reading.
+- Do not label Agent-only inspection as verified learning.
+- Do not make source-code claims from analogy or product intuition alone; anchor them in source, tests, comments, or runtime evidence.
+- When explaining principles, follow the mechanism depth ladder in `first-principles.md`; do not stop at a framework abstraction if the lower runtime, OS, protocol, or hardware layer changes the design decision.
+- When a review, validation, scan, doc rewrite, test loop, or commit sequence may take more than roughly 30-60 seconds, use `Long-Running Turn Handoff` from `checkpoint-lifecycle.md` before continuing.
+- Do not accept a code-reading note that only explains call chains; it must include production constraints, failure handling, invariants, trade-offs, and transfer limits.
+- daedalus lifecycle commands automatically refresh VSCode rust-analyzer `linkedProjects`; if the editor still loses a demo crate, run `daedalus ide sync-rust-analyzer` as a repair command.
+- Do not mark a task complete until demo, business transfer, and knowledge archival are addressed or explicitly justified.

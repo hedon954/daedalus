@@ -1,0 +1,279 @@
+# daedalus repo learning topic state. 保留注释；确定性字段由 CLI 更新。
+
+[topic]
+slug = "tools-permissions"
+title = "工具系统与权限系统"
+kind = "repo-learning-topic"
+parent_project = "../.."
+lifecycle = "completed"
+current_phase = "10-reflection"
+next_action = "所有阶段已完成；复核归档产物并关闭学习任务。"
+
+[[stages]]
+id = "01-goal-aligner"
+title = "对齐 Repo 学习目标"
+status = "done"
+required_artifacts = [".daedalus/task-card.md"]
+
+[[stages]]
+id = "02-repo-scout"
+title = "选择学习仓库"
+status = "done"
+required_artifacts = ["notes/02-repo-scout/README.md"]
+
+[[stages]]
+id = "03-socratic-coach"
+title = "提出 Repo 递进问题"
+status = "done"
+required_artifacts = ["notes/03-socratic-coach/README.md"]
+
+[[stages]]
+id = "04-debugger-guide"
+title = "运行并调试 Repo"
+status = "done"
+required_artifacts = ["notes/04-debugger-guide/README.md"]
+
+[[stages]]
+id = "05-arch-analyzer"
+title = "分析 Repo 架构"
+status = "done"
+required_artifacts = ["notes/05-arch-analyzer/README.md"]
+
+[[stages]]
+id = "06-code-reader"
+title = "深读 Repo 核心代码"
+status = "done"
+required_artifacts = ["notes/06-code-reader/README.md"]
+
+[[stages]]
+id = "07-demo-architecture"
+title = "设计 Repo Mini Demo"
+status = "done"
+required_artifacts = ["demo/design.md"]
+
+[[stages]]
+id = "08-demo-coder"
+title = "实现 Repo Mini Demo"
+status = "done"
+required_artifacts = ["demo/README.md"]
+
+[[stages]]
+id = "09-biz-solver"
+title = "将 Repo 学习迁移到业务问题"
+status = "done"
+required_artifacts = ["notes/09-biz-solver/README.md"]
+
+[[stages]]
+id = "10-reflection"
+title = "Repo 学习回顾与知识归档"
+status = "done"
+required_artifacts = [
+    ".daedalus/artifact-index.md",
+    ".daedalus/long-context.md",
+    "reflection/candidate-map.md",
+    "reflection/closeout.md",
+]
+
+[[transitions]]
+stage = "01-goal-aligner"
+action = "init"
+timestamp = "2026-05-09 15:58:52"
+actor = "daedalus-cli"
+reason = "初始化 repo 学习任务。"
+
+[[transitions]]
+stage = "01-goal-aligner"
+action = "complete"
+timestamp = "2026-05-09 16:00:30"
+actor = "agent"
+reason = "用户已确认 OpenAI Codex CLI、学习重点和输出形态，任务卡与目标对齐指南已落盘。"
+
+[[transitions]]
+stage = "02-repo-scout"
+action = "enter"
+timestamp = "2026-05-09 16:00:31"
+actor = "agent"
+reason = "开始客观评估用户指定的 OpenAI Codex CLI 仓库，并确认源码拉取方式。"
+
+[[transitions]]
+stage = "02-repo-scout"
+action = "complete"
+timestamp = "2026-05-09 16:03:49"
+actor = "agent"
+reason = "用户确认选择 OpenAI Codex CLI，源码已通过 pull_source.sh 拉取并固定 commit，repo-selection 记录已落盘。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "enter"
+timestamp = "2026-05-09 16:03:49"
+actor = "agent"
+reason = "开始生成 Codex CLI 深读问题路线图。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "block"
+timestamp = "2026-05-09 16:05:01"
+actor = "agent"
+reason = "等待用户回答或改写第一轮 3 个 Codex 源码学习问题。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "resume"
+timestamp = "2026-05-09 16:19:02"
+actor = "agent"
+reason = "用户已回答第一轮 3 个问题，问题路线图具备阶段完成证据。"
+
+[[transitions]]
+stage = "03-socratic-coach"
+action = "complete"
+timestamp = "2026-05-09 16:19:02"
+actor = "agent"
+reason = "用户回答已写入 notes/03-socratic-coach/README.md，并转化为后续运行调试和架构分析的可验证假设。"
+
+[[transitions]]
+stage = "04-debugger-guide"
+action = "enter"
+timestamp = "2026-05-09 16:19:02"
+actor = "agent"
+reason = "开始围绕 codex exec 建立可复现运行 runbook 和核心路径追踪。"
+
+[[transitions]]
+stage = "04-debugger-guide"
+action = "complete"
+timestamp = "2026-05-10 13:15:08"
+actor = "daedalus-cli"
+reason = "runbook 已验证，用户已执行最小命令并记录 codex-exec 测试通过；后续调试项保留为补充任务。"
+
+[[transitions]]
+stage = "05-arch-analyzer"
+action = "enter"
+timestamp = "2026-05-10 13:15:09"
+actor = "daedalus-cli"
+reason = "开始分析 Codex agent loop、工具系统、权限审批、沙箱和事件流架构。"
+
+[[transitions]]
+stage = "05-arch-analyzer"
+action = "complete"
+timestamp = "2026-05-10 13:15:09"
+actor = "daedalus-cli"
+reason = "notes/05-arch-analyzer/01-codex-agent-loop-architecture.md 已作为 notes/05-arch-analyzer/README.md 的等价架构笔记，覆盖核心 loop、架构分层、tool/auth/sandbox/event 关系，并配套 Excalidraw/Mermaid 图。"
+approval_source = "artifact-equivalent"
+
+[[transitions]]
+stage = "06-code-reader"
+action = "enter"
+timestamp = "2026-05-10 13:15:09"
+actor = "daedalus-cli"
+reason = "开始围绕上下文管理、压缩机制、工具结果回灌和 rollout 恢复深读核心代码。"
+
+[[transitions]]
+stage = "06-code-reader"
+action = "rollback"
+timestamp = "2026-05-11 23:44:20"
+actor = "daedalus-cli"
+reason = "根据用户要求回到 code-reader 阶段，用生产失败模式驱动的源码阅读规则重新审视 Codex。"
+
+[[transitions]]
+stage = "06-code-reader"
+action = "complete"
+timestamp = "2026-05-16 19:25:45"
+actor = "daedalus-cli"
+reason = "Decision 合成、Runtime request assembly、Orchestrator retry 三个 demo 缺口已由用户复述并经源码核对，足以进入 demo architecture。"
+
+[[transitions]]
+stage = "07-demo-architecture"
+action = "enter"
+timestamp = "2026-05-16 19:25:50"
+actor = "daedalus-cli"
+reason = "进入 demo 架构定稿：将 CommandRequest、ApprovalRequirement、SandboxRetryState 和验收用例从源码笔记收敛为 mini demo 设计。"
+
+[[transitions]]
+stage = "07-demo-architecture"
+action = "complete"
+timestamp = "2026-05-16 21:49:10"
+actor = "daedalus-cli"
+reason = "用户确认继续；demo/design.md 已完成 Phase 1/Phase 2 蓝图、事件协议、主状态机、AT-01 到 AT-14 验收测试和 08 子地图。"
+
+[[transitions]]
+stage = "08-demo-coder"
+action = "enter"
+timestamp = "2026-05-16 21:49:16"
+actor = "daedalus-cli"
+reason = "开始 08-demo-coder：按 guides/08-demo-coder/README.md 的 slice 地图实现 Phase 1 mini demo。"
+
+[[transitions]]
+stage = "08-demo-coder"
+action = "complete"
+timestamp = "2026-06-09 00:08:02"
+actor = "daedalus-cli"
+reason = "Phase 1 mini demo 已完成：demo/README.md 已补齐运行说明、验收命令、live LLM trace、Phase 1/Phase 2 边界和迁移注意事项；cargo test 通过 72 个默认测试。"
+
+[[transitions]]
+stage = "09-biz-solver"
+action = "enter"
+timestamp = "2026-06-09 00:08:20"
+actor = "daedalus-cli"
+reason = "进入业务迁移阶段：基于已完成的 Phase 1 demo，抽取安全本地命令执行模式并迁移到用户自有 Agent/CLI 设计。"
+
+[[transitions]]
+stage = "08-demo-coder"
+action = "rollback"
+timestamp = "2026-06-09 00:33:29"
+actor = "daedalus-cli"
+reason = "用户决定暂不进入 09-biz-solver，继续在 08-demo-coder 中推进 Phase 2：先规划 OsExecutionRunner 与 ratatui Agent REPL，再从真实 sandbox runner 开始。"
+
+[[transitions]]
+stage = "08-demo-coder"
+action = "complete"
+timestamp = "2026-06-10 03:27:21"
+actor = "daedalus-cli"
+reason = "Phase 2 mini demo 已完成：OsExecutionRunner 接入 sandbox-exec，ratatui Agent CLI REPL 支持持续 streaming、approval 面板和无副作用 approval-test 验收；demo README 已同步。"
+
+[[transitions]]
+stage = "09-biz-solver"
+action = "enter"
+timestamp = "2026-06-10 03:27:21"
+actor = "daedalus-cli"
+reason = "进入业务迁移：将 Codex 工具/权限/沙箱链路转化为自有 Agent/CLI 的安全本地命令执行方案。"
+
+[[transitions]]
+stage = "09-biz-solver"
+action = "complete"
+timestamp = "2026-06-10 03:27:21"
+actor = "daedalus-cli"
+reason = "notes/09-biz-solver/README.md 已输出业务迁移方案，覆盖现实压力、第一性原理、迁移设计、取舍和验收标准。"
+
+[[transitions]]
+stage = "10-reflection"
+action = "enter"
+timestamp = "2026-06-10 03:27:21"
+actor = "daedalus-cli"
+reason = "进入 topic closeout：先由用户完成主动回顾，再决定是否将 reviewed understanding 归档到 knowledge-base。"
+
+[[transitions]]
+stage = "10-reflection"
+action = "rollback"
+timestamp = "2026-06-12 00:00:00"
+actor = "agent"
+reason = "撤销 Agent 生成知识库闭环：用户尚未完成 closeout reflection，因此 `10-reflection` 回到 active。"
+
+[[transitions]]
+stage = "topic"
+action = "topic-await-reflection"
+timestamp = "2026-06-12 09:39:39"
+actor = "daedalus-cli"
+reason = "主体学习、demo、业务迁移和测试验证已完成；用户将在大块时间里完成 closeout reflection 后再归档知识库。"
+
+[[transitions]]
+stage = "10-reflection"
+action = "complete"
+timestamp = "2026-06-13 21:40:51"
+actor = "daedalus-cli"
+reason = "用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成，knowledge validate/link-check 通过。"
+
+[[transitions]]
+stage = "topic"
+action = "topic-complete"
+timestamp = "2026-06-13 21:41:05"
+actor = "daedalus-cli"
+reason = "用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成，knowledge validate/link-check 通过。"

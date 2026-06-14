@@ -4,10 +4,9 @@ use crate::application::render::render_state;
 use crate::application::state_machine::StateTransition;
 use crate::domain::transition::Transition;
 use crate::domain::{
-    ApprovalSource, DaedalusError, Result, StageState, StageTransitionKind, TaskLifecycle,
-    WorkspaceBucket,
+    ApprovalSource, DaedalusError, Result, StageState, StageTransitionKind, TopicLifecycle,
 };
-use crate::infrastructure::{clock, state_toml, workspace_fs};
+use crate::infrastructure::{clock, state_toml};
 
 /// 阶段状态流转动作。
 #[derive(Debug, Clone)]
@@ -25,6 +24,8 @@ pub enum StageAction {
     Block,
     /// 恢复 blocked 或 paused 阶段。
     Resume,
+    /// 回退到某个已到达阶段，并将其后的阶段重置为 pending。
+    Rollback,
 }
 
 impl StageAction {
@@ -34,6 +35,7 @@ impl StageAction {
             Self::Complete { .. } => StageTransitionKind::Complete,
             Self::Block => StageTransitionKind::Block,
             Self::Resume => StageTransitionKind::Resume,
+            Self::Rollback => StageTransitionKind::Rollback,
         }
     }
 
@@ -89,7 +91,7 @@ impl StateTransition for TransitionStageOptions {
     fn pre_check(&self) -> Result<()> {
         let state_path = state_toml::state_path(&self.task_dir);
         let doc = state_toml::load_state_doc(&state_path)?;
-        ensure_active_learning_task(&doc, &self.task_dir)?;
+        ensure_stage_transition_topic_lifecycle(&doc, self)?;
         validate_stage_transition(&doc, self)
     }
 
@@ -110,12 +112,21 @@ fn commit_stage_transition(options: TransitionStageOptions) -> Result<Transition
             state_toml::set_current_phase(&mut doc, &options.stage_id);
         }
         StageAction::Complete { .. } => {
-            update_next_action_after_complete(&mut doc, &options.stage_id);
+            let next_stage = state_toml::next_pending_stage_after(&doc, &options.stage_id);
+            update_next_action_after_complete(&mut doc, next_stage.as_ref());
+            if let Some(stage) = next_stage {
+                state_toml::set_current_phase(&mut doc, &stage.id);
+            }
         }
         StageAction::Block => {}
         StageAction::Resume => {
             state_toml::set_other_active_to_blocked(&mut doc, &options.stage_id);
             state_toml::set_current_phase(&mut doc, &options.stage_id);
+        }
+        StageAction::Rollback => {
+            state_toml::rollback_to_stage(&mut doc, &options.stage_id)?;
+            state_toml::set_current_phase(&mut doc, &options.stage_id);
+            update_next_action_after_rollback(&mut doc, &options.stage_id);
         }
     }
     state_toml::set_stage_state(&mut doc, &options.stage_id, target_state(kind))?;
@@ -152,7 +163,9 @@ fn validate_stage_transition(
     options: &TransitionStageOptions,
 ) -> Result<()> {
     let state = state_toml::stage_state(doc, &options.stage_id)?;
-    state.transition(options.action.kind())?;
+    if !is_awaiting_reflection_final_stage_complete(doc, options, state)? {
+        state.transition(options.action.kind())?;
+    }
 
     match &options.action {
         StageAction::Enter => {}
@@ -169,12 +182,25 @@ fn validate_stage_transition(
                 options.reason.as_deref(),
             )?;
         }
-        StageAction::Block | StageAction::Resume => {
+        StageAction::Block | StageAction::Resume | StageAction::Rollback => {
             require_specific_reason(options.reason.as_deref())?;
         }
     }
 
     Ok(())
+}
+
+fn is_awaiting_reflection_final_stage_complete(
+    doc: &toml_edit::DocumentMut,
+    options: &TransitionStageOptions,
+    state: StageState,
+) -> Result<bool> {
+    Ok(
+        state_toml::topic_lifecycle(doc)? == TopicLifecycle::AwaitingReflection
+            && options.stage_id == "10-reflection"
+            && matches!(options.action, StageAction::Complete { .. })
+            && state == StageState::Pending,
+    )
 }
 
 fn validate_completion_artifacts(
@@ -203,30 +229,35 @@ fn target_state(kind: StageTransitionKind) -> StageState {
         StageTransitionKind::Enter | StageTransitionKind::Resume => StageState::Active,
         StageTransitionKind::Complete => StageState::Done,
         StageTransitionKind::Block => StageState::Blocked,
+        StageTransitionKind::Rollback => StageState::Active,
     }
 }
 
-fn ensure_active_learning_task(
+fn ensure_stage_transition_topic_lifecycle(
     doc: &toml_edit::DocumentMut,
-    task_dir: &std::path::Path,
+    options: &TransitionStageOptions,
 ) -> Result<()> {
-    let lifecycle = state_toml::task_lifecycle(doc)?;
-    if lifecycle != TaskLifecycle::Active {
-        return Err(DaedalusError::InvalidTaskLifecycleTransition(format!(
-            "expected active task, got {}",
-            lifecycle.as_str()
-        )));
+    let kind = state_toml::state_kind(doc);
+    if kind != "topic" {
+        return Err(DaedalusError::InvalidStateDocumentKind {
+            expected: "topic".to_owned(),
+            actual: kind.to_owned(),
+        });
     }
-    let state_bucket = state_toml::workspace_bucket(doc)?;
-    let actual_bucket = workspace_fs::bucket_from_task_dir(task_dir)?;
-    if state_bucket != WorkspaceBucket::Learning || actual_bucket != WorkspaceBucket::Learning {
-        return Err(DaedalusError::TaskLifecycleLocationMismatch(format!(
-            "expected active task in 02-learning, state={}, actual={}",
-            state_bucket.as_str(),
-            actual_bucket.as_str()
-        )));
+    let lifecycle = state_toml::topic_lifecycle(doc)?;
+    if lifecycle == TopicLifecycle::Active {
+        return Ok(());
     }
-    Ok(())
+    if lifecycle == TopicLifecycle::AwaitingReflection
+        && matches!(options.action, StageAction::Complete { .. })
+        && options.stage_id == "10-reflection"
+    {
+        return Ok(());
+    }
+    Err(DaedalusError::InvalidTopicLifecycleTransition(format!(
+        "expected active topic, got {}",
+        lifecycle.as_str()
+    )))
 }
 
 fn validate_force(reason: Option<&str>, approval_source: Option<ApprovalSource>) -> Result<()> {
@@ -237,8 +268,11 @@ fn validate_force(reason: Option<&str>, approval_source: Option<ApprovalSource>)
     Ok(())
 }
 
-fn update_next_action_after_complete(doc: &mut toml_edit::DocumentMut, stage_id: &str) {
-    let next_action = state_toml::next_pending_stage_after(doc, stage_id)
+fn update_next_action_after_complete(
+    doc: &mut toml_edit::DocumentMut,
+    next_stage: Option<&crate::domain::StageSnapshot>,
+) {
+    let next_action = next_stage
         .map(|stage| {
             let artifacts = if stage.required_artifacts.is_empty() {
                 "更新该阶段需要的学习产物".to_owned()
@@ -248,6 +282,23 @@ fn update_next_action_after_complete(doc: &mut toml_edit::DocumentMut, stage_id:
             format!("进入 `{}`：{}，{}。", stage.id, stage.title, artifacts)
         })
         .unwrap_or_else(|| "所有阶段已完成；复核归档产物并关闭学习任务。".to_owned());
+    state_toml::set_next_action(doc, &next_action);
+}
+
+fn update_next_action_after_rollback(doc: &mut toml_edit::DocumentMut, stage_id: &str) {
+    let stage = state_toml::stages(doc)
+        .into_iter()
+        .find(|stage| stage.id == stage_id);
+    let next_action = stage
+        .map(|stage| {
+            let artifacts = if stage.required_artifacts.is_empty() {
+                "复核该阶段学习状态和后续阅读计划".to_owned()
+            } else {
+                format!("复核产物：{}", stage.required_artifacts.join("、"))
+            };
+            format!("已回退到 `{}`：{}，{}。", stage.id, stage.title, artifacts)
+        })
+        .unwrap_or_else(|| format!("已回退到 `{stage_id}`；复核学习状态和后续计划。"));
     state_toml::set_next_action(doc, &next_action);
 }
 

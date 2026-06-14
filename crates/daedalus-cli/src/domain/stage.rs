@@ -13,6 +13,8 @@ pub enum StageTransitionKind {
     Block,
     /// 恢复阶段。
     Resume,
+    /// 回退到某个已到达阶段。
+    Rollback,
 }
 
 impl StageTransitionKind {
@@ -23,6 +25,7 @@ impl StageTransitionKind {
             Self::Complete => "complete",
             Self::Block => "block",
             Self::Resume => "resume",
+            Self::Rollback => "rollback",
         }
     }
 }
@@ -75,6 +78,10 @@ impl StageState {
             (Self::Active, StageTransitionKind::Complete) => Ok(Self::Done),
             (Self::Active, StageTransitionKind::Block) => Ok(Self::Blocked),
             (Self::Blocked | Self::Paused, StageTransitionKind::Resume) => Ok(Self::Active),
+            (
+                Self::Active | Self::Blocked | Self::Paused | Self::Done,
+                StageTransitionKind::Rollback,
+            ) => Ok(Self::Active),
             _ => Err(DaedalusError::InvalidStageStateTransition {
                 state: self.as_str().to_owned(),
                 action: kind.as_str().to_owned(),
@@ -132,6 +139,12 @@ mod tests {
                 .expect("paused can resume"),
             StageState::Active
         );
+        assert_eq!(
+            StageState::Done
+                .transition(StageTransitionKind::Rollback)
+                .expect("done can rollback"),
+            StageState::Active
+        );
     }
 
     #[test]
@@ -149,6 +162,11 @@ mod tests {
         assert!(
             StageState::Blocked
                 .transition(StageTransitionKind::Complete)
+                .is_err()
+        );
+        assert!(
+            StageState::Pending
+                .transition(StageTransitionKind::Rollback)
                 .is_err()
         );
     }

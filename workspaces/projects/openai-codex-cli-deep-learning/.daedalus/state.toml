@@ -1,0 +1,68 @@
+# daedalus repo learning project state. 保留注释；确定性字段由 CLI 更新。
+#
+# Project state 只描述长期学习项目本身，不承载 10-stage 专题进度。
+# 专题进度写在 `topics/<slug>/.daedalus/state.toml`。
+#
+# 枚举约束：
+# - task.lifecycle 只能是：active、idle、abandoned。
+# - task.workspace_bucket 固定为：projects。
+# - project.active_topic 必须指向 `[[topics]]` 中存在的 topic slug。
+# - topics.lifecycle 只能是：planned、active、blocked、completed、abandoned、skipped。
+# - transition.action 只能是：init、topic-new、topic-activate、topic-complete、topic-abandon、migrate、task-complete、abandon。
+# Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+
+[task]
+name = "openai-codex-cli-deep-learning"
+kind = "repo-learning"
+created_at = "2026-05-09 15:58:52"
+lifecycle = "idle"
+workspace_bucket = "projects"
+next_action = "当前没有 active topic；可以复盘 project，或用 `daedalus topic new` 启动新专题。"
+
+[project]
+mode = "multi-topic"
+active_topic = ""
+source_kind = "repo"
+source_name = ""
+
+[[topics]]
+slug = "tools-permissions"
+title = "工具系统与权限系统"
+lifecycle = "completed"
+path = "topics/tools-permissions"
+inherits = []
+
+[[transitions]]
+stage = "project"
+action = "init"
+timestamp = "2026-05-09 15:58:52"
+actor = "daedalus-cli"
+reason = "初始化 repo learning project，并创建初始专题 `tools-permissions`。"
+
+[[transitions]]
+stage = "project"
+action = "migrate"
+timestamp = "2026-05-23 17:58:11"
+actor = "daedalus-cli"
+reason = "从 single-topic workspace 迁移为 multi-topic project，初始 topic 为 `tools-permissions`。"
+
+[[transitions]]
+stage = "project"
+action = "topic-activate"
+timestamp = "2026-06-12 00:00:00"
+actor = "agent"
+reason = "回滚 topic 完成状态：知识库归档必须等待用户先完成 closeout reflection，不能使用 Agent 生成的知识库条目代替用户总结。"
+
+[[transitions]]
+stage = "project"
+action = "topic-await-reflection"
+timestamp = "2026-06-12 09:39:39"
+actor = "daedalus-cli"
+reason = "主体学习、demo、业务迁移和测试验证已完成；用户将在大块时间里完成 closeout reflection 后再归档知识库。"
+
+[[transitions]]
+stage = "project"
+action = "topic-complete"
+timestamp = "2026-06-13 21:41:05"
+actor = "daedalus-cli"
+reason = "用户 closeout reflection、candidate-map 确认和 knowledge-base 归档均已完成，knowledge validate/link-check 通过。"

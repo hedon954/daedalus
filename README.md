@@ -1,175 +1,248 @@
 # daedalus
 
-daedalus 是一个以“输出带动输入”为核心的深入学习教练 Agent。它依托文件系统和现代 AI IDE，帮助用户围绕 repo、书、课程、论文等学习材料完成从目标澄清、深度阅读、实作验证到知识库沉淀的闭环。
+daedalus 是一个 filesystem-first 的深度学习 coach。
 
-当前第一阶段聚焦代码仓库学习：先把 repo 深度学习流程跑通，再迁移到更通用的知识材料。repo 可以来自 GitHub、GitLab、内部 Git 服务、压缩包或本地文件系统。
+它不是自动摘要工具，也不是替你读书、读论文、读源码的笔记生成器。它更像一个长期陪你学习的工作台：帮你把一个真实问题拆成学习路径，引导你阅读材料、实现 mini demo、做迁移思考、完成主动回顾，并最终把真正掌握的内容沉淀进知识库。
 
-## 核心理念
+名字来自希腊神话里的 Daedalus：那个造迷宫，也造翅膀的工匠。这个项目想做的事情也类似：帮学习者走进复杂系统的迷宫，再带着可迁移的能力飞出来。
 
-- 先解决现实问题，再选择学习材料。
-- 先建立第一性原理和 trade-off 框架，再阅读代码细节。
-- 先跑通核心链路，再分析架构和逐行阅读。
-- 先实现 mini demo，再迁移到真实业务问题。
-- 先沉淀可复用知识，再进入下一个学习任务。
-- 长期上下文以文件系统为准，聊天记录只作为临时交互，不作为事实源。
-- Agent 是学习教练，不是代工执行器：Agent 负责拆解、指导、排障和验收，用户负责关键实践、观察和手写笔记。
+## 为什么做
 
-## Repo 学习流程
+很多深度学习失败，不是因为材料不够好，而是因为学习过程缺少几个关键东西：
 
-1. 对齐 Repo 学习目标，明确现实问题、输出物、验收标准和暂不学习范围。
-2. 选择学习仓库，收敛到适合运行、阅读和抽取 mini demo 的 code repo。
-3. 提出 Repo 递进问题，用问题驱动后续运行、架构分析和代码阅读。
-4. 运行并调试 Repo，从入口走通核心链路。
-5. 分析 Repo 架构，识别边界、数据流、控制流、扩展点和 trade-off。
-6. 深读 Repo 核心代码，提取不变量、设计选择和可迁移模式。
-7. 设计 Repo Mini Demo，保留原 repo 的关键架构决策。
-8. 实现 Repo Mini Demo，用最小验证闭环复现核心能力。
-9. 将 Repo 学习迁移到业务问题，形成可执行应用方案。
-10. 闭环 Repo 学习任务，压缩上下文、归档知识并关闭 lifecycle。
+- 没有终点，不知道最后要产出什么。
+- 没有证据，读完之后很难证明自己真的懂了。
+- 没有实践，理解停留在“我知道它这么设计”。
+- 没有主动回顾，知识没有经过自己的表达和摩擦。
+- 没有迁移，学完之后不知道怎么用到自己的问题里。
 
-```mermaid
-flowchart LR
-    Goal["01 目标对齐"] --> Repo["02 选择 Repo"]
-    Repo --> Questions["03 问题路线图"]
-    Questions --> Run["04 运行调试"]
-    Run --> Arch["05 架构分析"]
-    Arch --> Code["06 核心代码"]
-    Code --> DemoDesign["07 Demo 设计"]
-    DemoDesign --> DemoCode["08 Demo 实现"]
-    DemoCode --> Biz["09 业务迁移"]
-    Biz --> Archive["10 归档关闭"]
-```
-
-## CLI 与 TUI
-
-`crates/daedalus-cli` 提供两个可执行文件：
-
-- `daedalus`：Agent-friendly CLI，负责初始化任务、确定性更新 `state.toml`、渲染 `state.md`、校验 workspace、关闭任务 lifecycle。
-- `daedalus-tui`：human-friendly 只读 TUI。位于具体学习任务目录时直接展示任务 dashboard；位于 daedalus 其他子目录时扫描 `02-learning` / `03-completed` / `04-abandoned` 并进入任务选择页。
-
-常用命令：
-
-```bash
-make build
-daedalus init repo-learning <task-name>
-daedalus validate <task-dir>
-daedalus state render <task-dir>
-daedalus state block 01-goal-aligner --task-dir <task-dir> --reason "<reason>"
-daedalus state resume 01-goal-aligner --task-dir <task-dir> --reason "<reason>"
-daedalus state complete 01-goal-aligner --task-dir <task-dir> --reason "<reason>"
-daedalus task complete <task-dir> --reason "<reason>"
-daedalus task abandon <task-dir> --reason "<reason>"
-daedalus-tui
-daedalus-tui <task-dir>
-```
-
-`daedalus` 只能在 daedalus 项目根目录或其子目录下运行。它会动态推导 repo root 和 task path；在非法目录运行时会拒绝服务并给出下一步建议。
-`daedalus-tui` 也遵循同样的目录边界，并会根据任务所在 bucket 调整 UI 侧重点：进行中任务关注下一步，已完成任务关注归档复用，已放弃任务关注恢复判断。`01-backlog` 的任务语义尚未固化，暂不纳入 TUI 选择页。
-
-## Workspace Lifecycle
-
-学习任务的 lifecycle 以 `.daedalus/state.toml` 为唯一事实源，目录 bucket 是状态的文件系统投影：
-
-```mermaid
-flowchart LR
-    Active["active\nworkspaces/02-learning"] -->|"task complete"| Completed["completed\nworkspaces/03-completed"]
-    Active -->|"task abandon"| Abandoned["abandoned\nworkspaces/04-abandoned"]
-    Completed -.-> Validate["validate: state 与目录一致"]
-    Abandoned -.-> Validate
-```
-
-关闭任务时，CLI 会先执行只读 pre-check，确认任务仍是 active、目标目录不冲突、reason 具体、必需产物满足规则；然后更新 `state.toml`、追加 `decision-log.md`、渲染 `state.md` 并移动目录。
-
-## 学习任务结构
-
-`daedalus init repo-learning <name>` 会生成：
+daedalus 的判断是：
 
 ```text
-workspaces/02-learning/<name>/
-  CLAUDE.md              Agent 恢复当前学习任务的入口
-  .daedalus/
-    task-card.md         学习目标、现实问题、验收标准和边界
-    state.toml           机器可读事实源，由 CLI 使用 toml_edit 更新
-    state.md             从 state.toml 渲染的 Agent 友好摘要
-    todo.md              分层动态 todo，由 Agent 持续维护
-    long-context.md      长期上下文压缩，不粘贴聊天记录
-    artifact-index.md    学习产物索引和状态
-    decision-log.md      关键决策、关闭原因和 lifecycle 记录
-    validation-log.md    daedalus 教学引导效果与改进记录
-  guides/
-    .gitkeep             Agent 生成的行动指南、问题引导和验收清单
-  source/
-    .gitignore           默认忽略外部源码，避免仓库膨胀
-    README.md            source 使用规则
-    pull_source.sh       可复现拉取学习原材料
-  demo/
-    .gitkeep
-  notes/
-    .gitkeep
+学习不是收集材料，而是围绕真实问题构建可迁移能力。
 ```
 
-根目录 `CLAUDE.md` 会通过 `@.daedalus/state.md`、`@.daedalus/task-card.md` 等引用任务状态中心，让 Cursor、Claude Code、Codex 这类 Agent 能在打开 workspace 后快速恢复上下文。
+## 它如何工作
 
-`guides/` 与 `notes/` 要刻意分层：`guides/` 保存 Agent 给用户的行动指南，`notes/` 保存用户亲自实践和思考后的学习笔记。外部源码放入 `source/` 时默认不提交，通过 `pull_source.sh` 记录可复现来源。
+一次学习不是直线推进。最外层是一条主线，内部有两个反复校准的小循环：
+
+```mermaid
+flowchart LR
+    Problem["真实问题"]
+    Scope["选择 / 裁剪学习材料"]
+
+    subgraph Topic["topic 内部学习循环"]
+        direction LR
+        Roadmap["问题路线图"]
+        Study["阅读 / 调试 / notes"]
+        Demo["mini demo 验证"]
+
+        Roadmap --> Study
+        Study --> Demo
+        Demo -. "暴露理解缺口" .-> Roadmap
+    end
+
+    subgraph Reflection["reflection 循环"]
+        direction LR
+        Closeout["closeout reflection"]
+        Challenge["challenge / 补资料 / 找矛盾"]
+        Revise["修正理解与候选知识"]
+
+        Closeout --> Challenge
+        Challenge --> Revise
+        Revise -. "仍不清楚" .-> Closeout
+    end
+
+    KB["knowledge-base"]
+    Next["复习 / 迁移 / 新问题"]
+
+    Problem --> Scope
+    Scope --> Topic
+    Topic --> Reflection
+    Reflection --> KB
+    KB --> Next
+```
+
+图里有两个反馈含义：
+
+- `复习 / 迁移 / 新问题` 会成为下一轮学习的真实问题。
+- 如果 reflection 发现范围过大、问题偏移或材料不合适，就回到 `选择 / 裁剪学习材料`。
+
+这个结构里最重要的是三条角色边界：
+
+- **你负责形成理解**：写 notes、做 demo、写 closeout、决定哪些知识值得留下。
+- **daedalus 负责推进理解**：提问题、给 guide、challenge 模糊答案、补外部资料、帮你组织和校验。
+- **knowledge-base 只存 reviewed understanding**：不是 AI 自动摘要，而是经过你主动回顾和确认后的长期知识。
+
+## 学习对象
+
+daedalus 不只服务 repo learning。它可以用于：
+
+- 源码项目：例如 Codex、数据库、中间件、框架。
+- 技术书：例如 DDIA、操作系统、编译原理。
+- 论文：围绕一个问题拆解背景、方法、假设、实验与迁移价值。
+- 课程：把课程内容变成练习、demo、复习计划和知识库。
+- 真实业务问题：从现实约束出发，寻找可复用的工程模式。
+
+当前跑通最完整的是 repo learning；第一个完整样本是 Codex CLI 的 `tools-permissions` topic。
+
+## Project 与 Topic
+
+daedalus 用 Project / Topic 来组织长期学习。
+
+```mermaid
+flowchart LR
+    Project["Learning Project"] --> Shared["Shared Context"]
+    Project --> TopicA["Topic A"]
+    Project --> TopicB["Topic B"]
+    TopicA --> Demo["Demo"]
+    TopicA --> Reflection["Reflection"]
+    TopicA --> Knowledge["Knowledge"]
+```
+
+
+
+- **Project**：一个长期学习对象，例如一个 repo、一本书、一门课。
+- **Topic**：Project 下一个可以闭环的专题，例如 Codex 的工具与权限系统。
+- **Shared Context**：同一个 Project 下跨 Topic 复用的背景、术语、运行方式和证据。
+
+目录大致是：
+
+```text
+workspaces/
+  current-topic        当前正在学习的 topic 入口
+  closeout-topic       等待回顾总结的 topic 入口
+  backlog/             未来可能学习的候选项
+  projects/
+    <project>/
+      shared/
+      source/
+      topics/
+        <topic>/
+          guides/      daedalus 给你的学习引导
+          notes/       你的学习记录与证据
+          demo/        用来验证理解的 mini demo
+          reflection/  topic 收尾回顾
+```
+
+你平时最常点开的入口通常只有两个：
+
+- `workspaces/current-topic`
+- `workspaces/closeout-topic`
+
+## 一次 Topic 会产出什么
+
+一个 topic 不是“读完一些材料”就结束。它至少应该留下这些东西：
+
+- `guides/`：下一步怎么学、怎么读、怎么实现。
+- `notes/`：你在阅读、调试、实现中的理解和证据。
+- `demo/`：一个可运行、可测试、可讲解的 mini demo。
+- `reflection/closeout.md`：你对整个 topic 的主动回顾。
+- `reflection/candidate-map.md`：学习过程中不断积累的知识候选。
+- `knowledge-base/`：最终筛选后值得长期保留的可迁移知识。
+
+其中最关键的是 `reflection/closeout.md`。它不是形式化总结，而是你把几周的源码、demo、争论、失败和设计取舍压缩成自己理解的过程。
+
+## 知识库
+
+`knowledge-base/` 是 daedalus 的长期知识层。
+
+它不是固定模板，也不是自动摘要集合，而是一棵会随着学习不断演化的知识树。新的 topic 完成后，daedalus 会帮助你从 closeout、notes、guides、demo 和外部资料里挖掘高价值知识候选；但是否归档、如何归档、哪些忽略，最终要经过你的确认。
+
+第一批知识来自 Codex `tools-permissions` topic，覆盖：
+
+- Agent 本地命令执行安全
+- ReAct 工具运行时
+- Sandbox 的第一性原理
+- Rust 流式 Agent 与 Tokio 运行时
+- 终端 Agent UI 的事件循环
+
+## 知识网页
+
+Markdown 适合长期保存，但有些机制更适合做成交互式页面。
+
+`apps/knowledge-web` 是 daedalus 的知识网页，用来把知识库里的复杂机制做成更容易复习的界面：状态机、流程图、场景切换、失败模式、代码落点和自测问题。
+
+启动方式：
+
+```bash
+make web
+```
+
+网页不是 Markdown 的替代品。Markdown 是知识源，网页是理解界面。
+
+## 当前样本
+
+当前第一个完整样本是：
+
+```text
+Project: openai-codex-cli-deep-learning
+Topic: tools-permissions
+```
+
+这个 topic 已经完成：
+
+- Codex 工具、权限、sandbox、retry、事件和 ReAct loop 的源码学习。
+- Rust mini demo。
+- OpenAI-compatible 流式模型接入。
+- Simulated sandbox runner。
+- macOS `sandbox-exec` backed runner。
+- 多 tool call 并发执行。
+- ratatui Agent CLI。
+- 用户 closeout reflection。
+- knowledge-base 归档。
+- knowledge web 策展。
+
+完整进化报告见：
+
+[docs/evolution/2026-06-14-daedalus-first-topic-evolution.md](docs/evolution/2026-06-14-daedalus-first-topic-evolution.md)
+
+## 常用入口
+
+日常使用时，你通常只需要关心这些：
+
+```text
+workspaces/current-topic
+workspaces/closeout-topic
+workspaces/backlog
+knowledge-base
+apps/knowledge-web
+```
+
+如果你只是想看当前学习状态，可以打开：
+
+```bash
+daedalus-tui
+```
+
+如果你想看知识网页：
+
+```bash
+make web
+```
+
+如果你要继续学习，就从当前 topic 的 guide、todo、outcome map 和 demo 开始；如果你要收尾，就进入 `reflection/closeout.md`。
 
 ## 目录结构
 
 ```text
+apps/
+  knowledge-web/       知识网页
 crates/
-  daedalus-cli/          Rust CLI/TUI，一 crate 两个 bin
-  docs/                  项目设想、设计说明和开发文档
-knowledge-base/         经过验证的长期知识库
+  daedalus-cli/        daedalus 与 daedalus-tui
+docs/
+  plan/                重要设计方案
+  changelog/           能力落地记录
+  evolution/           daedalus 自身进化复盘
+knowledge-base/        长期知识库
 system/
-  bin/                  本地构建、启动和维护脚本
-  config/               用户偏好与运行配置
-  prompts/
-    common/             跨学习材料复用的通用提示词
-    repo/               代码仓库学习的分阶段提示词
-  templates/            学习任务、上下文、看板等模板
-workspaces/
-  01-backlog/           待学习候选任务
-  02-learning/          进行中的学习任务，WIP = 1
-  03-completed/         已闭环归档任务
-  04-abandoned/         已放弃或暂停任务
+  prompts/             学习协议
+  templates/           workspace 模板
+workspaces/            学习现场
 ```
-
-## 状态机与一致性
-
-阶段流转通过 application 层状态机执行：
-
-```mermaid
-flowchart TD
-    Command["CLI Command"] --> UseCase["Application Use Case"]
-    UseCase --> PreCheck["pre_check 只读校验"]
-    PreCheck -->|"fail"| Error["稳定错误输出"]
-    PreCheck -->|"pass"| State["更新 state.toml"]
-    State --> Render["渲染 state.md"]
-    Render --> Output["输出路径和下一步"]
-```
-
-关键约束：
-
-- `state.toml` 是 task lifecycle 的唯一事实源。
-- `state.md` 是派生摘要，不手动编辑。
-- `stage.status`、`transition.action`、`approval_source` 等枚举值在模板和渲染输出中显式列出。
-- `--force` 只在用户明确批准或已有可追溯等价证据时使用，并必须记录 reason 与 approval source。
-- `validate` 会检查必需文件、active stage 数量、current phase、required artifacts、lifecycle 与目录 bucket 是否一致。
-
-## 开发与验证
-
-```bash
-make fmt
-make check
-make clippy
-make test
-make ci
-make build
-```
-
-`make build` 会生成 release 版本的 `daedalus` 和 `daedalus-tui`，并输出完整可执行文件路径。
 
 ## 当前状态
 
-repo-learning 的 CLI、模板、状态机、生命周期移动、TUI 总览和集成测试已经完成初版闭环。当前已经通过完整 dry run 验证：`init`、`validate`、阶段 block/resume/complete、task complete/abandon、WIP 释放、decision log 和本地时间戳都能协同工作。
+daedalus 已经完成第一次真实 repo-learning 闭环验证。
 
-下一步重点不是继续扩基础设施，而是在真实 Stage 01 学习过程中迭代 Agent 的教学引导质量。
+下一步不是继续堆功能，而是用更多学习材料继续压测它：新的 repo topic、一本书、一篇论文、一门课程，或者一个真实业务问题。每一次学习都应该反过来继续打磨 daedalus 自己。

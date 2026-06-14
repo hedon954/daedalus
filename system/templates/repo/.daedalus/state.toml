@@ -1,86 +1,40 @@
-# daedalus 学习状态。保留注释；确定性字段由 CLI 更新。
+# daedalus repo learning project state. 保留注释；确定性字段由 CLI 更新。
+#
+# Project state 只描述长期学习项目本身，不承载 10-stage 专题进度。
+# 专题进度写在 `topics/<slug>/.daedalus/state.toml`。
 #
 # 枚举约束：
-# - task.lifecycle 只能是：active、completed、abandoned。
-# - task.workspace_bucket 只能是：02-learning、03-completed、04-abandoned。
-# - stage.status 只能是：pending、active、blocked、paused、done。
-# - transition.action 只能是：init、enter、complete、block、resume、task-complete、abandon。
-# - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
+# - task.lifecycle 只能是：active、idle、abandoned。
+# - task.workspace_bucket 固定为：projects。
+# - project.active_topic 必须指向 `[[topics]]` 中存在的 topic slug。
+# - topics.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
+# - transition.action 只能是：init、topic-new、topic-activate、topic-await-reflection、topic-complete、topic-abandon、migrate、task-complete、abandon。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
-# required_artifacts 表示阶段完成证据，应该尽量包含用户确认、亲自实践或手写笔记后的结果。
 
 [task]
 name = "{{TASK_NAME}}"
 kind = "repo-learning"
 created_at = "{{CREATED_AT}}"
 lifecycle = "active"
-workspace_bucket = "02-learning"
-current_phase = "01-goal-aligner"
-next_action = "澄清学习目标，引导用户确认边界，并填写 [`.daedalus/task-card.md`](task-card.md)。"
+workspace_bucket = "projects"
+next_action = "激活初始专题 `{{TOPIC_SLUG}}`，澄清专题目标，并填写 topic 的 `.daedalus/task-card.md`。"
 
-[[stages]]
-id = "01-goal-aligner"
-title = "对齐 Repo 学习目标"
-status = "active"
-required_artifacts = [".daedalus/task-card.md"]
+[project]
+mode = "multi-topic"
+active_topic = "{{TOPIC_SLUG}}"
+source_kind = "repo"
+source_name = ""
 
-[[stages]]
-id = "02-repo-scout"
-title = "选择学习仓库"
-status = "pending"
-required_artifacts = ["notes/repo-selection.md"]
-
-[[stages]]
-id = "03-socratic-coach"
-title = "提出 Repo 递进问题"
-status = "pending"
-required_artifacts = ["notes/question-roadmap.md"]
-
-[[stages]]
-id = "04-debugger-guide"
-title = "运行并调试 Repo"
-status = "pending"
-required_artifacts = ["notes/runbook.md"]
-
-[[stages]]
-id = "05-arch-analyzer"
-title = "分析 Repo 架构"
-status = "pending"
-required_artifacts = ["notes/architecture.md"]
-
-[[stages]]
-id = "06-code-reader"
-title = "深读 Repo 核心代码"
-status = "pending"
-required_artifacts = ["notes/code-reading.md"]
-
-[[stages]]
-id = "07-demo-architecture"
-title = "设计 Repo Mini Demo"
-status = "pending"
-required_artifacts = ["demo/design.md"]
-
-[[stages]]
-id = "08-demo-coder"
-title = "实现 Repo Mini Demo"
-status = "pending"
-required_artifacts = ["demo/README.md"]
-
-[[stages]]
-id = "09-biz-solver"
-title = "将 Repo 学习迁移到业务问题"
-status = "pending"
-required_artifacts = ["notes/business-application.md"]
-
-[[stages]]
-id = "10-archivist"
-title = "闭环 Repo 学习任务"
-status = "pending"
-required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md"]
+[[topics]]
+slug = "{{TOPIC_SLUG}}"
+title = "{{TOPIC_TITLE}}"
+lifecycle = "active"
+path = "topics/{{TOPIC_SLUG}}"
+inherits = []
 
 [[transitions]]
-stage = "01-goal-aligner"
+stage = "project"
 action = "init"
 timestamp = "{{CREATED_AT}}"
 actor = "daedalus-cli"
-reason = "初始化 repo 学习任务。"
+reason = "初始化 repo learning project，并创建初始专题 `{{TOPIC_SLUG}}`。"

@@ -53,7 +53,7 @@ impl CmdExecutor for TaskCompleteArgs {
             self.task_dir,
             CloseTaskAction::Complete,
             self.reason,
-            true,
+            false,
             false,
             None,
         )
@@ -102,7 +102,7 @@ pub async fn execute_close_task(
         task_dir,
         action,
         reason,
-        actor: "agent".to_owned(),
+        actor: "daedalus-cli".to_owned(),
         complete_final_stage,
         final_stage_force,
         final_stage_approval_source,
