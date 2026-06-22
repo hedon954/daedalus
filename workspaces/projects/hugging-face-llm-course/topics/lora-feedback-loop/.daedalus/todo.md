@@ -18,17 +18,17 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：用户学习到 HF Course Chapter 1/5 Text generation 小节中 “GPT-2 的预训练目标基于 causal language modeling，预测序列中的下一个词” 这句话；当前困惑是这句话如何落到代码和底层逻辑上。
-- 为什么现在做它：这是从“模型能生成文本”进入“为什么 GPT 类模型能生成文本”的第一个关键概念。必须先理解 causal LM 的目标：只看左侧上下文预测下一个 token；再理解 fine-tuning recipe 中的数据形状、tokenization、block、labels 和 Trainer。
-- 完成后解锁：固定 baseline model、输入输出协议、第一版 runbook，以及买家 Agent `{s,r}` baseline。
+- 当前问题：用户已经完成 DistilGPT2 Causal LM quick training run，但 `Trainer.train()` 仍是黑箱；下一步要拆开一个 batch 如何进入 model、产生 logits/loss、再进入 backward。
+- 为什么现在做它：不理解 Trainer 训练循环，后面 LoRA / SFT / DPO 都会变成换 recipe 抄代码。先看清 batch、forward、loss、backward 和 optimizer step，才能知道不同训练方法到底改了哪里。
+- 完成后解锁：Chapter 2 pipeline 拆解、base model vs fine-tuned model 对比，以及将 ELI5 Causal LM 迁移为闲鱼买家 Agent instruction/SFT 数据格式。
 
 ## Current Cursor
 
 Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
 
-- Code frontier：已进入 `demo/hugging-face-course-learning`；用户跑通 `uv run transformer-lib/pipeline.py`。
+- Code frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：先从 Chapter 1/5 的 Text generation 概念理解 causal LM，再用 `02-causal-lm-code-reading.md` 对照代码；不急着完整训练。
+- Current open decision：按 `guides/04-debugger-guide/03-trainer-train-under-the-hood.md` 在 notebook 中观察 `trainer.get_train_dataloader()`、`model(**batch)`、`outputs.loss` 和 `outputs.logits.shape`。
 - Do not suggest：不要跳过 source/material scout 直接写训练代码；不要把 DDIA 升级为第二个 active topic。
 
 ## Critical Checkpoint
@@ -73,6 +73,9 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] LM block 观察：用户已观察 `group_texts` 后 `input_ids` / `labels` 均为 128，且 `labels == input_ids`。
 - [x] Collator / Trainer warning 观察：用户已观察 special token config 自动对齐 warning 与 MPS `pin_memory` warning，并确认它们不是训练失败。
 - [x] Causal LM quick training run：用户已完成 `max_steps=200` 的 DistilGPT2 fine-tuning，得到 `training_loss≈3.98`、`perplexity≈47.81`，并上传到 Hugging Face Hub。
+- [x] Trainer 拆解 guide：已生成 `guides/04-debugger-guide/03-trainer-train-under-the-hood.md`。
+- [ ] Trainer batch 观察：在 notebook 中打印 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device。
+- [ ] Trainer forward 观察：手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
 - [ ] HF Course 1/2：完成 Transformer Models 与 Using Transformers 的基础学习。
 - [ ] Causal LM recipe：解释并观察 dataset -> tokenizer -> blocks -> labels -> Trainer。
 - [ ] Pipeline 机制：解释 task -> model/tokenizer/config -> inference -> postprocess。
