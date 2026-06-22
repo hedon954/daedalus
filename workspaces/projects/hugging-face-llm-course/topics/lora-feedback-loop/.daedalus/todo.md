@@ -18,17 +18,17 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：已进入 `03-socratic-coach`，问题路线图、数据审核标准和第一批 20 条候选样本已创建；下一步需要用户按 keep/revise/weak/reject 审核样本，校准训练数据质量口径。
-- 为什么现在做它：用户明确表示自己是这方面小白；没有基础判断地图时，训练环境和模型选择会变成蒙选。现在已确认优先 pipeline，因此材料选择可以收窄。
-- 完成后解锁：进入问题路线图，定义输入输出 schema、rubric、baseline 和第一轮数据集。
+- 当前问题：用户学习到 HF Course Chapter 1/5 Text generation 小节中 “GPT-2 的预训练目标基于 causal language modeling，预测序列中的下一个词” 这句话；当前困惑是这句话如何落到代码和底层逻辑上。
+- 为什么现在做它：这是从“模型能生成文本”进入“为什么 GPT 类模型能生成文本”的第一个关键概念。必须先理解 causal LM 的目标：只看左侧上下文预测下一个 token；再理解 fine-tuning recipe 中的数据形状、tokenization、block、labels 和 Trainer。
+- 完成后解锁：固定 baseline model、输入输出协议、第一版 runbook，以及买家 Agent `{s,r}` baseline。
 
 ## Current Cursor
 
 Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
 
-- Code frontier：暂无，尚未进入训练代码或 demo 实现。
+- Code frontier：已进入 `demo/hugging-face-course-learning`；用户跑通 `uv run transformer-lib/pipeline.py`。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：第一批候选数据已生成 20 条，不一次性扩展 120 条；用户用 keep/revise/weak/reject 校准审核标准后，再批量扩展。
+- Current open decision：先从 Chapter 1/5 的 Text generation 概念理解 causal LM，再用 `02-causal-lm-code-reading.md` 对照代码；不急着完整训练。
 - Do not suggest：不要跳过 source/material scout 直接写训练代码；不要把 DDIA 升级为第二个 active topic。
 
 ## Critical Checkpoint
@@ -39,6 +39,7 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - Faithful imitation：必须忠实保留训练闭环的因果链，而不是只跑一次 fine-tune。
 - Engineering standard：第一阶段可以低成本、小数据、小模型，但不能用 demo 标准放过工程结构；训练、评测、反馈构造和报告生成必须脚本化、配置化、产物化。
 - Dataset difficulty：数据集不能只覆盖典型清晰 case；必须加入 ambiguous、boundary、negative/unsafe 样本，让模型学会补证据、暂停推进和处理风险冲突。
+- Product shape：suggestion next action 是用户点击后直接发给买家 Agent 的自然指令，不是菜单标签；target 为最多 3 条 `{s, r}`，其中 `s` 是用户口吻指令，`r` 是短原因。
 - Simplified / improved / discarded：简化模型规模和数据规模；暂时丢弃生产级平台和完整 RLHF。
 - Transfer risk：迁移到真实业务前必须重新验证数据质量、评测一致性、成本、隐私和线上回归风险。
 
@@ -62,6 +63,20 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] 下一阶段入口：生成 `03-socratic-coach` 问题路线图、数据生成标准和 demo 设计前置问题。
 - [x] 第一批样本：生成 20 条候选数据，供用户校准审核口径。
 - [x] 难度覆盖：确认数据集需要覆盖 typical / ambiguous / boundary / negative-unsafe case。
+- [x] 输出形态修正：确认 target 为 `{ "suggestions": [{ "s": "建议", "r": "原因" }] }`，最多 3 条。
+- [x] v0.2 样本：按短句数组重生成 20 条候选样本。
+- [x] v0.3 样本：按 `{s,r}` schema 生成候选样本。
+- [x] v0.4 样本：按“用户口吻发给买家 Agent 的指令”重生成候选样本。
+- [x] 运行证据：用户已跑通 Transformers `pipeline` smoke test。
+- [x] 数据观察：用户已跑通 ELI5 `inspect_dataset.py`，确认原始数据结构。
+- [x] Tokenizer 观察：用户已观察 `input_ids` / `attention_mask` / decode，并发现长序列 warning。
+- [x] LM block 观察：用户已观察 `group_texts` 后 `input_ids` / `labels` 均为 128，且 `labels == input_ids`。
+- [x] Collator / Trainer warning 观察：用户已观察 special token config 自动对齐 warning 与 MPS `pin_memory` warning，并确认它们不是训练失败。
+- [x] Causal LM quick training run：用户已完成 `max_steps=200` 的 DistilGPT2 fine-tuning，得到 `training_loss≈3.98`、`perplexity≈47.81`，并上传到 Hugging Face Hub。
+- [ ] HF Course 1/2：完成 Transformer Models 与 Using Transformers 的基础学习。
+- [ ] Causal LM recipe：解释并观察 dataset -> tokenizer -> blocks -> labels -> Trainer。
+- [ ] Pipeline 机制：解释 task -> model/tokenizer/config -> inference -> postprocess。
+- [ ] Baseline 固化：固定 model name，不依赖默认 pipeline model。
 - [ ] 用户审核：用户至少审核 5-10 条样本，校准 keep/revise/weak/reject 口径。
 
 ## Stage Exit Criteria
@@ -77,5 +92,10 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] 02-repo-scout：完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。
 - [x] 03-socratic-coach：创建问题路线图和第一批数据审核标准。
 - [x] 第一批候选样本：生成 20 条手机品类 suggestion next action 候选样本。
+- [x] 第一批候选样本 v0.2：根据产品形态反馈，重生成短句数组版本。
+- [x] 第一批候选样本 v0.3：根据 `{s,r}` target schema 生成当前有效版本。
+- [x] 第一批候选样本 v0.4：根据“suggestion 是发给买家 Agent 的用户指令”修正当前有效版本。
+- [x] Transformers pipeline smoke test：用户已跑通最小分类 pipeline。
+- [x] 学习路径调整：先完成 HF Course 1/2，建立 Transformers 基础，再进入 LoRA。
 
 ## Canceled

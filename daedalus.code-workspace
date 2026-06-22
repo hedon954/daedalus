@@ -1,0 +1,18 @@
+{
+  "folders": [
+    {
+      "name": "daedalus",
+      "path": "."
+    },
+    {
+      "name": "hf-course-learning",
+      "path": "workspaces/projects/hugging-face-llm-course/topics/lora-feedback-loop/demo/hugging-face-course-learning"
+    }
+  ],
+  "settings": {
+    "python-envs.defaultEnvManager": "ms-python.python:venv",
+    "python-envs.defaultPackageManager": "ms-python.python:pip",
+    "python-envs.alwaysUseUv": true,
+    "python.terminal.activateEnvironment": true
+  }
+}

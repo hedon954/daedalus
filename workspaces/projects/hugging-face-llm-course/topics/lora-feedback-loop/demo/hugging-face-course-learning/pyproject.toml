@@ -1,0 +1,20 @@
+[project]
+name = "hugging-face-course-learning"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "datasets>=5.0.0",
+    "evaluate>=0.4.6",
+    "ipykernel>=7.3.0",
+    "ipywidgets>=8.1.8",
+    "torch>=2.12.0",
+    "transformers[sentencepiece,torch]>=5.12.0",
+]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+extraPaths = ["."]
+pythonVersion = "3.11"

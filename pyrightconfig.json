@@ -1,0 +1,12 @@
+{
+  "executionEnvironments": [
+    {
+      "root": "workspaces/projects/hugging-face-llm-course/topics/lora-feedback-loop/demo/hugging-face-course-learning",
+      "pythonVersion": "3.11",
+      "extraPaths": [
+        "workspaces/projects/hugging-face-llm-course/topics/lora-feedback-loop/demo/hugging-face-course-learning",
+        "workspaces/projects/hugging-face-llm-course/topics/lora-feedback-loop/demo/hugging-face-course-learning/.venv/lib/python3.11/site-packages"
+      ]
+    }
+  ]
+}

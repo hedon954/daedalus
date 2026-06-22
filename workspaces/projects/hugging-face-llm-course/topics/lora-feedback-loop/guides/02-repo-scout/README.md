@@ -88,7 +88,7 @@ phone-shopping scenario dataset
 - 数据集策略：先由 Agent 生成候选样本，用户审核修改。
 - 训练平台候选：用户所在工作场景主要可能使用阿里云百炼平台，需要评估它是否适合作为第二阶段迁移目标。
 - 工程形态确认：从第一阶段开始按生产工程标准设计，采用 script-first / config-first / artifact-first，而不是用 demo 标准放过自己。
-- Schema 初稿：买家上下文包含购买任务、候选商品、品类、约束条件、购买阶段、已知/未知/卡点、对话上下文和可选知识注入；训练输出优先采用 `suggestion + reason` 的最小结构，`stage_fit / risk_tags / priority` 保留在标注和评测侧。
+- Schema 初稿：买家上下文包含购买任务、候选商品、品类、约束条件、购买阶段、已知/未知/卡点、对话上下文和可选知识注入；target 收敛为 `{"suggestions":[{"s":"短建议","r":"短原因"}]}`，最多 3 条；`s` 是用户点击后直接发送给买家 Agent 的用户口吻指令，`r` 解释当前为什么要这样做。
 - 第一轮默认方案：`Qwen/Qwen2.5-0.5B-Instruct` 起步，`Qwen/Qwen2.5-1.5B-Instruct` 作为升级候选；Colab/低成本单卡云 GPU 训练；初始数据规模 train 80 / eval 20 / holdout 20；PEFT LoRA + TRL SFTTrainer 优先。
 
 ## Source Scout Decision

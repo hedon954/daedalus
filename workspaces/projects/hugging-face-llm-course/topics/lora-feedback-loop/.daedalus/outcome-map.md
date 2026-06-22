@@ -26,7 +26,11 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | [`guides/02-repo-scout/03-first-lab-default-plan.md`](../guides/02-repo-scout/03-first-lab-default-plan.md) | 第一轮模型、训练环境、数据规模与材料入口默认方案 | 草案完成，待用户 review |
 | [`guides/03-socratic-coach/README.md`](../guides/03-socratic-coach/README.md) | 递进问题路线图与第一批数据审核标准 | 已生成，待用户用样本校准 |
 | [`guides/03-socratic-coach/01-candidate-samples-v0.1.md`](../guides/03-socratic-coach/01-candidate-samples-v0.1.md) | 第一批 20 条候选样本 | 已生成，待用户审核 |
-| [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 本地运行与调试证据 | 待填 |
+| [`guides/03-socratic-coach/02-candidate-samples-v0.2.md`](../guides/03-socratic-coach/02-candidate-samples-v0.2.md) | 第一批 20 条短句数组候选样本 | 已生成，待用户审核 |
+| [`guides/03-socratic-coach/03-candidate-samples-v0.3.md`](../guides/03-socratic-coach/03-candidate-samples-v0.3.md) | `{s,r}` schema 候选样本 | 已生成，待用户审核 |
+| [`guides/03-socratic-coach/04-candidate-samples-v0.4.md`](../guides/03-socratic-coach/04-candidate-samples-v0.4.md) | 用户口吻 Agent 指令样本 | 已生成，待用户审核 |
+| [`guides/04-debugger-guide/01-hf-course-ch1-ch2-foundation.md`](../guides/04-debugger-guide/01-hf-course-ch1-ch2-foundation.md) | HF Course 第 1、2 章基础学习导航 | 已生成，当前执行 |
+| [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 本地运行与调试证据 | 已记录第一个 Transformers pipeline smoke test |
 | [`notes/05-arch-analyzer/README.md`](../notes/05-arch-analyzer/README.md) | 架构与核心边界 | 待填 |
 | [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 用户参与后的核心源码阅读证据 | 待填 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计草案与定稿 | 待填 |
@@ -38,11 +42,11 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：03-socratic-coach。
-- 当前目标：等待用户审核第一批 20 条候选样本，校准 keep/revise/weak/reject 审核标准。
-- 当前障碍：第一批样例数据尚未用户审核；训练代码尚未实现。
+- 当前阶段：04-debugger-guide / 运行机制观察。
+- 当前目标：先完成 HF Course 第 1、2 章基础学习，把已跑通的 Transformers pipeline smoke test 拆成可观察、可解释的推理链路。
+- 当前障碍：尚未解释 tokenizer -> model -> logits -> postprocess；baseline model 尚未固定。
 - 当前动作服务的产物：`guides/02-repo-scout/README.md`、`guides/02-repo-scout/03-first-lab-default-plan.md`、后续 `notes/03-socratic-coach/README.md`。
-- 当前光标：第一批 20 条候选样本已生成；下一步用户审核至少 5-10 条。
+- 当前光标：用户已跑通 `uv run transformer-lib/pipeline.py`；下一步按 Chapter 1/2 导航拆解 pipeline 机制。
 
 ## Contribution Back To Project
 
@@ -72,6 +76,9 @@ demo evidence -> business-application -> knowledge-base entry
 - [x] 确认材料入口：围绕 lab 反向读取 Hugging Face LLM Course + PEFT/TRL/Transformers/Datasets 官方文档。
 - [x] 生成 `03-socratic-coach` 问题路线图和第一批数据审核标准。
 - [x] 生成第一批 20 条候选样本并等待用户审核。
+- [x] 跑通第一个 Hugging Face Transformers pipeline smoke test。
+- [ ] 完成 HF Course 第 1、2 章 foundation sprint。
+- [ ] 解释并记录 pipeline 的 task、默认 model、tokenizer、config、postprocess。
 - [ ] 用户审核至少 5-10 条候选样本。
 
 ## Why This Step Matters

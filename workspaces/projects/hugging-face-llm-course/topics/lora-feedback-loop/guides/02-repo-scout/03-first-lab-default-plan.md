@@ -25,7 +25,7 @@ agent-generated reviewed dataset
 | 训练方式 | PEFT LoRA + TRL SFTTrainer | 如果 TRL 引入复杂度过高，退回 Transformers Trainer + PEFT |
 | 训练环境 | Colab 或低成本单卡云 GPU | 本地只做数据、baseline、eval、报告，不强求训练 |
 | 数据规模 | 初始 train 80 / eval 20 / holdout 20 | 如果训练不稳定，先缩到 train 40 / eval 10 / holdout 10 验证链路 |
-| 输出 schema | 模型只输出 `suggestion + reason` | 标注/eval 侧保留 `stage_fit / risk_tags / priority` |
+| 输出 schema | `{"suggestions":[{"s":"用户口吻短指令","r":"短原因"}]}`，最多 3 条 | 如果小模型格式不稳，再降级为只输出 `s` |
 | 企业平台 | 阿里云百炼作为第二阶段复现目标 | 第一阶段不以百炼为唯一入口 |
 
 ## 为什么默认 Qwen2.5 小模型
@@ -45,7 +45,7 @@ agent-generated reviewed dataset
 
 对应处理：
 
-- 第一轮只要求模型输出 `suggestion + reason`。
+- 第一轮默认要求模型输出最多 3 条 `{s, r}`；`s` 必须像用户直接发给买家 Agent 的指令，`r` 必须短且解释当前为什么要这样做。
 - 评测必须比较 baseline vs LoRA，而不是只看 LoRA 是否“看起来能用”。
 - 如果 0.5B 无法形成基本质量，再升级到 1.5B，不直接跳到大模型。
 

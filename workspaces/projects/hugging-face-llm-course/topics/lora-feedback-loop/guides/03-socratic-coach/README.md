@@ -8,7 +8,7 @@
 
 - 业务任务：闲鱼二手买家 Agent 的 suggestion next action。
 - 第一轮品类：手机。
-- 模型输出：只生成 `suggestion + reason`。
+- 模型输出：`{"suggestions":[{"s":"短建议","r":"短原因"}]}`，最多 3 条；`s` 是用户口吻、可直接发给买家 Agent 的短指令，`r` 是短解释。
 - 标注/eval 元信息：保留 `stage_fit / risk_tags / priority`。
 - 第一轮模型：`Qwen/Qwen2.5-0.5B-Instruct`，必要时升级 `Qwen/Qwen2.5-1.5B-Instruct`。
 - 第一批数据：train 80 / eval 20 / holdout 20。
@@ -33,19 +33,32 @@
 
 合格 suggestion 必须满足：
 
+- 短：每条是用户会直接发给 Agent 的一句话，而不是解释型长句。
+- 可点击：用户点击后，这句话会作为用户消息发送给买家 Agent。
+- 用户口吻：`s` 应该像“帮我... / 帮我问... / 帮我对比...”，而不是内部动作标签。
 - 具体：用户知道下一句该问什么、下一步该查什么或该比较什么。
 - 相关：不脱离当前候选商品、预算、阶段和约束。
 - 前进一步：不是重复已有信息，而是解锁下一步判断。
 - 多想一步：能指出用户可能忽略的风险、证据或决策点。
+- 互补：最多 3 条之间覆盖不同行动方向，不能只是同义改写。
 - 安全：不鼓励欺诈、骚扰、绕过平台规则或侵犯隐私。
 
-### 3. reason 是否服务训练和审核？
+### 3. reason 应该放在哪里？
 
-`reason` 不是产品文案的装饰，而是训练闭环证据：
+`reason` 必须存在，并作为 target 的 `r` 字段输出：
 
 - 它应说明为什么这个 suggestion 适合当前阶段。
 - 它应点出依据的风险、知识或用户卡点。
 - 它不能只是复述 suggestion。
+
+第一轮直接使用短字段 `{s, r}`；如果小模型格式不稳，再降级为只输出 `s`。
+
+`s` 的正反例：
+
+- 好：`帮我把这三台按电池、保修和验机证据做个对比表`
+- 好：`帮我生成一句礼貌话术，问卖家是否退出 Apple ID`
+- 差：`生成三台对比表`
+- 差：`确认已退出 Apple ID`
 
 ### 4. eval 是否能区分好坏？
 
@@ -147,7 +160,7 @@ baseline 不能太弱，否则 LoRA 改善没有意义；也不能太强，否�
 - 同一个 Qwen2.5 小模型。
 - 使用 prompt + context + 少量手机风险知识。
 - 不使用训练数据中的 label。
-- 输出同样的 `suggestion + reason`。
+- 输出同样的 `{"suggestions":[{"s":"...","r":"..."}]}`。
 
 baseline 必须保存：
 
@@ -172,5 +185,13 @@ baseline 必须保存：
 第一批 20 条候选样本已生成：
 
 - [`01-candidate-samples-v0.1.md`](01-candidate-samples-v0.1.md)
+- [`02-candidate-samples-v0.2.md`](02-candidate-samples-v0.2.md)
+- [`03-candidate-samples-v0.3.md`](03-candidate-samples-v0.3.md)
+- [`04-candidate-samples-v0.4.md`](04-candidate-samples-v0.4.md)
 
-下一步由用户按 `keep / revise / weak / reject` 审核样本。不要一次性扩展到 120 条；先用 20 条验证 schema、rubric 和审核口径。
+v0.1 暴露出产品形态问题：suggestion 太长，无法直接点击发送给 Agent。v0.2 已改为最多 3 条互补短句数组。
+
+v0.3 将 target schema 收敛为 `{ "suggestions": [{ "s": "建议", "r": "原因" }] }`。
+v0.4 进一步修正 `s` 的说话对象：`s` 不是给用户看的菜单标签，而是用户点击后直接发给买家 Agent 的自然指令。
+
+下一步由用户按 `keep / revise / weak / reject` 审核 v0.2 样本。不要一次性扩展到 120 条；先用 20 条验证 schema、rubric 和审核口径。
