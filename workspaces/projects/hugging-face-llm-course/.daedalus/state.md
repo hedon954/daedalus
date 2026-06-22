@@ -5,11 +5,13 @@
 ## 当前状态
 
 - Project：`hugging-face-llm-course`
+- 类型：`course-learning`
 - 生命周期：`active`
 - Workspace Bucket：`projects`
 - Active Topic：`lora-feedback-loop`
 - Pending Closeout：`none`
-- 下一步：激活初始专题 `lora-feedback-loop`，澄清专题目标，并填写 topic 的 `.daedalus/task-card.md`。
+- Course URL：https://huggingface.co/learn/llm-course/en
+- 下一步：继续 course-learning active topic `lora-feedback-loop`，按课程阶段推进下一份 guide。
 
 ## Topics
 
@@ -19,14 +21,17 @@
 
 - `.daedalus/project-map.md`: present
 - `.daedalus/topic-board.md`: present
+- `shared/syllabus-map.md`: present
+- `shared/course-progress.md`: present
+- `shared/concept-map.md`: present
 - `shared/evidence-registry.md`: present
-- `shared/source-index.md`: present
 
 ## 最近状态流转
 
-> 共 1 条状态流转；下面显示最近 1 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
+> 共 2 条状态流转；下面显示最近 2 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
 
 - `2026-06-14 14:42:45` 由 `daedalus-cli` 对 `project` 执行 `init`：初始化 repo learning project，并创建初始专题 `lora-feedback-loop`。
+- `2026-06-23 00:53:42` 由 `daedalus-cli` 对 `project` 执行 `migrate`：将项目从 repo-learning 语义迁移为 course-learning。
 
 ## 下一步 CLI 建议
 

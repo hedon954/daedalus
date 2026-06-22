@@ -1,6 +1,6 @@
-# daedalus repo learning topic state. 保留注释；确定性字段由 CLI 更新。
+# daedalus course learning topic state. 保留注释；确定性字段由 CLI 更新。
 #
-# Topic state 承载 10-stage 专题学习进度。Project state 只负责 project lifecycle
+# Topic state 承载 course-learning 专题学习进度。Project state 只负责 project lifecycle
 # 和 active topic 指针。
 #
 # 枚举约束：
@@ -15,78 +15,65 @@
 [topic]
 slug = "lora-feedback-loop"
 title = "LoRA 微调与数据反馈闭环"
-kind = "repo-learning-topic"
+kind = "course-learning-topic"
 parent_project = "../.."
 lifecycle = "active"
-current_phase = "03-socratic-coach"
-next_action = "进入 `03-socratic-coach`：提出专题递进问题，准备产物：notes/03-socratic-coach/README.md。"
+current_phase = "04-lesson-lab"
+next_action = "进入 `04-lesson-lab`：把课程 lesson 变成可观察实验，准备产物：guides/04-lesson-lab/README.md、notes/04-lesson-lab/README.md。"
 
 [[stages]]
-id = "01-goal-aligner"
-title = "对齐专题学习目标"
+id = "01-need-aligner"
+title = "对齐课程学习诉求"
 status = "done"
 required_artifacts = [".daedalus/task-card.md", ".daedalus/outcome-map.md"]
 
 [[stages]]
-id = "02-repo-scout"
-title = "确认专题学习素材"
+id = "02-syllabus-mapper"
+title = "映射课程 syllabus"
 status = "done"
-required_artifacts = ["guides/02-repo-scout/README.md"]
-completion_mode = "inherited"
-inherited_from = "../../shared/source-index.md"
+required_artifacts = ["guides/02-syllabus-mapper/README.md"]
 
 [[stages]]
-id = "03-socratic-coach"
-title = "提出专题递进问题"
+id = "03-concept-roadmap"
+title = "建立概念路线图"
+status = "done"
+required_artifacts = ["guides/03-concept-roadmap/README.md", "../../shared/concept-map.md"]
+
+[[stages]]
+id = "04-lesson-lab"
+title = "把课程 lesson 变成可观察实验"
 status = "active"
-required_artifacts = ["notes/03-socratic-coach/README.md"]
+required_artifacts = ["guides/04-lesson-lab/README.md", "notes/04-lesson-lab/README.md"]
 
 [[stages]]
-id = "04-debugger-guide"
-title = "运行并调试专题路径"
+id = "05-mechanism-deep-dive"
+title = "拆解被 API 隐藏的机制"
 status = "pending"
-required_artifacts = ["notes/04-debugger-guide/README.md"]
+required_artifacts = ["guides/05-mechanism-deep-dive/README.md"]
 
 [[stages]]
-id = "05-arch-analyzer"
-title = "分析专题相关架构"
+id = "06-practice-transfer"
+title = "迁移课程概念到真实任务"
 status = "pending"
-required_artifacts = ["notes/05-arch-analyzer/README.md"]
+required_artifacts = ["guides/06-practice-transfer/README.md"]
 
 [[stages]]
-id = "06-code-reader"
-title = "深读专题核心代码"
-status = "pending"
-required_artifacts = ["notes/06-code-reader/README.md"]
-
-[[stages]]
-id = "07-demo-architecture"
-title = "设计专题 Mini Demo"
+id = "07-capstone-lab"
+title = "完成课程驱动 mini project"
 status = "pending"
 required_artifacts = ["demo/design.md"]
 
 [[stages]]
-id = "08-demo-coder"
-title = "实现专题 Mini Demo"
+id = "08-review-loop"
+title = "复习与掌握度验证"
 status = "pending"
-required_artifacts = ["demo/README.md"]
+required_artifacts = ["review/mastery-map.md", "review/question-bank.md"]
 
 [[stages]]
-id = "09-biz-solver"
-title = "将专题学习迁移到业务问题"
-status = "pending"
-required_artifacts = ["notes/09-biz-solver/README.md"]
-
-[[stages]]
-id = "10-reflection"
+id = "09-closeout-archive"
 title = "专题回顾与知识归档"
 status = "pending"
-required_artifacts = [
-    ".daedalus/artifact-index.md",
-    ".daedalus/long-context.md",
-    "reflection/candidate-map.md",
-    "reflection/closeout.md",
-]
+required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md", "reflection/candidate-map.md", "reflection/closeout.md"]
 
 [[transitions]]
 stage = "01-goal-aligner"
@@ -122,3 +109,24 @@ action = "enter"
 timestamp = "2026-06-14 21:32:51"
 actor = "daedalus-cli"
 reason = "进入问题路线图阶段，将默认方案转成数据生成标准、审核问题和 demo 设计前置问题。"
+
+[[transitions]]
+stage = "03-concept-roadmap"
+action = "resume"
+timestamp = "2026-06-23 00:53:42"
+actor = "daedalus-cli"
+reason = "将 topic 从 repo-learning 阶段映射为 course-learning 阶段；历史 guide/notes 目录保留。"
+
+[[transitions]]
+stage = "03-concept-roadmap"
+action = "complete"
+timestamp = "2026-06-23 01:03:06"
+actor = "daedalus-cli"
+reason = "完成 HF Course 1/2 concept roadmap，并同步 shared concept/progress/syllabus maps。"
+
+[[transitions]]
+stage = "04-lesson-lab"
+action = "enter"
+timestamp = "2026-06-23 01:03:06"
+actor = "daedalus-cli"
+reason = "进入 course-learning lesson lab，将历史 Trainer 拆解 guide 迁移为正式 lesson lab。"

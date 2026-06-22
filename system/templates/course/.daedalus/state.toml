@@ -1,0 +1,41 @@
+# daedalus course learning project state. 保留注释；确定性字段由 CLI 更新。
+#
+# Project state 只描述长期课程学习项目本身，不承载专题阶段进度。
+# 专题进度写在 `topics/<slug>/.daedalus/state.toml`。
+#
+# 枚举约束：
+# - task.lifecycle 只能是：active、idle、abandoned。
+# - task.workspace_bucket 固定为：projects。
+# - project.active_topic 必须指向 `[[topics]]` 中存在的 topic slug。
+# - topics.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
+# - transition.action 只能是：init、topic-new、topic-activate、topic-await-reflection、topic-complete、topic-abandon、migrate、task-complete、abandon。
+# Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+
+[task]
+name = "{{TASK_NAME}}"
+kind = "course-learning"
+created_at = "{{CREATED_AT}}"
+lifecycle = "active"
+workspace_bucket = "projects"
+next_action = "激活初始课程专题 `{{TOPIC_SLUG}}`，澄清课程学习目标，并填写 topic 的 `.daedalus/task-card.md`。"
+
+[project]
+mode = "multi-topic"
+active_topic = "{{TOPIC_SLUG}}"
+source_kind = "course"
+source_name = "{{TASK_NAME}}"
+course_url = "{{COURSE_URL}}"
+
+[[topics]]
+slug = "{{TOPIC_SLUG}}"
+title = "{{TOPIC_TITLE}}"
+lifecycle = "active"
+path = "topics/{{TOPIC_SLUG}}"
+inherits = []
+
+[[transitions]]
+stage = "project"
+action = "init"
+timestamp = "{{CREATED_AT}}"
+actor = "daedalus-cli"
+reason = "初始化 course learning project，并创建初始课程专题 `{{TOPIC_SLUG}}`。"

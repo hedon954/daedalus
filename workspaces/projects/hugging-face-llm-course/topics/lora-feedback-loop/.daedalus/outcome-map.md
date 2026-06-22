@@ -7,13 +7,14 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 - Project：`hugging-face-llm-course`
 - Topic：`lora-feedback-loop` - LoRA 微调与数据反馈闭环
 - 最终要获得的能力：用系统化训练闭环理解 AI fine-tuning，而不是停留在 API glue code；能判断数据、训练、评测、反馈和迁移边界。
-- 最小可验证 demo：闲鱼二手买家 Agent 的 suggestion next action LoRA feedback loop lab，覆盖初始数据、训练、测试/线上样本、eval、错误分析、反馈数据、再训练和对比报告。
+- 最小可验证 lesson lab：先用 Hugging Face Course 1/2 建立 Transformers 基础，再迁移到闲鱼二手买家 Agent 的 suggestion next action LoRA feedback loop lab。
 - 现实问题中的迁移目标：为 AI Agent 开发补齐模型层和训练层判断力，形成下一份 AI 开发岗位可展示、可解释的技术作品。
 
 ## Inherited Context
 
-- Shared runbook：[`../../shared/runbook.md`](../../shared/runbook.md)
-- Shared architecture：[`../../shared/architecture-map.md`](../../shared/architecture-map.md)
+- Syllabus map：[`../../shared/syllabus-map.md`](../../shared/syllabus-map.md)
+- Course progress：[`../../shared/course-progress.md`](../../shared/course-progress.md)
+- Concept map：[`../../shared/concept-map.md`](../../shared/concept-map.md)
 - Shared evidence：[`../../shared/evidence-registry.md`](../../shared/evidence-registry.md)
 
 ## Final Artifacts
@@ -29,25 +30,24 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | [`guides/03-socratic-coach/02-candidate-samples-v0.2.md`](../guides/03-socratic-coach/02-candidate-samples-v0.2.md) | 第一批 20 条短句数组候选样本 | 已生成，待用户审核 |
 | [`guides/03-socratic-coach/03-candidate-samples-v0.3.md`](../guides/03-socratic-coach/03-candidate-samples-v0.3.md) | `{s,r}` schema 候选样本 | 已生成，待用户审核 |
 | [`guides/03-socratic-coach/04-candidate-samples-v0.4.md`](../guides/03-socratic-coach/04-candidate-samples-v0.4.md) | 用户口吻 Agent 指令样本 | 已生成，待用户审核 |
-| [`guides/04-debugger-guide/01-hf-course-ch1-ch2-foundation.md`](../guides/04-debugger-guide/01-hf-course-ch1-ch2-foundation.md) | HF Course 第 1、2 章基础学习导航 | 已生成，当前执行 |
-| [`guides/04-debugger-guide/03-trainer-train-under-the-hood.md`](../guides/04-debugger-guide/03-trainer-train-under-the-hood.md) | 拆解 `Trainer.train()` 的 batch / forward / loss / backward 观察实验 | 已生成，下一步执行 |
-| [`notes/04-debugger-guide/README.md`](../notes/04-debugger-guide/README.md) | 本地运行与调试证据 | 已记录第一个 Transformers pipeline smoke test |
-| [`notes/05-arch-analyzer/README.md`](../notes/05-arch-analyzer/README.md) | 架构与核心边界 | 待填 |
-| [`notes/06-code-reader/README.md`](../notes/06-code-reader/README.md) | 用户参与后的核心源码阅读证据 | 待填 |
+| [`guides/03-concept-roadmap/README.md`](../guides/03-concept-roadmap/README.md) | HF Course 1/2 概念路线图 | 已生成，当前执行 |
+| [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson 可观察实验入口 | 待生成 |
+| [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) | 用户运行、观察和解释证据 | 待填 |
+| 历史 [`guides/04-debugger-guide/`](../guides/04-debugger-guide) | 迁移前的课程实验指南现场 | 保留为历史证据 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计草案与定稿 | 待填 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 待填 |
-| [`notes/09-biz-solver/README.md`](../notes/09-biz-solver/README.md) | 业务迁移方案 | 待填 |
+| [`guides/06-practice-transfer/README.md`](../guides/06-practice-transfer/README.md) | 业务迁移练习 | 待填 |
 | knowledge-base entry | 已验证知识归档 | 待填 |
 
 ## Current Position
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：04-debugger-guide / 运行机制观察。
-- 当前目标：在已跑通 Causal LM quick training run 后，拆开 `Trainer.train()` 的 batch、forward、loss、backward 和 optimizer step。
-- 当前障碍：尚未用 notebook 手动观察 `trainer.get_train_dataloader()`、`model(**batch)`、`outputs.loss` 和 `outputs.logits.shape`。
-- 当前动作服务的产物：`guides/02-repo-scout/README.md`、`guides/02-repo-scout/03-first-lab-default-plan.md`、后续 `notes/03-socratic-coach/README.md`。
-- 当前光标：用户已完成 `max_steps=200` 的 DistilGPT2 Causal LM quick training run；下一步按 `03-trainer-train-under-the-hood.md` 拆解 Trainer 训练循环。
+- 当前阶段：04-lesson-lab / Trainer 训练循环可观察实验。
+- 当前目标：把历史 `Trainer.train()` 拆解 guide 迁移成正式 lesson lab，围绕 batch、forward、loss、backward 和 optimizer step 形成用户可运行观察。
+- 当前障碍：尚未把历史 `Trainer.train()` 拆解 guide 整理为正式 `04-lesson-lab`。
+- 当前动作服务的产物：`guides/04-lesson-lab/README.md` 和后续 `notes/04-lesson-lab/README.md`。
+- 当前光标：用户已完成 `max_steps=200` 的 DistilGPT2 Causal LM quick training run；下一步生成 `guides/04-lesson-lab/README.md`。
 
 ## Contribution Back To Project
 
@@ -58,9 +58,9 @@ Current Position 是学习地图，不是实现事实源。涉及实现阶段时
 ## Artifact Dependency Graph
 
 ```text
-task-card -> question-roadmap -> runbook -> architecture/code-reading
-architecture/code-reading -> demo/design -> demo/README
-demo evidence -> business-application -> knowledge-base entry
+task-card -> syllabus-map -> concept-roadmap -> lesson-lab
+lesson-lab -> mechanism-deep-dive -> practice-transfer
+practice-transfer -> capstone/review -> knowledge-base entry
 ```
 
 ## Open Gaps
@@ -86,7 +86,7 @@ demo evidence -> business-application -> knowledge-base entry
 
 ## Why This Step Matters
 
-当前步骤决定后续应该读哪些源码、停止哪些源码、最终 demo 如何验收。
+当前步骤决定后续应该学哪些章节、停止哪些材料、最终 lesson lab 和迁移任务如何验收。
 
 ## Critical Lens
 
@@ -101,6 +101,6 @@ Critical Lens 用来防止把学习素材当成权威。它不是反对模仿，
 
 ## Stop Rules
 
-- 不读与 North Star、demo、业务迁移或知识归档无关的源码细节。
-- 不因为某个目录、函数或专题还没覆盖完就继续读。
+- 不学与 North Star、lesson lab、迁移任务或知识归档无关的课程细节。
+- 不因为课程还有章节没覆盖完就继续学。
 - 不把 Agent-only 预读写成用户已经掌握的 notes。

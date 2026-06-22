@@ -28,6 +28,24 @@ fn repo_fixture() -> TempDir {
         &source_topic_template,
         &repo.join("system/templates/repo-topic"),
     );
+    let source_course_template = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("repo root")
+        .join("system/templates/course");
+    copy_dir(
+        &source_course_template,
+        &repo.join("system/templates/course"),
+    );
+    let source_course_topic_template = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("repo root")
+        .join("system/templates/course-topic");
+    copy_dir(
+        &source_course_topic_template,
+        &repo.join("system/templates/course-topic"),
+    );
     let source_review_template = manifest_dir
         .parent()
         .and_then(Path::parent)
@@ -321,6 +339,110 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(repo.path().join(".claude/settings.json").exists());
     assert!(topic_dir.join(".daedalus/task-card.md").exists());
     assert!(topic_dir.join(".daedalus/artifact-index.md").exists());
+}
+
+#[test]
+fn init_course_learning_creates_course_state_and_templates() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "course-learning",
+            "HF Course",
+            "--topic",
+            "lora-loop",
+            "--title",
+            "LoRA Loop",
+            "--course-url",
+            "https://huggingface.co/learn/llm-course/en",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "ok: initialized course-learning project",
+        ));
+
+    let task_dir = repo.path().join("workspaces/projects/hf-course");
+    let topic_dir = task_dir.join("topics/lora-loop");
+    assert!(task_dir.join("shared/syllabus-map.md").exists());
+    assert!(task_dir.join("shared/course-progress.md").exists());
+    assert!(task_dir.join("shared/concept-map.md").exists());
+    assert!(!task_dir.join("shared/source-index.md").exists());
+    assert!(!task_dir.join("source/pull_source.sh").exists());
+    assert!(topic_dir.join("guides/04-lesson-lab/.gitkeep").exists());
+    assert!(
+        topic_dir
+            .join("guides/05-mechanism-deep-dive/.gitkeep")
+            .exists()
+    );
+    assert!(topic_dir.join("review/.gitkeep").exists());
+
+    let project_state =
+        fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("project state");
+    assert!(project_state.contains("kind = \"course-learning\""));
+    assert!(project_state.contains("source_kind = \"course\""));
+    assert!(project_state.contains("course_url = \"https://huggingface.co/learn/llm-course/en\""));
+
+    let topic_state =
+        fs::read_to_string(topic_dir.join(".daedalus/state.toml")).expect("topic state");
+    assert!(topic_state.contains("kind = \"course-learning-topic\""));
+    assert!(topic_state.contains("current_phase = \"01-need-aligner\""));
+    assert!(topic_state.contains("id = \"04-lesson-lab\""));
+    assert!(topic_state.contains("id = \"05-mechanism-deep-dive\""));
+
+    let rendered_state =
+        fs::read_to_string(task_dir.join(".daedalus/state.md")).expect("rendered state");
+    assert!(rendered_state.contains("类型：`course-learning`"));
+    assert!(rendered_state.contains("shared/syllabus-map.md"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("ok: workspace valid"));
+}
+
+#[test]
+fn validate_course_learning_requires_current_phase_in_todo() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "course-learning",
+            "HF Course",
+            "--topic",
+            "lora-loop",
+            "--title",
+            "LoRA Loop",
+            "--course-url",
+            "https://huggingface.co/learn/llm-course/en",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/hf-course");
+    let topic_dir = task_dir.join("topics/lora-loop");
+    fs::write(
+        topic_dir.join(".daedalus/todo.md"),
+        "# Todo\n\n缺少当前阶段恢复坐标。\n",
+    )
+    .expect("overwrite todo");
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "current_phase `01-need-aligner` is not recoverable",
+        ));
 }
 
 #[test]
@@ -2307,4 +2429,75 @@ reason = "初始化旧任务。"
     assert!(topic_state.contains("current_phase = \"01-goal-aligner\""));
     let pull_source = fs::read_to_string(task_dir.join("source/pull_source.sh")).expect("source");
     assert!(pull_source.contains("https://example.com/old.git"));
+}
+
+#[test]
+fn migrate_course_learning_retypes_existing_project() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "HF Course",
+            "--topic",
+            "lora-loop",
+            "--title",
+            "LoRA Loop",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/hf-course");
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "migrate",
+            "course-learning",
+            task_dir.to_str().expect("utf8"),
+            "--course-url",
+            "https://huggingface.co/learn/llm-course/en",
+            "--execute",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "ok: course-learning migration completed",
+        ));
+
+    let topic_dir = task_dir.join("topics/lora-loop");
+    assert!(task_dir.join("shared/syllabus-map.md").exists());
+    assert!(task_dir.join("shared/course-progress.md").exists());
+    assert!(task_dir.join("shared/concept-map.md").exists());
+    assert!(topic_dir.join("guides/04-lesson-lab/.gitkeep").exists());
+    assert!(
+        topic_dir
+            .join("guides/05-mechanism-deep-dive/.gitkeep")
+            .exists()
+    );
+
+    let project_state =
+        fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("project state");
+    assert!(project_state.contains("kind = \"course-learning\""));
+    assert!(project_state.contains("source_kind = \"course\""));
+    assert!(project_state.contains("course_url = \"https://huggingface.co/learn/llm-course/en\""));
+    assert!(project_state.contains("action = \"migrate\""));
+
+    let topic_state =
+        fs::read_to_string(topic_dir.join(".daedalus/state.toml")).expect("topic state");
+    assert!(topic_state.contains("kind = \"course-learning-topic\""));
+    assert!(topic_state.contains("current_phase = \"01-need-aligner\""));
+    assert!(topic_state.contains("id = \"02-syllabus-mapper\""));
+    assert!(topic_state.contains("id = \"04-lesson-lab\""));
+    assert!(!topic_state.contains("id = \"02-repo-scout\""));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("ok: workspace valid"));
 }

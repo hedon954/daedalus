@@ -1,6 +1,6 @@
 # Topic Board
 
-Topic Board 记录当前 repo learning project 的专题列表、状态和继承关系。一次只能有一个 active topic。
+Topic Board 记录当前 course learning project 的专题列表、状态和继承关系。一次只能有一个 active topic。
 
 ## Active Topic
 

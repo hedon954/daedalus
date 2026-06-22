@@ -51,6 +51,7 @@ fn render_project_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<S
     output.push_str("> 从 [`.daedalus/state.toml`](state.toml) 生成。不要手动编辑。\n\n");
     output.push_str("## 当前状态\n\n");
     output.push_str(&format!("- Project：`{}`\n", state_toml::task_name(doc)));
+    output.push_str(&format!("- 类型：`{}`\n", state_toml::task_kind(doc)));
     output.push_str(&format!(
         "- 生命周期：`{}`\n",
         state_toml::task_lifecycle(doc)
@@ -71,6 +72,9 @@ fn render_project_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<S
         "- Pending Closeout：`{}`\n",
         state_toml::awaiting_reflection_topic(doc).unwrap_or_else(|| "none".to_owned())
     ));
+    if let Some(course_url) = state_toml::course_url(doc) {
+        output.push_str(&format!("- Course URL：{course_url}\n"));
+    }
     output.push_str(&format!("- 下一步：{}\n\n", state_toml::next_action(doc)));
 
     output.push_str("## Topics\n\n");
@@ -87,12 +91,23 @@ fn render_project_state_markdown(doc: &DocumentMut, task_dir: &Path) -> Result<S
     }
 
     output.push_str("\n## Project Files\n\n");
-    for path in [
-        ".daedalus/project-map.md",
-        ".daedalus/topic-board.md",
-        "shared/evidence-registry.md",
-        "shared/source-index.md",
-    ] {
+    let project_files: Vec<&str> = match state_toml::task_kind(doc).as_str() {
+        "course-learning" => vec![
+            ".daedalus/project-map.md",
+            ".daedalus/topic-board.md",
+            "shared/syllabus-map.md",
+            "shared/course-progress.md",
+            "shared/concept-map.md",
+            "shared/evidence-registry.md",
+        ],
+        _ => vec![
+            ".daedalus/project-map.md",
+            ".daedalus/topic-board.md",
+            "shared/evidence-registry.md",
+            "shared/source-index.md",
+        ],
+    };
+    for path in project_files {
         let status = if task_dir.join(path).exists() {
             "present"
         } else {

@@ -70,6 +70,33 @@ pub fn state_kind(doc: &DocumentMut) -> &'static str {
     }
 }
 
+/// 读取 task kind，例如 `repo-learning` 或 `course-learning`。
+pub fn task_kind(doc: &DocumentMut) -> String {
+    doc.get("task")
+        .and_then(|task| task.get("kind"))
+        .and_then(Item::as_str)
+        .unwrap_or("unknown")
+        .to_owned()
+}
+
+/// 读取 project source kind，例如 `repo` 或 `course`。
+pub fn project_source_kind(doc: &DocumentMut) -> String {
+    doc.get("project")
+        .and_then(|project| project.get("source_kind"))
+        .and_then(Item::as_str)
+        .unwrap_or("unknown")
+        .to_owned()
+}
+
+/// 读取课程入口 URL。
+pub fn course_url(doc: &DocumentMut) -> Option<String> {
+    doc.get("project")
+        .and_then(|project| project.get("course_url"))
+        .and_then(Item::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .map(ToOwned::to_owned)
+}
+
 /// 读取任务生命周期。
 pub fn task_lifecycle(doc: &DocumentMut) -> Result<TaskLifecycle> {
     let value = doc["task"]["lifecycle"]
@@ -304,6 +331,15 @@ pub fn topic_slug(doc: &DocumentMut) -> String {
 pub fn topic_title(doc: &DocumentMut) -> String {
     doc.get("topic")
         .and_then(|topic| topic.get("title"))
+        .and_then(Item::as_str)
+        .unwrap_or("unknown")
+        .to_owned()
+}
+
+/// 读取 topic kind，例如 `repo-learning-topic` 或 `course-learning-topic`。
+pub fn topic_kind(doc: &DocumentMut) -> String {
+    doc.get("topic")
+        .and_then(|topic| topic.get("kind"))
         .and_then(Item::as_str)
         .unwrap_or("unknown")
         .to_owned()

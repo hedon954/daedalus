@@ -14,9 +14,11 @@ use clap::Subcommand;
 use enum_dispatch::enum_dispatch;
 
 pub use ide::{IdeCommand, IdeSubcommand, IdeSyncRustAnalyzerArgs};
-pub use init::{InitCommand, InitKind, InitRepoLearningArgs};
+pub use init::{InitCommand, InitCourseLearningArgs, InitKind, InitRepoLearningArgs};
 pub use knowledge::{KnowledgeCommand, KnowledgeSubcommand, KnowledgeTemplateArgs};
-pub use migrate::{MigrateCommand, MigrateRepoLearningArgs, MigrateSubcommand};
+pub use migrate::{
+    MigrateCommand, MigrateCourseLearningArgs, MigrateRepoLearningArgs, MigrateSubcommand,
+};
 pub use review::{
     ReviewCloseArgs, ReviewCommand, ReviewListArgs, ReviewModeArg, ReviewSessionCommand,
     ReviewSessionCompleteArgs, ReviewSessionStartArgs, ReviewSessionSubcommand, ReviewShowArgs,

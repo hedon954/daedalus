@@ -9,27 +9,27 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - Project：`hugging-face-llm-course`
 - Topic：`lora-feedback-loop` - LoRA 微调与数据反馈闭环
 - 最终产物：闲鱼二手买家 Agent suggestion next action production-shaped mini LoRA lab、训练闭环 runbook、实验对比报告、业务迁移笔记。
-- 最小 demo：`suggestion dataset -> train -> eval -> error analysis -> feedback data -> retrain -> compare`。
+- 最小 lesson lab：HF Course 1/2 基础机制观察；后续迁移为 `suggestion dataset -> train -> eval -> error analysis -> feedback data -> retrain -> compare`。
 - 业务迁移目标：让用户从 AI Agent 应用层进入模型训练闭环层，提升下一份 AI 开发岗位竞争力。
 
 ## Current Path
 
-当前 active topic 已完成 01-goal-aligner：业务任务、fine-tuning suitability、第一轮品类和核心质量标准已经确认。下一步进入材料选择。
+当前 active topic 已迁移为 course-learning：`01-need-aligner`、`02-syllabus-mapper`、`03-concept-roadmap` 已完成，当前处于 `04-lesson-lab`。
 
 ## Now
 
-- 当前问题：用户已经完成 DistilGPT2 Causal LM quick training run，但 `Trainer.train()` 仍是黑箱；下一步要拆开一个 batch 如何进入 model、产生 logits/loss、再进入 backward。
-- 为什么现在做它：不理解 Trainer 训练循环，后面 LoRA / SFT / DPO 都会变成换 recipe 抄代码。先看清 batch、forward、loss、backward 和 optimizer step，才能知道不同训练方法到底改了哪里。
-- 完成后解锁：Chapter 2 pipeline 拆解、base model vs fine-tuned model 对比，以及将 ELI5 Causal LM 迁移为闲鱼买家 Agent instruction/SFT 数据格式。
+- 当前问题：下一步要把历史 Trainer 拆解 guide 整理为正式 `04-lesson-lab`。
+- 为什么现在做它：不建立课程概念路线，后面 LoRA / SFT / DPO 仍会变成换 recipe 抄代码。
+- 完成后解锁：用 course-learning 方式继续拆 Trainer、pipeline、Causal LM，并迁移到闲鱼买家 Agent instruction/SFT 数据格式。
 
 ## Current Cursor
 
 Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
 
-- Code frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
+- Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：按 `guides/04-debugger-guide/03-trainer-train-under-the-hood.md` 在 notebook 中观察 `trainer.get_train_dataloader()`、`model(**batch)`、`outputs.loss` 和 `outputs.logits.shape`。
-- Do not suggest：不要跳过 source/material scout 直接写训练代码；不要把 DDIA 升级为第二个 active topic。
+- Current open decision：生成 `guides/04-lesson-lab/README.md`，把 Trainer batch / forward / loss / backward 观察转成正式 lesson lab。
+- Do not suggest：不要继续新增 `repo-scout`、`debugger-guide`、`arch-analyzer` 命名的指南；不要把 DDIA 升级为第二个 active topic。
 
 ## Critical Checkpoint
 
@@ -73,7 +73,10 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] LM block 观察：用户已观察 `group_texts` 后 `input_ids` / `labels` 均为 128，且 `labels == input_ids`。
 - [x] Collator / Trainer warning 观察：用户已观察 special token config 自动对齐 warning 与 MPS `pin_memory` warning，并确认它们不是训练失败。
 - [x] Causal LM quick training run：用户已完成 `max_steps=200` 的 DistilGPT2 fine-tuning，得到 `training_loss≈3.98`、`perplexity≈47.81`，并上传到 Hugging Face Hub。
-- [x] Trainer 拆解 guide：已生成 `guides/04-debugger-guide/03-trainer-train-under-the-hood.md`。
+- [x] Trainer 拆解历史 guide：已生成 `guides/04-debugger-guide/03-trainer-train-under-the-hood.md`，迁移后视为历史课程实验现场。
+- [x] course-learning 迁移：project/topic state 已切换为 `course-learning` / `course-learning-topic`，并补齐 course shared maps 与新阶段目录。
+- [x] Concept roadmap：已生成 `guides/03-concept-roadmap/README.md`，把 HF Course 1/2 的关键问题收束为课程概念路线。
+- [ ] Lesson lab：生成 `guides/04-lesson-lab/README.md`，将 Trainer batch / forward / loss / backward 观察迁移到新阶段。
 - [ ] Trainer batch 观察：在 notebook 中打印 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device。
 - [ ] Trainer forward 观察：手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
 - [ ] HF Course 1/2：完成 Transformer Models 与 Using Transformers 的基础学习。
@@ -86,14 +89,14 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 
 - [x] 可以解释本任务为什么值得进入 active learning。
 - [x] 可以说清最终产物和最小 demo。
-- [x] 可以用验收标准判断是否进入 `02-source-scout` / `02-repo-scout`。
+- [x] 可以用验收标准判断是否进入 `02-syllabus-mapper`。
 - [x] 用户 review 本次初始化内容，并确认 fine-tuning suitability、第一轮品类和质量标准。
 
 ## Done
 
-- [x] 01-goal-aligner：完成 topic 目标、业务任务、fine-tuning suitability、第一轮品类和核心质量标准确认。
-- [x] 02-repo-scout：完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。
-- [x] 03-socratic-coach：创建问题路线图和第一批数据审核标准。
+- [x] 01-need-aligner：完成 topic 目标、业务任务、fine-tuning suitability、第一轮品类和核心质量标准确认。
+- [x] 02-syllabus-mapper：完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。
+- [x] 03-concept-roadmap historical input：旧 `03-socratic-coach` 产物保留为数据集与问题路线历史现场。
 - [x] 第一批候选样本：生成 20 条手机品类 suggestion next action 候选样本。
 - [x] 第一批候选样本 v0.2：根据产品形态反馈，重生成短句数组版本。
 - [x] 第一批候选样本 v0.3：根据 `{s,r}` target schema 生成当前有效版本。
