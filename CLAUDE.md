@@ -20,7 +20,7 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 - Treat every study material as a constrained design case, not an authority. Preserve first principles, trade-offs, critical lens, faithful imitation choices, and not-to-copy boundaries.
 - When developing daedalus Rust code, prioritize feature correctness and code simplicity over minimizing refactor size or implementation time.
 - Write daedalus implementation plans as target outcomes, not "first version" compromises, unless the user explicitly asks for phased delivery.
-- Git commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
+- Git commit messages must follow `{topic}/{scope}: 中文描述`, for example `lora-feedback-loop/debugger-guide: 跑通 Causal LM 训练闭环` or `daedalus/cli: 修正 topic 校验规则`.
 - Tests should assert stable behavior, not incidental wording.
 
 ## Project Map

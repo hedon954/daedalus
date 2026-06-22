@@ -428,7 +428,7 @@ daedalus 把上下文入口写进 agent 原生加载机制：
 
 daedalus 补齐了轻量工程协议：
 
-- commit message hook：`type(scope): 中文描述` 或 `type: 中文描述`。
+- commit message hook：最初采用 `type(scope): 中文描述` 或 `type: 中文描述`，后续随 daedalus 从纯开发仓库演进为学习主题推进系统，更新为 `{topic}/{scope}: 中文描述`。
 - 长任务前给学习者一个可并行思考的小任务。
 - 微闭环后同步学习地图。
 - 提交后主动输出当前位置和下一步。

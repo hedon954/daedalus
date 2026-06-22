@@ -45,7 +45,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - When writing daedalus implementation plans, describe the target outcome directly. Do not weaken the plan with "first version", "do it later", or schedule-saving language unless the user explicitly asks for phased delivery.
 - Put detailed daedalus implementation plans in `docs/plan/`; use `.codex/plans/` only as Codex tracking cards with `status` and `todos` that link to the canonical `docs/plan/` plan.
 - When adding or moving a Rust crate, update `crates/Cargo.toml`, `Makefile`, `.pre-commit-config.yaml`, and `.github/workflows/ci.yml` as needed.
-- Commit messages must follow `type(scope): 中文描述` or `type: 中文描述`.
+- Commit messages must follow `{topic}/{scope}: 中文描述`, for example `lora-feedback-loop/debugger-guide: 跑通 Causal LM 训练闭环` or `daedalus/cli: 修正 topic 校验规则`.
 - Tests should assert stable behavior, not incidental wording. For errors, prefer variant, category, or presence unless exact text is public contract.
 - Before marking a learning task completed, verify that it has goal, core questions, run/debug notes or justified skip, architecture/code notes, demo or explicit no-demo reason, business transfer, user closeout retrospective, and verified knowledge archival.
 
