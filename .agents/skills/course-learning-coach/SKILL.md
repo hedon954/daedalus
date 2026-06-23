@@ -1,6 +1,6 @@
 ---
 name: course-learning-coach
-description: Guides daedalus course-learning for courses, tutorials, official learning paths, online curricula, chapter-based docs, and lesson labs. Use when the user learns a course such as Hugging Face Course, follows an official tutorial/notebook, asks what to study next in a curriculum, or says they copied course code but do not understand the underlying mechanism. Do not use for deep reading a real code repository, code review, or one-off API lookup.
+description: Guides daedalus course-learning for courses, tutorials, official learning paths, online curricula, chapter-based docs, and lesson labs. Use when the user learns a course such as Hugging Face Course, follows an official tutorial/notebook, asks what to study next in a curriculum, or says they copied course code but do not understand the underlying mechanism.
 ---
 
 # Course Learning Coach
@@ -9,7 +9,9 @@ Use this skill when the user is learning a course, tutorial, official learning p
 
 ## Core Rule
 
-Course learning is not repo learning. It shares filesystem-first state, WIP discipline, human-owned notes, first principles, and critical lens, but it does not use repo-learning stage names or repo-reading defaults.
+Course learning turns course material into an observable learning path: learning need, syllabus route, concept mechanism, lesson lab, user observation, practice transfer, review, and archive.
+
+It keeps daedalus's filesystem-first state, WIP discipline, human-owned notes, first principles, and critical lens. Its coaching center is course mastery: the user should be able to explain, reproduce, modify, and transfer the course concepts.
 
 The course-learning path is:
 
@@ -18,18 +20,11 @@ learning need -> syllabus route -> concept mechanism -> smallest lesson lab
 -> user observation -> practice transfer -> capstone/review -> archive
 ```
 
-Do not use:
-
-- `02-repo-scout`
-- `04-debugger-guide`
-- `05-arch-analyzer`
-- repo-learning 10-stage flow
-
 ## Startup
 
 1. Resolve active context from `workspaces/.daedalus/current.toml`, `workspaces/current-project`, or `workspaces/current-topic`.
 2. Confirm the project state uses `task.kind = "course-learning"` and `project.source_kind = "course"`.
-3. If an existing course project is still `repo-learning`, recommend or run `daedalus migrate course-learning <project-dir> --course-url <url> --execute` before continuing.
+3. If the metadata does not match course-learning, pause course-learning routing and repair the concrete files in place with user approval.
 4. Read project `shared/syllabus-map.md`, `shared/course-progress.md`, `shared/concept-map.md`, active topic `.daedalus/state.md`, `.daedalus/outcome-map.md`, and `.daedalus/todo.md`.
 5. Route to exactly one current course-learning stage.
 
@@ -115,16 +110,5 @@ Use when closing a course topic and mining verified knowledge.
 - Write `notes/` only after user answers, runs code, observes output, or explains a mechanism.
 - For lesson labs, always separate prediction, minimum code, observed output, explanation, and next transfer.
 - Treat warnings, shapes, losses, artifacts, and generated files as learning evidence, not terminal noise.
-- Keep historical repo-named directories after migration unless the user approves renaming them.
+- Keep historical directories after manual reorganization unless the user approves renaming them.
 - After changing lifecycle state, evidence, risks, or next action, synchronize `todo.md`, `outcome-map.md`, and relevant shared maps.
-
-## Anti-Triggers
-
-Use repo-learning instead when the user wants to deeply read a real source repository's architecture, runtime path, invariants, or production design.
-
-Do not use this skill for:
-
-- Code review.
-- One-off API lookup.
-- Product implementation unrelated to a course.
-- Debugging a production codebase unless it is part of a lesson lab or course exercise.

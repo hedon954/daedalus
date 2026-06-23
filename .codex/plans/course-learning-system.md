@@ -15,8 +15,8 @@ todos:
   - id: add-course-prompts-skill
     content: 新增 system/prompts/course 与 course-learning-coach skill。
     status: completed
-  - id: migrate-hf-course-project
-    content: 将 hugging-face-llm-course 从 repo-learning 迁移为 course-learning。
+  - id: organize-hf-course-project
+    content: 手动整理 hugging-face-llm-course，使其成为 course-learning project。
     status: completed
 isProject: false
 ---

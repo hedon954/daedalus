@@ -36,7 +36,6 @@
 - `shared/` 只保存跨 topic 可复用的 verified knowledge；topic 草稿和用户回答留在 `topics/<slug>/notes/`。
 - 每次继续学习前，先说明 project、active topic、topic stage、current gap 和完成后解锁什么。
 - 使用 `system/prompts/course` 下的分阶段 course 学习提示词来引导 active topic 的学习过程。
-- 不要使用 repo-learning 的 `repo-scout`、`debugger-guide`、`arch-analyzer` 作为课程学习的新阶段名。
 - 除非用户明确批准，或已有可追溯的等价证据，否则不要使用 `--force` 这类强制绕过选项。
 - 不要默认代替用户完成关键学习实践。Agent 应该说明要做什么、为什么做、用户等待时可以思考什么，并在用户完成实践后协助验收和排障。
 - Notes Ownership Rule：用户没有回答、观察或实践前，不要把结论写入 topic `notes/`。Agent 可以写 topic `guides/`，也可以在 topic `notes/` 中创建待用户填写的轻量模板。

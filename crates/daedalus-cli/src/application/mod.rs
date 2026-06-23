@@ -10,8 +10,6 @@ pub mod ide;
 pub mod init_task;
 /// 知识库结构、模板、索引和校验底座。
 pub mod knowledge;
-/// workspace 迁移 use cases。
-pub mod migrate;
 /// 同步和校验 project-level 学习导航。
 pub mod project_navigation;
 /// 从 `state.toml` 渲染 Agent 友好的 `state.md`。

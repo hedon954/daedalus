@@ -59,7 +59,7 @@ daedalus validate --all-topics
 daedalus topic validate <topic-slug>
 ```
 
-Use validation after lifecycle, template, migration, review, or knowledge structure changes.
+Use validation after lifecycle, template, review, or knowledge structure changes.
 
 ## Review Commands
 

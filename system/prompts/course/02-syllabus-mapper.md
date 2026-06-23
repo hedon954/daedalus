@@ -11,7 +11,7 @@ phase: course.02-syllabus-mapper
 
 ## Layer Contract
 
-本 prompt 只把课程目录变成 daedalus 学习路线图。不要把 syllabus 当权威，也不要扩展成 repo source scout。
+本 prompt 只把课程目录变成 daedalus 学习路线图。不要把 syllabus 当权威；课程顺序只是路线设计的输入。
 
 ## Workflow
 

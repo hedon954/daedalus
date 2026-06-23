@@ -13,7 +13,7 @@ phase: course.01-need-aligner
 
 ## Layer Contract
 
-本 prompt 只处理 course-learning 的学习诉求对齐。不要套用 repo-learning 的 repo selection、source scout 或源码深读阶段。
+本 prompt 只处理 course-learning 的学习诉求对齐：为什么学、服务哪个现实问题、学到什么程度、用什么证据证明。
 
 所有 topic 产物默认写入 active topic。课程级共享结论再同步到 project root 的 `shared/`。
 

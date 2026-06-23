@@ -12,7 +12,7 @@ phase: course.05-mechanism-deep-dive
 
 ## Layer Contract
 
-本 prompt 只在 lesson lab 无法解释关键机制时使用。它不是 repo-learning 源码深读；读取源码必须服务一个明确的课程机制问题。
+本 prompt 只在 lesson lab 无法解释关键机制时使用。文档、源码或论文读取必须服务一个明确的课程机制问题。
 
 ## Workflow
 

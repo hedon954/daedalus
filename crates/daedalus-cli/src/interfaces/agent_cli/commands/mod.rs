@@ -3,7 +3,6 @@
 pub mod ide;
 pub mod init;
 pub mod knowledge;
-pub mod migrate;
 pub mod review;
 pub mod state;
 pub mod task;
@@ -16,9 +15,6 @@ use enum_dispatch::enum_dispatch;
 pub use ide::{IdeCommand, IdeSubcommand, IdeSyncRustAnalyzerArgs};
 pub use init::{InitCommand, InitCourseLearningArgs, InitKind, InitRepoLearningArgs};
 pub use knowledge::{KnowledgeCommand, KnowledgeSubcommand, KnowledgeTemplateArgs};
-pub use migrate::{
-    MigrateCommand, MigrateCourseLearningArgs, MigrateRepoLearningArgs, MigrateSubcommand,
-};
 pub use review::{
     ReviewCloseArgs, ReviewCommand, ReviewListArgs, ReviewModeArg, ReviewSessionCommand,
     ReviewSessionCompleteArgs, ReviewSessionStartArgs, ReviewSessionSubcommand, ReviewShowArgs,
@@ -43,8 +39,6 @@ pub enum Command {
     Init(InitCommand),
     /// 同步 IDE 派生配置。
     Ide(IdeCommand),
-    /// 迁移学习 workspace。
-    Migrate(MigrateCommand),
     /// 管理复习计划。
     Review(ReviewCommand),
     /// 管理知识库模板、索引和校验。

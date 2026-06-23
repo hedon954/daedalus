@@ -13,10 +13,6 @@ daedalus init course-learning <project-name> \
   --topic <topic-slug> \
   --title <topic-title> \
   --course-url <url>
-
-daedalus migrate course-learning <project-dir> \
-  --course-url <url> \
-  --execute
 ```
 
 ## State Contract
@@ -54,6 +50,6 @@ current_phase = "01-need-aligner"
 
 ## Hard Rules
 
-- Do not create new course-learning guides under repo-learning names.
-- Keep historical repo-named guides after migration unless the user approves a rename.
+- Create new guides with the course-learning stage names listed above.
+- Keep historical guides after manual reorganization unless the user approves a rename.
 - Validate structure with `daedalus validate` after state or lifecycle changes.
