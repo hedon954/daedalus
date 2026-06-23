@@ -269,6 +269,12 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
                 .add_modifier(Modifier::BOLD),
         ),
         Span::raw("    "),
+        Span::styled("Type  ", muted()),
+        Span::styled(
+            overview.learning_label.as_str(),
+            Style::default().fg(SECONDARY),
+        ),
+        Span::raw("    "),
         Span::styled("Topic  ", muted()),
         Span::styled(
             overview.active_topic.as_str(),
@@ -281,7 +287,7 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
             Style::default().fg(MUTED),
         ),
         Span::raw("    "),
-        Span::styled("Phase  ", muted()),
+        Span::styled(format!("{}  ", overview.current_unit_label), muted()),
         Span::styled(
             overview.current_phase.as_str(),
             Style::default().fg(CURRENT_ACCENT),
@@ -322,8 +328,8 @@ fn render_current_panel(frame: &mut Frame<'_>, area: Rect, overview: &TuiOvervie
         )
         .ratio(progress)
         .label(format!(
-            "{}/{} stages complete",
-            overview.done_stage_count, overview.total_stage_count
+            "{}/{} {} complete",
+            overview.done_stage_count, overview.total_stage_count, overview.progress_unit_label
         ));
     frame.render_widget(gauge, chunks[1]);
 }
@@ -487,6 +493,10 @@ fn render_task_list(frame: &mut Frame<'_>, area: Rect, tasks: &[TuiTaskSummary],
                         .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(format!("{:<24}", task.task_name), Style::default().fg(TEXT)),
+                Span::styled(
+                    format!("{:<17}", task.learning_label),
+                    Style::default().fg(SECONDARY),
+                ),
                 Span::styled(
                     format!("{:<18}", task.active_topic),
                     Style::default().fg(TODO_ACCENT),
