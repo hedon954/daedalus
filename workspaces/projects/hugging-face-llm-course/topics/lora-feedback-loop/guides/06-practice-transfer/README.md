@@ -1,6 +1,6 @@
-# 03 Socratic Coach：问题路线图
+# 06 Practice Transfer：买家 Agent 数据与评测路线图
 
-本阶段目标：把 `02-repo-scout` 的默认方案转成可执行的数据生成、用户审核、baseline 设计和 demo 前置问题。
+本阶段目标：把 `02-syllabus-mapper` 的默认方案转成可执行的数据生成、用户审核、baseline 设计和 demo 前置问题，并迁移到闲鱼二手买家 Agent 的 suggestion next action 任务。
 
 > 本文件是 Agent 生成的问题路线图，不是用户学习笔记。用户自己的观察和理解应另行写入 notes。
 
@@ -194,4 +194,4 @@ v0.1 暴露出产品形态问题：suggestion 太长，无法直接点击发送�
 v0.3 将 target schema 收敛为 `{ "suggestions": [{ "s": "建议", "r": "原因" }] }`。
 v0.4 进一步修正 `s` 的说话对象：`s` 不是给用户看的菜单标签，而是用户点击后直接发给买家 Agent 的自然指令。
 
-下一步由用户按 `keep / revise / weak / reject` 审核 v0.2 样本。不要一次性扩展到 120 条；先用 20 条验证 schema、rubric 和审核口径。
+下一步由用户按 `keep / revise / weak / reject` 审核 v0.4 样本。不要一次性扩展到 120 条；先用 20 条验证 schema、rubric 和审核口径。

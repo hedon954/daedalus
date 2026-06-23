@@ -18,7 +18,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：下一步要把历史 Trainer 拆解 guide 整理为正式 `04-lesson-lab`。
+- 当前问题：`04-lesson-lab` guide/notes 已迁移完成，下一步要让用户补 Trainer batch / forward / loss / logits 的实际观察。
 - 为什么现在做它：不建立课程概念路线，后面 LoRA / SFT / DPO 仍会变成换 recipe 抄代码。
 - 完成后解锁：用 course-learning 方式继续拆 Trainer、pipeline、Causal LM，并迁移到闲鱼买家 Agent instruction/SFT 数据格式。
 
@@ -28,8 +28,8 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 
 - Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：生成 `guides/04-lesson-lab/README.md`，把 Trainer batch / forward / loss / backward 观察转成正式 lesson lab。
-- Do not suggest：不要继续新增 `repo-scout`、`debugger-guide`、`arch-analyzer` 命名的指南；不要把 DDIA 升级为第二个 active topic。
+- Current open decision：按 `guides/04-lesson-lab/README.md` 复查 notebook，补齐 Trainer batch / forward / loss / backward 观察。
+- Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
 
 ## Critical Checkpoint
 
@@ -60,7 +60,7 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] 工程标准：从第一阶段开始采用 script-first / config-first / artifact-first，不用 demo 标准放过自己。
 - [x] Schema 草案：买家上下文、suggestion 输出结构、购买阶段枚举、rubric 和工程目录已形成草案。
 - [x] 实验边界：默认模型、训练环境和第一批样例数据规模已确认。
-- [x] 下一阶段入口：生成 `03-socratic-coach` 问题路线图、数据生成标准和 demo 设计前置问题。
+- [x] 下一阶段入口：生成 `06-practice-transfer` 问题路线图、数据生成标准和 demo 设计前置问题。
 - [x] 第一批样本：生成 20 条候选数据，供用户校准审核口径。
 - [x] 难度覆盖：确认数据集需要覆盖 typical / ambiguous / boundary / negative-unsafe case。
 - [x] 输出形态修正：确认 target 为 `{ "suggestions": [{ "s": "建议", "r": "原因" }] }`，最多 3 条。
@@ -73,10 +73,10 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] LM block 观察：用户已观察 `group_texts` 后 `input_ids` / `labels` 均为 128，且 `labels == input_ids`。
 - [x] Collator / Trainer warning 观察：用户已观察 special token config 自动对齐 warning 与 MPS `pin_memory` warning，并确认它们不是训练失败。
 - [x] Causal LM quick training run：用户已完成 `max_steps=200` 的 DistilGPT2 fine-tuning，得到 `training_loss≈3.98`、`perplexity≈47.81`，并上传到 Hugging Face Hub。
-- [x] Trainer 拆解历史 guide：已生成 `guides/04-debugger-guide/03-trainer-train-under-the-hood.md`，迁移后视为历史课程实验现场。
+- [x] Trainer 拆解 guide：已迁入 `guides/04-lesson-lab/03-trainer-train-under-the-hood.md`。
 - [x] course-learning 迁移：project/topic state 已切换为 `course-learning` / `course-learning-topic`，并补齐 course shared maps 与新阶段目录。
 - [x] Concept roadmap：已生成 `guides/03-concept-roadmap/README.md`，把 HF Course 1/2 的关键问题收束为课程概念路线。
-- [ ] Lesson lab：生成 `guides/04-lesson-lab/README.md`，将 Trainer batch / forward / loss / backward 观察迁移到新阶段。
+- [x] Lesson lab：已生成 `guides/04-lesson-lab/README.md`，并迁移 Trainer batch / forward / loss / backward 观察入口。
 - [ ] Trainer batch 观察：在 notebook 中打印 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device。
 - [ ] Trainer forward 观察：手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
 - [ ] HF Course 1/2：完成 Transformer Models 与 Using Transformers 的基础学习。
@@ -96,7 +96,7 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 
 - [x] 01-need-aligner：完成 topic 目标、业务任务、fine-tuning suitability、第一轮品类和核心质量标准确认。
 - [x] 02-syllabus-mapper：完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。
-- [x] 03-concept-roadmap historical input：旧 `03-socratic-coach` 产物保留为数据集与问题路线历史现场。
+- [x] 06-practice-transfer input：数据集与问题路线产物已迁入 course-learning 阶段目录。
 - [x] 第一批候选样本：生成 20 条手机品类 suggestion next action 候选样本。
 - [x] 第一批候选样本 v0.2：根据产品形态反馈，重生成短句数组版本。
 - [x] 第一批候选样本 v0.3：根据 `{s,r}` target schema 生成当前有效版本。

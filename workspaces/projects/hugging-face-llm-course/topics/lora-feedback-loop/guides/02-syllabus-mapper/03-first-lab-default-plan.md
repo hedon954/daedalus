@@ -1,6 +1,6 @@
 # 第一轮 Lab 默认方案
 
-本文件给出 daedalus 主动推进后的第一轮默认方案。除非用户明确反对，后续进入 `03-socratic-coach` 和 demo 设计时按这里执行。
+本文件给出 daedalus 主动推进后的第一轮默认方案。除非用户明确反对，后续进入 `06-practice-transfer` 和 demo 设计时按这里执行。
 
 ## 默认结论
 
@@ -128,7 +128,7 @@ python scripts/generate_report.py --run-a baseline --run-b lora_r1
 
 ## 是否进入 03
 
-`02-repo-scout` 可以在满足下面条件后进入 `03-socratic-coach`：
+`02-syllabus-mapper` 可以在满足下面条件后进入 `03-concept-roadmap`；业务样本与 baseline 设计在后续 `06-practice-transfer` 承接：
 
 - 已有默认模型和升级路径。
 - 已有默认训练环境。

@@ -1,12 +1,12 @@
-# 01 Goal Aligner：LoRA Feedback Loop Lab
+# 01 Need Aligner：LoRA Feedback Loop Lab
 
 ## Learning Navigation
 
 - Final artifact：mini LoRA fine-tuning feedback loop lab + runbook + 实验对比报告 + 业务迁移笔记。
-- Current stage：01-goal-aligner。
+- Current stage：01-need-aligner。
 - Current gap：suggestion next action 输入输出 schema、质量标准、小模型、训练环境和材料读取顺序尚未确认。
 - Evidence needed：用户 review 并确认 task card；下一阶段选择材料入口。
-- After this：进入 `02-source-scout`，围绕 lab 选择 Hugging Face LLM Course / PEFT / TRL / Transformers / Datasets 的最小材料集合。
+- After this：进入 `02-syllabus-mapper`，围绕 lab 选择 Hugging Face LLM Course / PEFT / TRL / Transformers / Datasets 的最小材料集合。
 
 ## Confirmed Direction
 
@@ -35,7 +35,7 @@ DDIA 暂不作为 active topic。它只作为 ambient reading，用来维持系�
 
 ## Fine-tuning Suitability Gate
 
-在进入 `02-source-scout` 前，必须先判断 suggestion next action 是否真的适合 fine-tuning：
+在进入 `02-syllabus-mapper` 前，必须先判断 suggestion next action 是否真的适合 fine-tuning：
 
 - 如果目标是让模型记住商品事实、实时价格、卖家动态或平台规则，fine-tuning 不是主解法；这些应该来自 context engineering / retrieval / tools。
 - 如果目标是让模型稳定学会“什么购物阶段该建议什么动作、如何识别风险、如何输出统一格式和语气、如何在大量相似场景下保持策略一致”，fine-tuning 可以作为候选解法。

@@ -8,7 +8,7 @@
 - 当前课程章节：Hugging Face LLM Course Chapter 1/2
 - 当前 lesson / mechanism：Causal LM quick training run -> Trainer training loop
 - 当前 open question：如何让用户亲自观察 Trainer batch / forward / loss / backward
-- 下一步：生成 `guides/04-lesson-lab/README.md`
+- 下一步：按 `guides/04-lesson-lab/README.md` 复查 Trainer batch / forward / loss / logits，并补充 `notes/04-lesson-lab/README.md`
 
 ## Progress Board
 

@@ -19,7 +19,7 @@ kind = "course-learning-topic"
 parent_project = "../.."
 lifecycle = "active"
 current_phase = "04-lesson-lab"
-next_action = "进入 `04-lesson-lab`：把课程 lesson 变成可观察实验，准备产物：guides/04-lesson-lab/README.md、notes/04-lesson-lab/README.md。"
+next_action = "继续 `04-lesson-lab`：按 guides/04-lesson-lab/README.md 复查 notebook，补齐 Trainer batch / forward / loss / logits 观察，并写入 notes/04-lesson-lab/README.md。"
 
 [[stages]]
 id = "01-need-aligner"
@@ -76,35 +76,35 @@ status = "pending"
 required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md", "reflection/candidate-map.md", "reflection/closeout.md"]
 
 [[transitions]]
-stage = "01-goal-aligner"
+stage = "01-need-aligner"
 action = "init"
 timestamp = "2026-06-14 14:42:45"
 actor = "daedalus-cli"
-reason = "初始化 repo learning topic。"
+reason = "初始化 course learning topic。"
 
 [[transitions]]
-stage = "01-goal-aligner"
+stage = "01-need-aligner"
 action = "complete"
 timestamp = "2026-06-14 20:44:11"
 actor = "daedalus-cli"
 reason = "用户确认 fine-tuning suitability、第一轮手机品类和 suggestion next action 质量标准，01 目标对齐完成。"
 
 [[transitions]]
-stage = "02-repo-scout"
+stage = "02-syllabus-mapper"
 action = "enter"
 timestamp = "2026-06-14 20:44:11"
 actor = "daedalus-cli"
 reason = "进入 Hugging Face LLM Course source/material scout，选择支持 baseline + LoRA 对照实验的最小材料集合。"
 
 [[transitions]]
-stage = "02-repo-scout"
+stage = "02-syllabus-mapper"
 action = "complete"
 timestamp = "2026-06-14 21:32:51"
 actor = "daedalus-cli"
 reason = "完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。"
 
 [[transitions]]
-stage = "03-socratic-coach"
+stage = "06-practice-transfer"
 action = "enter"
 timestamp = "2026-06-14 21:32:51"
 actor = "daedalus-cli"
@@ -115,7 +115,7 @@ stage = "03-concept-roadmap"
 action = "resume"
 timestamp = "2026-06-23 00:53:42"
 actor = "daedalus-cli"
-reason = "将 topic 从 repo-learning 阶段映射为 course-learning 阶段；历史 guide/notes 目录保留。"
+reason = "将 topic 阶段映射为 course-learning 阶段，并迁移 guide/notes 到 course-learning 目录。"
 
 [[transitions]]
 stage = "03-concept-roadmap"
@@ -129,4 +129,4 @@ stage = "04-lesson-lab"
 action = "enter"
 timestamp = "2026-06-23 01:03:06"
 actor = "daedalus-cli"
-reason = "进入 course-learning lesson lab，将历史 Trainer 拆解 guide 迁移为正式 lesson lab。"
+reason = "进入 course-learning lesson lab，执行 Trainer 拆解 guide 并沉淀用户观察证据。"

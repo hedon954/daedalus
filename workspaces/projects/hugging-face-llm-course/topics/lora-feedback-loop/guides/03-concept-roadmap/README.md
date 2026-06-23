@@ -1,6 +1,6 @@
 # HF Course 1/2 Concept Roadmap
 
-本 guide 是迁移到 course-learning 后的第一份正式课程阶段指南。它不继续使用旧 `04-debugger-guide` 命名；旧目录只保留为历史学习现场。
+本 guide 是迁移到 course-learning 后的第一份正式课程阶段指南。课程实验入口统一收敛到 `04-lesson-lab`。
 
 ## Current Course Scope
 
@@ -18,7 +18,7 @@
 | Causal LM | 为什么 GPT-2 预训练目标是预测 next token？ | 已完成 ELI5 Causal LM quick training run | 用 logits shape 和 shifted labels 解释 loss |
 | `group_texts` | 为什么要拼接再切成固定 block？输入输出类型是什么？ | 已观察 block size = 128，`labels == input_ids` | 将观察整理进 `notes/04-lesson-lab` |
 | data collator | collator 在 batch 进入 model 前做了什么？ | 已理解 `mlm=False`、pad/eos warning | 打印一个 batch 的 keys、shape、device |
-| `Trainer.train()` | batch 如何经过 forward、loss、backward、optimizer step？ | 已生成历史 guide `04-debugger-guide/03-trainer-train-under-the-hood.md` | 下一份正式 guide 写入 `guides/04-lesson-lab/README.md` |
+| `Trainer.train()` | batch 如何经过 forward、loss、backward、optimizer step？ | 已迁移到 `04-lesson-lab/03-trainer-train-under-the-hood.md` | 当前正式入口是 `guides/04-lesson-lab/README.md` |
 
 ## Mechanism Deep Dive Candidates
 
@@ -44,7 +44,7 @@
 
 - [`../04-lesson-lab/README.md`](../04-lesson-lab/README.md)
 
-目标是把历史 `Trainer.train()` 拆解 guide 迁移成正式 lesson lab：
+目标是继续执行 `Trainer.train()` 拆解 lesson lab：
 
 ```text
 batch -> model(**batch) -> logits/loss -> loss.backward -> optimizer.step

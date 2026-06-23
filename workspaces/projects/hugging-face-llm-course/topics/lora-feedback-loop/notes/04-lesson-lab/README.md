@@ -1,4 +1,4 @@
-# 04 Debugger Guide：运行证据
+# 04 Lesson Lab：运行证据
 
 本文件记录用户亲自运行 demo 的证据、观察和下一步调试问题。
 

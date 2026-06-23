@@ -30,8 +30,8 @@
 
 > 共 2 条状态流转；下面显示最近 2 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
 
-- `2026-06-14 14:42:45` 由 `daedalus-cli` 对 `project` 执行 `init`：初始化 repo learning project，并创建初始专题 `lora-feedback-loop`。
-- `2026-06-23 00:53:42` 由 `daedalus-cli` 对 `project` 执行 `migrate`：将项目从 repo-learning 语义迁移为 course-learning。
+- `2026-06-14 14:42:45` 由 `daedalus-cli` 对 `project` 执行 `init`：初始化 course learning project，并创建初始专题 `lora-feedback-loop`。
+- `2026-06-23 00:53:42` 由 `daedalus-cli` 对 `project` 执行 `migrate`：确认项目使用 course-learning 语义。
 
 ## 下一步 CLI 建议
 

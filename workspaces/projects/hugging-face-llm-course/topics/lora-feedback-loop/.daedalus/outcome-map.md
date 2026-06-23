@@ -22,18 +22,17 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | 产物 | 用途 | 状态 |
 | --- | --- | --- |
 | [`.daedalus/task-card.md`](task-card.md) | 学习目标与验收标准 | 已确认草案 |
-| [`guides/01-goal-aligner/02-secondhand-buyer-agent-research.md`](../guides/01-goal-aligner/02-secondhand-buyer-agent-research.md) | 二手买家 Agent 业务痛点与 fine-tuning suitability gate | Agent 调研完成，待用户确认 |
-| [`guides/02-repo-scout/02-schema-and-engineering-shape.md`](../guides/02-repo-scout/02-schema-and-engineering-shape.md) | 输入输出 schema、rubric 与 production-shaped 工程目录 | 草案完成，待用户 review |
-| [`guides/02-repo-scout/03-first-lab-default-plan.md`](../guides/02-repo-scout/03-first-lab-default-plan.md) | 第一轮模型、训练环境、数据规模与材料入口默认方案 | 草案完成，待用户 review |
-| [`guides/03-socratic-coach/README.md`](../guides/03-socratic-coach/README.md) | 递进问题路线图与第一批数据审核标准 | 已生成，待用户用样本校准 |
-| [`guides/03-socratic-coach/01-candidate-samples-v0.1.md`](../guides/03-socratic-coach/01-candidate-samples-v0.1.md) | 第一批 20 条候选样本 | 已生成，待用户审核 |
-| [`guides/03-socratic-coach/02-candidate-samples-v0.2.md`](../guides/03-socratic-coach/02-candidate-samples-v0.2.md) | 第一批 20 条短句数组候选样本 | 已生成，待用户审核 |
-| [`guides/03-socratic-coach/03-candidate-samples-v0.3.md`](../guides/03-socratic-coach/03-candidate-samples-v0.3.md) | `{s,r}` schema 候选样本 | 已生成，待用户审核 |
-| [`guides/03-socratic-coach/04-candidate-samples-v0.4.md`](../guides/03-socratic-coach/04-candidate-samples-v0.4.md) | 用户口吻 Agent 指令样本 | 已生成，待用户审核 |
+| [`guides/01-need-aligner/02-secondhand-buyer-agent-research.md`](../guides/01-need-aligner/02-secondhand-buyer-agent-research.md) | 二手买家 Agent 业务痛点与 fine-tuning suitability gate | Agent 调研完成，待用户确认 |
+| [`guides/02-syllabus-mapper/02-schema-and-engineering-shape.md`](../guides/02-syllabus-mapper/02-schema-and-engineering-shape.md) | 输入输出 schema、rubric 与 production-shaped 工程目录 | 草案完成，待用户 review |
+| [`guides/02-syllabus-mapper/03-first-lab-default-plan.md`](../guides/02-syllabus-mapper/03-first-lab-default-plan.md) | 第一轮模型、训练环境、数据规模与材料入口默认方案 | 草案完成，待用户 review |
+| [`guides/06-practice-transfer/README.md`](../guides/06-practice-transfer/README.md) | 递进问题路线图与第一批数据审核标准 | 已生成，待用户用样本校准 |
+| [`guides/06-practice-transfer/01-candidate-samples-v0.1.md`](../guides/06-practice-transfer/01-candidate-samples-v0.1.md) | 第一批 20 条候选样本 | 已生成，待用户审核 |
+| [`guides/06-practice-transfer/02-candidate-samples-v0.2.md`](../guides/06-practice-transfer/02-candidate-samples-v0.2.md) | 第一批 20 条短句数组候选样本 | 已生成，待用户审核 |
+| [`guides/06-practice-transfer/03-candidate-samples-v0.3.md`](../guides/06-practice-transfer/03-candidate-samples-v0.3.md) | `{s,r}` schema 候选样本 | 已生成，待用户审核 |
+| [`guides/06-practice-transfer/04-candidate-samples-v0.4.md`](../guides/06-practice-transfer/04-candidate-samples-v0.4.md) | 用户口吻 Agent 指令样本 | 已生成，待用户审核 |
 | [`guides/03-concept-roadmap/README.md`](../guides/03-concept-roadmap/README.md) | HF Course 1/2 概念路线图 | 已生成，当前执行 |
-| [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson 可观察实验入口 | 待生成 |
-| [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) | 用户运行、观察和解释证据 | 待填 |
-| 历史 [`guides/04-debugger-guide/`](../guides/04-debugger-guide) | 迁移前的课程实验指南现场 | 保留为历史证据 |
+| [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson 可观察实验入口 | 已迁移，当前执行 |
+| [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) | 用户运行、观察和解释证据 | 已迁移历史观察，待补 Trainer batch/forward |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计草案与定稿 | 待填 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 待填 |
 | [`guides/06-practice-transfer/README.md`](../guides/06-practice-transfer/README.md) | 业务迁移练习 | 待填 |
@@ -44,10 +43,10 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
 - 当前阶段：04-lesson-lab / Trainer 训练循环可观察实验。
-- 当前目标：把历史 `Trainer.train()` 拆解 guide 迁移成正式 lesson lab，围绕 batch、forward、loss、backward 和 optimizer step 形成用户可运行观察。
-- 当前障碍：尚未把历史 `Trainer.train()` 拆解 guide 整理为正式 `04-lesson-lab`。
+- 当前目标：执行正式 lesson lab，围绕 batch、forward、loss、backward 和 optimizer step 形成用户可运行观察。
+- 当前障碍：guide/notes 已迁移完成，但用户还需要补 Trainer batch、forward、loss/logits 的实际观察。
 - 当前动作服务的产物：`guides/04-lesson-lab/README.md` 和后续 `notes/04-lesson-lab/README.md`。
-- 当前光标：用户已完成 `max_steps=200` 的 DistilGPT2 Causal LM quick training run；下一步生成 `guides/04-lesson-lab/README.md`。
+- 当前光标：用户已完成 `max_steps=200` 的 DistilGPT2 Causal LM quick training run；下一步按 `guides/04-lesson-lab/README.md` 复查 Trainer batch / forward / loss / logits，并把观察补进 notes。
 
 ## Contribution Back To Project
 
@@ -75,11 +74,11 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] 确认手机品类初始样例集结构、suggestion 输出 schema、购买阶段枚举和 eval rubric 草案。
 - [x] 确认具体小模型、训练环境和第一批样例数据规模。
 - [x] 确认材料入口：围绕 lab 反向读取 Hugging Face LLM Course + PEFT/TRL/Transformers/Datasets 官方文档。
-- [x] 生成 `03-socratic-coach` 问题路线图和第一批数据审核标准。
+- [x] 生成 `06-practice-transfer` 问题路线图和第一批数据审核标准。
 - [x] 生成第一批 20 条候选样本并等待用户审核。
 - [x] 跑通第一个 Hugging Face Transformers pipeline smoke test。
 - [x] 跑通 Causal LM quick training run。
-- [ ] 拆解 `Trainer.train()` 的 batch / forward / loss / backward。
+- [ ] 用户补充 `Trainer.train()` 的 batch / forward / loss / backward 观察。
 - [ ] 完成 HF Course 第 1、2 章 foundation sprint。
 - [ ] 解释并记录 pipeline 的 task、默认 model、tokenizer、config、postprocess。
 - [ ] 用户审核至少 5-10 条候选样本。

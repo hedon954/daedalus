@@ -17,7 +17,7 @@
 
 - 希望获得的能力：从 AI Agent 应用层进入模型训练闭环层，理解 fine-tuning 的数据、训练、评测、反馈和版本化边界，并能判断什么时候该 fine-tune、什么时候该用 prompt/RAG/tooling。
 - 继承的 shared context：暂无；本 topic 将沉淀 Hugging Face LLM Course project 的第一批 shared context。
-- 需要补充的源码入口：Hugging Face LLM Course、Transformers、Datasets、PEFT、TRL 官方文档和最小 LoRA 示例；具体材料在 `02-source-scout` 阶段确认。
+- 需要补充的源码入口：Hugging Face LLM Course、Transformers、Datasets、PEFT、TRL 官方文档和最小 LoRA 示例；具体材料在 `02-syllabus-mapper` 阶段确认。
 - 运行/调试要求：在用户可控的非公司环境中跑通训练；优先选择本地或低成本云环境能承受的小模型和小数据集；所有训练命令、环境约束和失败案例写入 runbook；所有入口都应是脚本/配置驱动，所有关键中间产物都要落盘并可追溯。
 - Mini demo 方向：闲鱼二手买家 Agent 在每次回复后生成 2-4 个高质量 suggestion next actions；闭环为 `initial dataset -> LoRA fine-tuning -> test / online-like dataset -> eval -> error analysis -> feedback data construction -> retrain -> compare`。
 

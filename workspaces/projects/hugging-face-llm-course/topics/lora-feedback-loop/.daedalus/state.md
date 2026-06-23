@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`04-lesson-lab`
 - 状态：`active`
-- 下一步：进入 `04-lesson-lab`：把课程 lesson 变成可观察实验，准备产物：guides/04-lesson-lab/README.md、notes/04-lesson-lab/README.md。
+- 下一步：继续 `04-lesson-lab`：按 guides/04-lesson-lab/README.md 复查 notebook，补齐 Trainer batch / forward / loss / logits 观察，并写入 notes/04-lesson-lab/README.md。
 
 ## 枚举约束
 
@@ -32,10 +32,7 @@
 
 ## 缺失产物
 
-- [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) 属于 `04-lesson-lab`
-- [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) 属于 `04-lesson-lab`
 - [`guides/05-mechanism-deep-dive/README.md`](../guides/05-mechanism-deep-dive/README.md) 属于 `05-mechanism-deep-dive`
-- [`guides/06-practice-transfer/README.md`](../guides/06-practice-transfer/README.md) 属于 `06-practice-transfer`
 - [`demo/design.md`](../demo/design.md) 属于 `07-capstone-lab`
 - [`review/mastery-map.md`](../review/mastery-map.md) 属于 `08-review-loop`
 - [`review/question-bank.md`](../review/question-bank.md) 属于 `08-review-loop`
@@ -48,14 +45,14 @@
 
 > 共 8 条状态流转；下面显示最近 8 条，完整历史见 [`.daedalus/state.toml`](state.toml) 的 `[[transitions]]`。
 
-- `2026-06-14 14:42:45` 由 `daedalus-cli` 对 `01-goal-aligner` 执行 `init`：初始化 repo learning topic。
-- `2026-06-14 20:44:11` 由 `daedalus-cli` 对 `01-goal-aligner` 执行 `complete`：用户确认 fine-tuning suitability、第一轮手机品类和 suggestion next action 质量标准，01 目标对齐完成。
-- `2026-06-14 20:44:11` 由 `daedalus-cli` 对 `02-repo-scout` 执行 `enter`：进入 Hugging Face LLM Course source/material scout，选择支持 baseline + LoRA 对照实验的最小材料集合。
-- `2026-06-14 21:32:51` 由 `daedalus-cli` 对 `02-repo-scout` 执行 `complete`：完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。
-- `2026-06-14 21:32:51` 由 `daedalus-cli` 对 `03-socratic-coach` 执行 `enter`：进入问题路线图阶段，将默认方案转成数据生成标准、审核问题和 demo 设计前置问题。
-- `2026-06-23 00:53:42` 由 `daedalus-cli` 对 `03-concept-roadmap` 执行 `resume`：将 topic 从 repo-learning 阶段映射为 course-learning 阶段；历史 guide/notes 目录保留。
+- `2026-06-14 14:42:45` 由 `daedalus-cli` 对 `01-need-aligner` 执行 `init`：初始化 course learning topic。
+- `2026-06-14 20:44:11` 由 `daedalus-cli` 对 `01-need-aligner` 执行 `complete`：用户确认 fine-tuning suitability、第一轮手机品类和 suggestion next action 质量标准，01 目标对齐完成。
+- `2026-06-14 20:44:11` 由 `daedalus-cli` 对 `02-syllabus-mapper` 执行 `enter`：进入 Hugging Face LLM Course source/material scout，选择支持 baseline + LoRA 对照实验的最小材料集合。
+- `2026-06-14 21:32:51` 由 `daedalus-cli` 对 `02-syllabus-mapper` 执行 `complete`：完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。
+- `2026-06-14 21:32:51` 由 `daedalus-cli` 对 `06-practice-transfer` 执行 `enter`：进入问题路线图阶段，将默认方案转成数据生成标准、审核问题和 demo 设计前置问题。
+- `2026-06-23 00:53:42` 由 `daedalus-cli` 对 `03-concept-roadmap` 执行 `resume`：将 topic 阶段映射为 course-learning 阶段，并迁移 guide/notes 到 course-learning 目录。
 - `2026-06-23 01:03:06` 由 `daedalus-cli` 对 `03-concept-roadmap` 执行 `complete`：完成 HF Course 1/2 concept roadmap，并同步 shared concept/progress/syllabus maps。
-- `2026-06-23 01:03:06` 由 `daedalus-cli` 对 `04-lesson-lab` 执行 `enter`：进入 course-learning lesson lab，将历史 Trainer 拆解 guide 迁移为正式 lesson lab。
+- `2026-06-23 01:03:06` 由 `daedalus-cli` 对 `04-lesson-lab` 执行 `enter`：进入 course-learning lesson lab，执行 Trainer 拆解 guide 并沉淀用户观察证据。
 
 ## 下一步 CLI 建议
 

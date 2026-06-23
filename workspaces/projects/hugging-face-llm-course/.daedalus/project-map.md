@@ -38,4 +38,4 @@ Project Map 是长期 course learning project 的导航仪表盘。它描述课�
 
 - 课程主页：https://huggingface.co/learn/llm-course/en
 - 新 shared 入口：[`shared/syllabus-map.md`](../shared/syllabus-map.md)、[`shared/course-progress.md`](../shared/course-progress.md)、[`shared/concept-map.md`](../shared/concept-map.md)
-- 历史 `guides/04-debugger-guide` 保留为迁移前现场；后续新 guide 使用 course-learning 阶段名。
+- 课程实验现场已迁入 `guides/04-lesson-lab`；后续新 guide 使用 course-learning 阶段名。

@@ -10,7 +10,7 @@
 
 ## 2026-06-14 14:42:45
 
-- 事件：初始化 repo learning project。
+- 事件：初始化 course learning project。
 - 有效引导：
 - 用户亲自完成的实践：
 - Agent 代替用户过多的地方：
