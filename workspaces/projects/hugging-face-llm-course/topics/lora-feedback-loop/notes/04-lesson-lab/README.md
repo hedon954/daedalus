@@ -47,6 +47,12 @@
 - 固定 model name，避免依赖 Transformers 默认模型选择。
 - 将运行命令和输出沉淀到 demo README 或 runbook。
 
+## 2026-06-23 Chapter 1/5 Text Classification Tokenizer Note
+
+- 当前问题：BPE 和 WordPiece 的区别是什么？
+- 独立笔记：[`bpe-vs-wordpiece.md`](bpe-vs-wordpiece.md)
+- 当前结论：BPE 更像频率驱动的 merge rules；WordPiece 更像词表驱动的最长匹配，并在训练时更重视片段之间的相对绑定强度。
+
 ## 2026-06-22 ELI5 Dataset Inspection
 
 ### 运行目标
