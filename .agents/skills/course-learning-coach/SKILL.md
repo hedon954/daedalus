@@ -108,6 +108,7 @@ Use when closing a course topic and mining verified knowledge.
 - Ask 1-3 high-value questions when the user's intent or understanding is still fuzzy.
 - Write Agent-generated action plans to `guides/`, not `notes/`.
 - Write `notes/` only after user answers, runs code, observes output, or explains a mechanism.
+- Before writing notes, classify the note shape. Stage `README.md` files are indexes/timelines for restoring the learning scene. A reusable concept, mechanism explanation, comparison, debugging pattern, or Agent failure mode must become a dedicated note file and be linked from the stage README plus shared maps when relevant.
 - For lesson labs, always separate prediction, minimum code, observed output, explanation, and next transfer.
 - Treat warnings, shapes, losses, artifacts, and generated files as learning evidence, not terminal noise.
 - Keep historical directories after manual reorganization unless the user approves renaming them.
