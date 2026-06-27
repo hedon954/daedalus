@@ -18,17 +18,18 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：`04-lesson-lab` guide/notes 已迁移完成，下一步要让用户补 Trainer batch / forward / loss / logits 的实际观察。
+- 当前问题：用户已完成 sequence classification lab，并理解了 forward / logits / loss / label mapping；下一步要验证能否脱离教程闭卷重写最小 flow。
 - 为什么现在做它：不建立课程概念路线，后面 LoRA / SFT / DPO 仍会变成换 recipe 抄代码。
-- 完成后解锁：用 course-learning 方式继续拆 Trainer、pipeline、Causal LM，并迁移到闲鱼买家 Agent instruction/SFT 数据格式。
+- 完成后解锁：能从任务契约反推 tokenizer、collator、model head、metric 和 Trainer，再迁移到闲鱼买家 Agent instruction/SFT 数据格式。
 
 ## Current Cursor
 
 Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
 
 - Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
+- Latest lesson evidence：用户已完成 `transformer-work/sequence_classification.ipynb`，跑通 pipeline load / inference，并通过手动 probe 理解 `batch -> model forward -> loss/logits -> argmax -> id2label`。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：按 `guides/04-lesson-lab/README.md` 复查 notebook，补齐 Trainer batch / forward / loss / backward 观察。
+- Current open decision：盖住教程，按 `guides/04-lesson-lab/04-sequence-classification-derivation.md` 的 skeleton 重写最小 sequence classification flow。
 - Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
 
 ## Critical Checkpoint
@@ -74,9 +75,13 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] Collator / Trainer warning 观察：用户已观察 special token config 自动对齐 warning 与 MPS `pin_memory` warning，并确认它们不是训练失败。
 - [x] Causal LM quick training run：用户已完成 `max_steps=200` 的 DistilGPT2 fine-tuning，得到 `training_loss≈3.98`、`perplexity≈47.81`，并上传到 Hugging Face Hub。
 - [x] Trainer 拆解 guide：已迁入 `guides/04-lesson-lab/03-trainer-train-under-the-hood.md`。
+- [x] Sequence classification lab：用户已完成 `transformer-work/sequence_classification.ipynb`，但需要做 derivation review。
+- [x] Sequence classification pipeline reload：用户报告已跑通保存/加载或内存模型推理链路。
 - [x] course-learning 迁移：project/topic state 已切换为 `course-learning` / `course-learning-topic`，并补齐 course shared maps 与新阶段目录。
 - [x] Concept roadmap：已生成 `guides/03-concept-roadmap/README.md`，把 HF Course 1/2 的关键问题收束为课程概念路线。
 - [x] Lesson lab：已生成 `guides/04-lesson-lab/README.md`，并迁移 Trainer batch / forward / loss / backward 观察入口。
+- [x] Sequence classification derivation review：已补 raw/tokenized/collated/forward/logits 观察，并理解 loss/logits/argmax/id2label 链路。
+- [ ] Sequence classification closed-book rewrite：盖住教程，按任务契约重写最小 flow。
 - [ ] Trainer batch 观察：在 notebook 中打印 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device。
 - [ ] Trainer forward 观察：手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
 - [ ] HF Course 1/2：完成 Transformer Models 与 Using Transformers 的基础学习。

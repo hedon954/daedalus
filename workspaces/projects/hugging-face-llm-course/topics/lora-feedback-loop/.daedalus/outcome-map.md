@@ -42,11 +42,11 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：04-lesson-lab / Trainer 训练循环可观察实验。
-- 当前目标：执行正式 lesson lab，围绕 batch、forward、loss、backward 和 optimizer step 形成用户可运行观察。
-- 当前障碍：guide/notes 已迁移完成，但用户还需要补 Trainer batch、forward、loss/logits 的实际观察。
-- 当前动作服务的产物：`guides/04-lesson-lab/README.md` 和后续 `notes/04-lesson-lab/README.md`。
-- 当前光标：用户已完成 `max_steps=200` 的 DistilGPT2 Causal LM quick training run；下一步按 `guides/04-lesson-lab/README.md` 复查 Trainer batch / forward / loss / logits，并把观察补进 notes。
+- 当前阶段：04-lesson-lab / Sequence classification closed-book rewrite。
+- 当前目标：验证用户能否脱离教程，按任务契约重写最小 sequence classification flow。
+- 当前障碍：用户已理解 `batch -> model forward -> loss/logits -> argmax -> id2label`，但还需要用闭卷复现证明不是只记住解释。
+- 当前动作服务的产物：`guides/04-lesson-lab/04-sequence-classification-derivation.md` 和后续 `notes/04-lesson-lab/README.md`。
+- 当前光标：下一步盖住教程，用 8 段 skeleton 重写最小 flow，然后再进入 Chapter 2 pipeline/model/tokenizer 拆解。
 
 ## Contribution Back To Project
 
@@ -78,6 +78,10 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] 生成第一批 20 条候选样本并等待用户审核。
 - [x] 跑通第一个 Hugging Face Transformers pipeline smoke test。
 - [x] 跑通 Causal LM quick training run。
+- [x] 跑通 sequence classification lab。
+- [x] 跑通 sequence classification pipeline load / inference。
+- [x] 完成 sequence classification derivation review。
+- [ ] 完成 sequence classification closed-book rewrite。
 - [ ] 用户补充 `Trainer.train()` 的 batch / forward / loss / backward 观察。
 - [ ] 完成 HF Course 第 1、2 章 foundation sprint。
 - [ ] 解释并记录 pipeline 的 task、默认 model、tokenizer、config、postprocess。
