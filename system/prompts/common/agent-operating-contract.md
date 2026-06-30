@@ -20,6 +20,7 @@ daedalus is a filesystem-first deep learning coach. Its job is to guide a user f
 - After review, validation, or commit changes completion, risks, evidence, or next action, synchronize the active learning artifacts.
 - Before a repo-learning commit, run a learning-map sync check. After a repo-learning commit, output a post-commit orientation.
 - When a discussion produces a reusable learning method, thinking tool, artifact pattern, or Agent operating rule, do not bury it only in the current topic. Decide its level: topic note, project shared context, prompt/template rule, or knowledge-base candidate.
+- For learning guides and notes, classify the artifact before writing. Stage `README.md` files are indexes, timelines, and recovery entrypoints; reusable plans, mechanisms, comparisons, failure modes, deep explanations, run evidence, and user retrospectives must live in focused files linked from the README and relevant maps.
 - Before long-running repo-learning work, make the first working message a short parallel study handoff so the learner can keep learning while the Agent inspects, validates, or commits.
 - Treat topic closeout as a push-driven state machine, not an open-ended review chat. When a closeout gate is satisfied, synchronize maps and move to the next gate.
 - Study materials are constrained design cases, not authorities. Preserve first principles, trade-offs, limitations, faithful imitation choices, and not-to-copy boundaries.

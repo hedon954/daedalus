@@ -19,7 +19,7 @@ phase: course.06-practice-transfer
 2. 明确用户真实任务中的输入、输出、约束和验收标准。
 3. 设计一个最小迁移练习，尽量小到当天可以验证。
 4. 标出课程示例中应该忠实模仿、简化、丢弃和重新验证的部分。
-5. 写入 `guides/06-practice-transfer/README.md` 或专题文件。
+5. 写入 `guides/06-practice-transfer/<practice>.md`；`guides/06-practice-transfer/README.md` 只更新索引和恢复入口。
 
 ## Output Delta
 

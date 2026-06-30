@@ -67,22 +67,24 @@ AI 不能是：
 
 不要把 AI 的总结混进用户理解正文。
 
-## Notes Granularity
+## Artifact Granularity
 
-写入 notes 前必须先判断笔记形态，不要把所有内容都追加到阶段 `README.md`。
+写入 `guides/` 或 `notes/` 前必须先判断 artifact 形态，不要把所有内容都追加到阶段 `README.md`。
 
-`README.md` 只承担：
+`guides/**/README.md` 和 `notes/**/README.md` 只承担：
 
 - 当前阶段索引
 - 时间线
 - 恢复现场
-- 链接到具体 notes
+- 链接到具体 guides / notes
 - 很短的当前结论
 
 下面这些内容必须单独成篇，并从 README 链接过去：
 
+- 具体学习路线、实现计划或 lesson guide
 - 可复用概念解释
 - 机制对比
+- 排障路径和运行证据
 - debugging pattern
 - 失败模式
 - 学习方法

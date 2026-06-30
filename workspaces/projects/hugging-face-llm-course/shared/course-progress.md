@@ -5,18 +5,18 @@
 ## Current Checkpoint
 
 - Active topic：`lora-feedback-loop`
-- 当前课程章节：Hugging Face LLM Course Chapter 1/2
-- 当前 lesson / mechanism：Sequence classification forward / logits / loss / label mapping 已理解
-- 当前 open question：能否盖住教程，按任务契约独立重写最小 sequence classification flow
-- 下一步：闭卷重写一个最小 flow：dataset -> tokenizer -> collator -> model forward -> logits -> label，再进入 Chapter 2 pipeline/model/tokenizer 拆解
+- 当前课程章节：Hugging Face LLM Course Chapter 1/5
+- 当前 lesson / mechanism：Chapter 1/5 task lab sweep
+- 当前 open question：Chapter 1/5 的 8 个 labs 如何横向改变 input、processor/tokenizer、head、loss、logits/generated output 和 postprocess
+- 下一步：做 Question Answering lab，观察 start/end logits 和 span extraction
 
 ## Progress Board
 
 | Chapter / Section | Status | Evidence | Review |
 | --- | --- | --- | --- |
-| Chapter 1 Transformer Models | in-progress | pipeline / Causal LM quick run / sequence classification lab / forward-logits probe | 待闭卷最小复现 |
-| Chapter 2 Using Transformers | planned | tokenizer / model / Trainer observations | 待进入 |
+| Chapter 1/5 How Transformers solve tasks | in-progress | 3/8 labs complete：Causal LM / sequence classification / token classification | 当前做 task lab sweep |
+| Chapter 2 Using Transformers | planned | tokenizer / model / Trainer observations | Chapter 1/5 labs 后进入 |
 
 ## Review Queue
 
-- Sequence classification：闭卷重写最小 flow，验证是否能脱离教程推导。
+- Chapter 1/5 task sweep：共 8 个 lab，已完成 3 个；下一步 Question answering。

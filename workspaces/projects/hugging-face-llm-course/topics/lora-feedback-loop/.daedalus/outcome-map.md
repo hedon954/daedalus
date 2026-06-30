@@ -31,8 +31,10 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | [`guides/06-practice-transfer/03-candidate-samples-v0.3.md`](../guides/06-practice-transfer/03-candidate-samples-v0.3.md) | `{s,r}` schema 候选样本 | 已生成，待用户审核 |
 | [`guides/06-practice-transfer/04-candidate-samples-v0.4.md`](../guides/06-practice-transfer/04-candidate-samples-v0.4.md) | 用户口吻 Agent 指令样本 | 已生成，待用户审核 |
 | [`guides/03-concept-roadmap/README.md`](../guides/03-concept-roadmap/README.md) | HF Course 1/2 概念路线图 | 已生成，当前执行 |
-| [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson 可观察实验入口 | 已迁移，当前执行 |
-| [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) | 用户运行、观察和解释证据 | 已迁移历史观察，待补 Trainer batch/forward |
+| [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson guide 索引 | 已索引化，当前执行 |
+| [`guides/04-lesson-lab/06-token-classification-derivation.md`](../guides/04-lesson-lab/06-token-classification-derivation.md) | Token classification 任务契约与 label alignment guide | 已完成 |
+| [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) | Lesson lab notes 索引 | 已索引化 |
+| [`notes/04-lesson-lab/2026-06-30-token-classification-lab-recap.md`](../notes/04-lesson-lab/2026-06-30-token-classification-lab-recap.md) | Token classification 用户复述与完成证据 | 已完成 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计草案与定稿 | 待填 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 待填 |
 | [`guides/06-practice-transfer/README.md`](../guides/06-practice-transfer/README.md) | 业务迁移练习 | 待填 |
@@ -42,11 +44,11 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：04-lesson-lab / Sequence classification closed-book rewrite。
-- 当前目标：验证用户能否脱离教程，按任务契约重写最小 sequence classification flow。
-- 当前障碍：用户已理解 `batch -> model forward -> loss/logits -> argmax -> id2label`，但还需要用闭卷复现证明不是只记住解释。
-- 当前动作服务的产物：`guides/04-lesson-lab/04-sequence-classification-derivation.md` 和后续 `notes/04-lesson-lab/README.md`。
-- 当前光标：下一步盖住教程，用 8 段 skeleton 重写最小 flow，然后再进入 Chapter 2 pipeline/model/tokenizer 拆解。
+- 当前阶段：04-lesson-lab / Chapter 1/5 task lab sweep。
+- 当前目标：先完成 `How Transformers solve tasks` 中的 8 个任务 labs，用重复建立不同任务的输入、模型架构、head、loss 和 postprocess 直觉。
+- 当前障碍：需要避免“机械重复”变成无意识抄 recipe；每个 lab 必须记录 input、batch、model class、output shape 和 task 差异。
+- 当前动作服务的产物：`guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md` 和后续各 lab notes。
+- 当前光标：下一步做 question answering lab。
 
 ## Contribution Back To Project
 
@@ -81,7 +83,17 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] 跑通 sequence classification lab。
 - [x] 跑通 sequence classification pipeline load / inference。
 - [x] 完成 sequence classification derivation review。
-- [ ] 完成 sequence classification closed-book rewrite。
+- [x] 完成 sequence classification closed-book rewrite。
+- [ ] 完成 Chapter 1/5 task lab sweep。
+- [x] Lab 1/8 Text generation / Causal LM。
+- [x] Lab 2/8 Text classification。
+- [x] Lab 3/8 Token classification。
+- [ ] Lab 4/8 Question answering。
+- [ ] Lab 5/8 Summarization。
+- [ ] Lab 6/8 Translation。
+- [ ] Lab 7/8 Automatic speech recognition。
+- [ ] Lab 8/8 Image classification。
+- [ ] 手写 text-classification pipeline 等价流程。
 - [ ] 用户补充 `Trainer.train()` 的 batch / forward / loss / backward 观察。
 - [ ] 完成 HF Course 第 1、2 章 foundation sprint。
 - [ ] 解释并记录 pipeline 的 task、默认 model、tokenizer、config、postprocess。

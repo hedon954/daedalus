@@ -15,7 +15,7 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 - After review, validation, or commit changes completion status, risks, evidence, or next action, synchronize the relevant learning artifacts.
 - Before repo-learning commits, run a learning-map sync check; after repo-learning commits, end with post-commit orientation.
 - When a discussion reveals a reusable learning method, thinking tool, artifact pattern, or Agent failure mode, promote it to the right durable layer instead of burying it only in the current topic.
-- For learning notes, classify the artifact before writing: README files are indexes/timelines; reusable concepts, mechanisms, comparisons, failure modes, and deep explanations get their own focused note and are linked from the README and relevant maps.
+- For learning guides and notes, classify the artifact before writing: README files are indexes/timelines/recovery entrypoints; reusable plans, mechanisms, comparisons, failure modes, deep explanations, run evidence, and user retrospectives get their own focused file and are linked from the README and relevant maps.
 - Treat topic closeout as a push-driven state machine: when a gate is satisfied, synchronize maps and move to the next gate instead of waiting for the user to re-prompt.
 - Mine knowledge-base candidates from closeout plus guides, notes, demo, and validation evidence; do not rely on closeout alone.
 - Keep closeout focused on core goals, demo decisions, trade-offs, architecture, transfer boundaries, and important weak foundations; make knowledge extraction greedy.

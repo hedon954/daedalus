@@ -20,7 +20,7 @@ phase: course.03-concept-roadmap
 2. 将每个概念改写成可回答的问题。
 3. 区分三类问题：先靠实验观察、需要文档解释、必要时读源码。
 4. 同步 `shared/concept-map.md`。
-5. 写入 `guides/03-concept-roadmap/README.md`。
+5. 写入 `guides/03-concept-roadmap/<roadmap>.md`；`guides/03-concept-roadmap/README.md` 只更新索引和恢复入口。
 
 ## Output Delta
 

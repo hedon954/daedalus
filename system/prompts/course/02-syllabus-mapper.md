@@ -19,7 +19,7 @@ phase: course.02-syllabus-mapper
 2. 标出主线章节、旁路章节、可跳过章节、延后章节。
 3. 为每个主线章节写出概念目标、依赖、必做练习和可验证输出。
 4. 同步 `shared/syllabus-map.md` 和 `shared/course-progress.md`。
-5. 为 active topic 写 `guides/02-syllabus-mapper/README.md`。
+5. 为 active topic 写 `guides/02-syllabus-mapper/<route>.md`；`guides/02-syllabus-mapper/README.md` 只更新索引和恢复入口。
 
 ## Output Delta
 

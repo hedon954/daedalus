@@ -18,18 +18,18 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：用户已完成 sequence classification lab，并理解了 forward / logits / loss / label mapping；下一步要验证能否脱离教程闭卷重写最小 flow。
+- 当前问题：用户希望先完成 Chapter 1/5 `How Transformers solve tasks` 里的 task labs，用机械式重复建立 Transformer 任务直觉。
 - 为什么现在做它：不建立课程概念路线，后面 LoRA / SFT / DPO 仍会变成换 recipe 抄代码。
-- 完成后解锁：能从任务契约反推 tokenizer、collator、model head、metric 和 Trainer，再迁移到闲鱼买家 Agent instruction/SFT 数据格式。
+- 完成后解锁：能横向比较不同任务的 input、processor/tokenizer、head、loss、logits/generated output 和 postprocess，再回到 Chapter 2 拆 pipeline。
 
 ## Current Cursor
 
 Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
 
 - Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
-- Latest lesson evidence：用户已完成 `transformer-work/sequence_classification.ipynb`，跑通 pipeline load / inference，并通过手动 probe 理解 `batch -> model forward -> loss/logits -> argmax -> id2label`。
+- Latest lesson evidence：用户已完成 `transformer-work/token_classification.ipynb`，使用 `flaitenberger/wnut_17` 跑通 token classification 小样本训练、保存本地模型、`pipeline("ner")` 推理，并能复述 word-level labels 到 token-level labels 的 alignment 机制。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：盖住教程，按 `guides/04-lesson-lab/04-sequence-classification-derivation.md` 的 skeleton 重写最小 sequence classification flow。
+- Current open decision：Chapter 2 `Behind the pipeline` 后移；当前继续 Chapter 1/5 task lab sweep，下一步做 question answering lab。
 - Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
 
 ## Critical Checkpoint
@@ -81,7 +81,17 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] Concept roadmap：已生成 `guides/03-concept-roadmap/README.md`，把 HF Course 1/2 的关键问题收束为课程概念路线。
 - [x] Lesson lab：已生成 `guides/04-lesson-lab/README.md`，并迁移 Trainer batch / forward / loss / backward 观察入口。
 - [x] Sequence classification derivation review：已补 raw/tokenized/collated/forward/logits 观察，并理解 loss/logits/argmax/id2label 链路。
-- [ ] Sequence classification closed-book rewrite：盖住教程，按任务契约重写最小 flow。
+- [x] Sequence classification closed-book rewrite：盖住教程，按任务契约重写最小 flow，并验收通过。
+- [ ] Chapter 1/5 task lab sweep：完成本节 8 个 task labs，形成跨任务输入/输出/head/postprocess 对比。
+- [x] Lab 1/8 Text generation / Causal LM：已完成 DistilGPT2 quick training run、perplexity、Hub 上传。
+- [x] Lab 2/8 Text classification：已完成 DistilBERT sequence classification、pipeline load、forward/logits probe、闭卷复现。
+- [x] Lab 3/8 Token classification：已观察 label alignment、token-level logits 任务契约、模型保存和 `pipeline("ner")` postprocess；用户已完成复述。
+- [ ] Lab 4/8 Question answering：观察 start/end logits 和 span extraction。
+- [ ] Lab 5/8 Summarization：观察 encoder-decoder generation。
+- [ ] Lab 6/8 Translation：观察 seq2seq translation 与 summarization 的共性差异。
+- [ ] Lab 7/8 Automatic speech recognition：观察 audio input、processor、generated transcript；先做轻量 pipeline / tiny sample。
+- [ ] Lab 8/8 Image classification：观察 image processor、pixel_values、image logits；先做轻量 pipeline / tiny sample。
+- [ ] Pipeline internals：手写 `pipeline("text-classification")` 的 tokenizer -> model -> postprocess 等价流程。
 - [ ] Trainer batch 观察：在 notebook 中打印 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device。
 - [ ] Trainer forward 观察：手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
 - [ ] HF Course 1/2：完成 Transformer Models 与 Using Transformers 的基础学习。

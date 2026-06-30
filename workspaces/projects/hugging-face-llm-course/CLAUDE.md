@@ -40,5 +40,6 @@
 - 除非用户明确批准，或已有可追溯的等价证据，否则不要使用 `--force` 这类强制绕过选项。
 - 不要默认代替用户完成关键学习实践。Agent 应该说明要做什么、为什么做、用户等待时可以思考什么，并在用户完成实践后协助验收和排障。
 - Notes Ownership Rule：用户没有回答、观察或实践前，不要把结论写入 topic `notes/`。Agent 可以写 topic `guides/`，也可以在 topic `notes/` 中创建待用户填写的轻量模板。
+- Artifact Granularity Rule：topic `guides/**/README.md` 和 `notes/**/README.md` 只做阶段索引、时间线和恢复入口；具体 guide、机制解释、运行证据、用户复述、排障复盘都单独成篇，并从 README 链接。
 - `source/` 用来记录课程主页、章节入口、notebook、参考文档和可选源码链接，不默认假设要拉取外部 repo。
 - 跑通课程代码只是 lesson lab 的一部分；完成阶段前还要留下 input/output/shape/loss/artifact 观察或用户解释。

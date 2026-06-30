@@ -18,11 +18,11 @@ phase: course.04-lesson-lab
 
 1. 选择一个最小 lesson，不同时推进多个 lesson。
 2. 让用户先预测输入、输出、shape、loss 或 artifact。
-3. 生成 `guides/04-lesson-lab/<lesson>.md`：最小代码、观察点、预期输出、排障路径。
+3. 生成或更新 `guides/04-lesson-lab/<lesson>.md`：最小代码、观察点、预期输出、排障路径；`guides/04-lesson-lab/README.md` 只更新索引和恢复入口。
 4. 指导用户亲自运行，记录用户观察到的输出。
-5. 用户完成后，把“用户运行/观察/解释”写入 `notes/04-lesson-lab/README.md` 或对应 lesson notes。
-6. 如果对话中解释了可复用机制、API 参数面板、训练速度/成本调节、或“如何从任务契约推导代码”的框架，必须在同一轮补进当前 lesson guide，除非用户明确只想聊天不落盘。
-7. 如果记录的是可复用概念、机制解释或对比，例如 tokenizer 算法差异，创建独立 note 文件，并只在 `README.md` 中保留索引。
+5. 用户完成后，把“用户运行/观察/解释”写入 `notes/04-lesson-lab/` 下的独立 note 文件；`README.md` 只更新索引和恢复入口。
+6. 如果对话中解释了可复用机制、API 参数面板、训练速度/成本调节、或“如何从任务契约推导代码”的框架，必须在同一轮补进当前独立 lesson guide，除非用户明确只想聊天不落盘。
+7. 如果记录的是可复用概念、机制解释、对比、用户复述、排障复盘或实验观察，创建独立 note 文件，并只在 `README.md` 中保留索引。
 8. 若 API 隐藏机制导致用户无法解释，再进入 `05-mechanism-deep-dive`。
 
 ## Output Delta
