@@ -19,7 +19,7 @@ kind = "course-learning-topic"
 parent_project = "../.."
 lifecycle = "active"
 current_phase = "04-lesson-lab"
-next_action = "继续 `04-lesson-lab`：按 guides/04-lesson-lab/README.md 复查 notebook，补齐 Trainer batch / forward / loss / logits 观察，并写入 notes/04-lesson-lab/README.md。"
+next_action = "继续 `04-lesson-lab`：进入 Chapter 1/5 Summarization lab，观察 encoder-decoder generation、seq2seq labels 和 generated ids/postprocess。"
 
 [[stages]]
 id = "01-need-aligner"

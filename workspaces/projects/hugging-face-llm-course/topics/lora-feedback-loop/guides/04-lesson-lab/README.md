@@ -24,6 +24,7 @@ Chapter 1/5 task lab sweep
 | Sequence classification | [`04-sequence-classification-derivation.md`](04-sequence-classification-derivation.md) | 从任务契约反推 tokenizer、collator、model、metric、Trainer |
 | Chapter 1/5 task sweep | [`05-chapter1-5-task-lab-sweep.md`](05-chapter1-5-task-lab-sweep.md) | 完成本节 task labs，用重复建立任务输入输出和 head/postprocess 直觉 |
 | Token classification | [`06-token-classification-derivation.md`](06-token-classification-derivation.md) | 理解 word-level 标签如何对齐到 token-level logits |
+| Question answering | [`07-question-answering-derivation.md`](07-question-answering-derivation.md) | 理解字符级 answer span 如何对齐到 token 级 start/end positions |
 
 ## Required Observation
 
@@ -32,6 +33,7 @@ Chapter 1/5 task lab sweep
 - chapter1/5 task sweep：每个 lab 的 input、batch keys/shape、model class、logits/generated output、postprocess、与上一个 task 的差异
 - pipeline internals：tokenizer 输出、model logits、softmax scores、argmax label、`id2label` 映射
 - sequence classification：raw sample keys、tokenized sample keys、collated batch shapes、`outputs.loss`、`outputs.logits.shape`
+- question answering：`offset_mapping`、`sequence_ids`、`start_positions/end_positions`、`start_logits/end_logits` 和 decoded span
 - causal LM / Trainer：`batch.keys()`、`input_ids / attention_mask / labels` 的 shape、dtype、device、shifted loss、至少一个 token 位置的 top-k prediction
 
 ## Exit Criteria

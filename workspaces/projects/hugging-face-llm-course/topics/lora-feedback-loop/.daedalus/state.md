@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`04-lesson-lab`
 - 状态：`active`
-- 下一步：继续 `04-lesson-lab`：按 guides/04-lesson-lab/README.md 复查 notebook，补齐 Trainer batch / forward / loss / logits 观察，并写入 notes/04-lesson-lab/README.md。
+- 下一步：继续 `04-lesson-lab`：进入 Chapter 1/5 Summarization lab，观察 encoder-decoder generation、seq2seq labels 和 generated ids/postprocess。
 
 ## 枚举约束
 

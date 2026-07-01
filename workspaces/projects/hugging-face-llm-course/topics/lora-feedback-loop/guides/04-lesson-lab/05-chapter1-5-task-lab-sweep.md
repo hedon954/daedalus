@@ -40,8 +40,8 @@ Chapter 1/5 页面里所有 `Ready to try your hand...` 对应的任务实验一
 | Text generation / Causal LM | done | `causal_language_model.ipynb`，已跑通 DistilGPT2 quick training run、perplexity、Hub 上传 | 后续只在对比 decoder-only 时回看 |
 | Text classification | done | `sequence_classification.ipynb`，已跑通训练、pipeline load、forward/logits probe、闭卷复现 | 后续只在 encoder classification 对比时回看 |
 | Token classification | done | `token_classification.ipynb`，已跑通 WNUT 数据加载、label alignment、小步训练、模型保存、`pipeline("ner")`；已记录用户复述 | 后续只在 per-token logits 对比时回看 |
-| Question answering | next | 尚未开始 | 下一小步 |
-| Summarization | planned | 尚未开始 | 观察 seq2seq 输入输出 |
+| Question answering | done | `question_answering.ipynb`，已跑通 SQuAD 数据加载、字符答案到 token span 对齐、DistilBERT QA 小样本训练、Hub push，并观察到独立 start/end argmax 的空 span 风险 | 后续只在 QA postprocess / eval 对比时回看 |
+| Summarization | next | 尚未开始 | 观察 seq2seq 输入输出 |
 | Translation | planned | 尚未开始 | 与 summarization 对比 |
 | Automatic speech recognition | planned | 尚未开始 | 只做轻量 pipeline / tiny sample，除非用户明确要 fine-tune |
 | Image classification | planned | 尚未开始 | 只做轻量 pipeline / tiny sample，除非用户明确要 fine-tune |
@@ -72,6 +72,42 @@ Chapter 1/5 页面里所有 `Ready to try your hand...` 对应的任务实验一
 - Notebook 可以作为学习证据，但必须补最小观察输出：batch keys、shape、loss/logits 或 generated output。
 - 不强求每个 lab 都完整 fine-tune 到好效果；先证明任务链路。
 - 对 ASR / image classification 这类非文本任务，先做 inference 或极小样本观察；如果环境成本过高，只记录跳过理由。
+
+## 当前排障：Question Answering 数据集 ID
+
+在 `datasets==5.0.0` + `huggingface_hub==1.19.0` 组合下，课程旧写法：
+
+```python
+load_dataset("squad", split="train[:5000]")
+```
+
+会报：
+
+```text
+HfUriError: Invalid HF URI 'hf://datasets/squad@.../.huggingface.yaml'.
+Repository id must be 'namespace/name', got 'squad'.
+```
+
+原因不是 SQuAD 数据集缺失，而是新版本 `huggingface_hub` 的 `hf://` 解析不再接受单段 repo id。`HfApi.dataset_info("squad")` 会解析到同一个数据集仓库 `rajpurkar/squad`，commit hash 与报错中的 revision 一致。当前 notebook 应使用：
+
+```python
+squad = load_dataset("rajpurkar/squad", split="train[:5000]")
+```
+
+已验证 `load_dataset("rajpurkar/squad", split="train[:2]")` 能生成 `id/title/context/question/answers` 字段。继续 lab 时，先打印一个样本和 batch shape，再进入 tokenizer offset mapping、`start_positions/end_positions`、`start_logits/end_logits` 和 span extraction。
+
+如果下一格出现：
+
+```text
+AttributeError: 'DatasetDict' object has no attribute 'train_test_split'
+```
+
+先检查 `type(squad)`。`load_dataset(..., split="train[:5000]")` 返回单个 `Dataset`，可以调用 `.train_test_split()`；`load_dataset(...)` 不带 `split` 会返回已经包含 `train/validation` 的 `DatasetDict`，此时不能再对整个对象 split。为了避免 Jupyter 旧内存状态污染，推荐在 notebook 里分开命名：
+
+```python
+squad_raw = load_dataset("rajpurkar/squad", split="train[:5000]")
+squad = squad_raw.train_test_split(test_size=0.2)
+```
 
 ## 已完成：Token Classification
 

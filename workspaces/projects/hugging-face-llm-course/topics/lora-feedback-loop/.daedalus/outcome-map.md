@@ -33,6 +33,7 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | [`guides/03-concept-roadmap/README.md`](../guides/03-concept-roadmap/README.md) | HF Course 1/2 概念路线图 | 已生成，当前执行 |
 | [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson guide 索引 | 已索引化，当前执行 |
 | [`guides/04-lesson-lab/06-token-classification-derivation.md`](../guides/04-lesson-lab/06-token-classification-derivation.md) | Token classification 任务契约与 label alignment guide | 已完成 |
+| [`guides/04-lesson-lab/07-question-answering-derivation.md`](../guides/04-lesson-lab/07-question-answering-derivation.md) | Question answering 字符答案到 token span 的任务契约与排障 guide | 已完成基础观察 |
 | [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) | Lesson lab notes 索引 | 已索引化 |
 | [`notes/04-lesson-lab/2026-06-30-token-classification-lab-recap.md`](../notes/04-lesson-lab/2026-06-30-token-classification-lab-recap.md) | Token classification 用户复述与完成证据 | 已完成 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计草案与定稿 | 待填 |
@@ -48,7 +49,7 @@ Current Position 是学习地图，不是实现事实源。涉及实现阶段时
 - 当前目标：先完成 `How Transformers solve tasks` 中的 8 个任务 labs，用重复建立不同任务的输入、模型架构、head、loss 和 postprocess 直觉。
 - 当前障碍：需要避免“机械重复”变成无意识抄 recipe；每个 lab 必须记录 input、batch、model class、output shape 和 task 差异。
 - 当前动作服务的产物：`guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md` 和后续各 lab notes。
-- 当前光标：下一步做 question answering lab。
+- 当前光标：下一步做 summarization lab。
 
 ## Contribution Back To Project
 
@@ -88,7 +89,7 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] Lab 1/8 Text generation / Causal LM。
 - [x] Lab 2/8 Text classification。
 - [x] Lab 3/8 Token classification。
-- [ ] Lab 4/8 Question answering。
+- [x] Lab 4/8 Question answering。
 - [ ] Lab 5/8 Summarization。
 - [ ] Lab 6/8 Translation。
 - [ ] Lab 7/8 Automatic speech recognition。
