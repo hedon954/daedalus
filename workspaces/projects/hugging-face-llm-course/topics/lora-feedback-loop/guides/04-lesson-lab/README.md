@@ -25,6 +25,13 @@ Chapter 1/5 task lab sweep
 | Chapter 1/5 task sweep | [`05-chapter1-5-task-lab-sweep.md`](05-chapter1-5-task-lab-sweep.md) | 完成本节 task labs，用重复建立任务输入输出和 head/postprocess 直觉 |
 | Token classification | [`06-token-classification-derivation.md`](06-token-classification-derivation.md) | 理解 word-level 标签如何对齐到 token-level logits |
 | Question answering | [`07-question-answering-derivation.md`](07-question-answering-derivation.md) | 理解字符级 answer span 如何对齐到 token 级 start/end positions |
+| Summarization task shape | [`08-summarization-derivation.md`](08-summarization-derivation.md) | 理解 encoder-decoder 如何把长输入转换成短生成文本 |
+| T5 task prefix | [`09-t5-task-prefix.md`](09-t5-task-prefix.md) | 理解 `summarize: ` 如何作为任务提示进入 input ids |
+| BillSum dataset loading | [`10-billsum-dataset-loading.md`](10-billsum-dataset-loading.md) | 记录 BillSum 完整 ID、split 和 notebook 变量覆盖边界 |
+| ROUGE metric | [`11-rouge-metric.md`](11-rouge-metric.md) | 理解 summarization 自动评估的重叠指标和边界 |
+| Mixed precision | [`12-mixed-precision-fp16-bf16.md`](12-mixed-precision-fp16-bf16.md) | 区分 `fp16`、`bf16`、XPU 和本地 MPS 排障默认值 |
+| Summarization metric debug | [`13-summarization-compute-metrics-overflow.md`](13-summarization-compute-metrics-overflow.md) | 排查 `batch_decode(predictions)` 的 `OverflowError` |
+| Summarization inference | [`14-summarization-inference-generate.md`](14-summarization-inference-generate.md) | 理解 tokenizer、`generate`、`max_new_tokens`、`decode` 的推理链路 |
 
 ## Required Observation
 
@@ -34,6 +41,7 @@ Chapter 1/5 task lab sweep
 - pipeline internals：tokenizer 输出、model logits、softmax scores、argmax label、`id2label` 映射
 - sequence classification：raw sample keys、tokenized sample keys、collated batch shapes、`outputs.loss`、`outputs.logits.shape`
 - question answering：`offset_mapping`、`sequence_ids`、`start_positions/end_positions`、`start_logits/end_logits` 和 decoded span
+- summarization：`input_ids/attention_mask/labels` shape、`outputs.logits.shape`、`generated_ids` 和 decoded summary
 - causal LM / Trainer：`batch.keys()`、`input_ids / attention_mask / labels` 的 shape、dtype、device、shifted loss、至少一个 token 位置的 top-k prediction
 
 ## Exit Criteria

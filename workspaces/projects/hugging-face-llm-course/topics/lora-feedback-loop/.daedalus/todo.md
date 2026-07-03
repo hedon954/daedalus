@@ -27,9 +27,9 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
 
 - Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
-- Latest lesson evidence：用户已完成 `transformer-work/question_answering.ipynb`，修正 `rajpurkar/squad` 数据集入口和 QA span label 边界判断，跑通 DistilBERT QA 小样本训练、Hub push，并观察到 `start_logits/end_logits` 独立 argmax 可能产生空 span；已记录 QA 后处理不是 golden output 的边界。
+- Latest lesson evidence：用户已完成 `transformer-work/summarization.ipynb`，跑通 BillSum `ca_test` 数据加载、T5 summarization preprocessing、ROUGE 评估修复、Seq2SeqTrainer 训练和 `checkpoint-248` 推理；训练输出 `epoch=4.0`、`train_loss≈3.02`，推理样例已生成摘要。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：Chapter 2 `Behind the pipeline` 后移；当前继续 Chapter 1/5 task lab sweep，下一步做 summarization lab。
+- Current open decision：Chapter 2 `Behind the pipeline` 后移；当前继续 Chapter 1/5 task lab sweep，下一步做 translation lab，对比 seq2seq 任务共性。
 - Current QA boundary：QA lab 已完成基础观察；若后续追求可靠指标，需要补完整合法 span postprocess 与 SQuAD EM/F1，而不是复现 task guide 的单次示例输出。
 - Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
 
@@ -88,7 +88,7 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] Lab 2/8 Text classification：已完成 DistilBERT sequence classification、pipeline load、forward/logits probe、闭卷复现。
 - [x] Lab 3/8 Token classification：已观察 label alignment、token-level logits 任务契约、模型保存和 `pipeline("ner")` postprocess；用户已完成复述。
 - [x] Lab 4/8 Question answering：已观察 `offset_mapping`、`start_positions/end_positions`、`start_logits/end_logits`、空 span 后处理问题和官网示例输出不可作为 golden output 的边界。
-- [ ] Lab 5/8 Summarization：观察 encoder-decoder generation。
+- [x] Lab 5/8 Summarization：已观察 encoder-decoder generation、T5 task prefix、seq2seq labels、ROUGE、`compute_metrics` decode 边界和 `model.generate` 推理链路。
 - [ ] Lab 6/8 Translation：观察 seq2seq translation 与 summarization 的共性差异。
 - [ ] Lab 7/8 Automatic speech recognition：观察 audio input、processor、generated transcript；先做轻量 pipeline / tiny sample。
 - [ ] Lab 8/8 Image classification：观察 image processor、pixel_values、image logits；先做轻量 pipeline / tiny sample。

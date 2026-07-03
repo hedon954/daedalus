@@ -4,9 +4,9 @@
 
 ## 当前入口
 
-- 当前 lab：Chapter 1/5 Question Answering。
-- 最近完成：Token Classification，见 [`2026-06-30-token-classification-lab-recap.md`](2026-06-30-token-classification-lab-recap.md)。
-- 当前 guide：等待建立 Question Answering 单项 guide；Chapter 1/5 总览见 [`../../guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md`](../../guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md)。
+- 当前 lab：Chapter 1/5 Translation。
+- 最近完成：Summarization，见 [`2026-07-03-summarization-lab-recap.md`](2026-07-03-summarization-lab-recap.md)。
+- 当前 guide：Chapter 1/5 总览见 [`../../guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md`](../../guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md)；Summarization 机制拆分见 [`../../guides/04-lesson-lab/08-summarization-derivation.md`](../../guides/04-lesson-lab/08-summarization-derivation.md) 起。
 
 ## Notes
 
@@ -25,3 +25,4 @@
 | 2026-06-27 | [`Sequence Classification Derivation Review`](2026-06-27-sequence-classification-derivation-review.md) | 记录用户复述、forward/logits probe 和闭卷重写验收。 |
 | 2026-06-27 | [`Chapter 1/5 Task Lab Sweep 路线调整`](2026-06-27-chapter1-5-task-lab-sweep-route.md) | 记录先完成 8 个 task labs 的路线判断。 |
 | 2026-06-30 | [`Token Classification Lab 复述`](2026-06-30-token-classification-lab-recap.md) | 记录用户对 token classification 的复述、校正点和完成证据。 |
+| 2026-07-03 | [`Summarization Lab Recap`](2026-07-03-summarization-lab-recap.md) | 记录 BillSum summarization 训练、ROUGE 排障、checkpoint 推理和 seq2seq 观察。 |

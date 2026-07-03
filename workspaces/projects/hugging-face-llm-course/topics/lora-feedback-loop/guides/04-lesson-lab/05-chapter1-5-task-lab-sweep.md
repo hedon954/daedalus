@@ -41,8 +41,8 @@ Chapter 1/5 页面里所有 `Ready to try your hand...` 对应的任务实验一
 | Text classification | done | `sequence_classification.ipynb`，已跑通训练、pipeline load、forward/logits probe、闭卷复现 | 后续只在 encoder classification 对比时回看 |
 | Token classification | done | `token_classification.ipynb`，已跑通 WNUT 数据加载、label alignment、小步训练、模型保存、`pipeline("ner")`；已记录用户复述 | 后续只在 per-token logits 对比时回看 |
 | Question answering | done | `question_answering.ipynb`，已跑通 SQuAD 数据加载、字符答案到 token span 对齐、DistilBERT QA 小样本训练、Hub push，并观察到独立 start/end argmax 的空 span 风险 | 后续只在 QA postprocess / eval 对比时回看 |
-| Summarization | next | 尚未开始 | 观察 seq2seq 输入输出 |
-| Translation | planned | 尚未开始 | 与 summarization 对比 |
+| Summarization | done | `summarization.ipynb` 已跑通 BillSum / T5 / ROUGE / Seq2SeqTrainer / checkpoint 推理；已记录 [`2026-07-03-summarization-lab-recap.md`](../../notes/04-lesson-lab/2026-07-03-summarization-lab-recap.md) | 后续只在对比 seq2seq translation 时回看 |
+| Translation | next | 尚未开始 | 与 summarization 对比 source/target、prefix、labels、generate 和 metric |
 | Automatic speech recognition | planned | 尚未开始 | 只做轻量 pipeline / tiny sample，除非用户明确要 fine-tune |
 | Image classification | planned | 尚未开始 | 只做轻量 pipeline / tiny sample，除非用户明确要 fine-tune |
 
