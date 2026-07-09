@@ -2,7 +2,7 @@
 
 ## 学习现场
 
-用户希望先把 Hugging Face LLM Course Chapter 1/5 `How Transformers solve tasks` 这一节提到的 task labs 都完成，再进入 Chapter 2 `Behind the pipeline`。
+用户原先希望先把 Hugging Face LLM Course Chapter 1/5 `How Transformers solve tasks` 这一节提到的 task labs 都完成，再进入 Chapter 2 `Behind the pipeline`。2026-07-07 路线收窄：已完成 5 个文本主线任务后，Translation / ASR / Image classification 跳过或延后，先进入 Chapter 1/6 `Transformer Architectures` 做架构归纳。
 
 这个判断成立：当前阶段用户不是缺少“更高效的路线”，而是缺少跨任务的手感。前期机械式重复可以服务于模式识别：
 
@@ -41,10 +41,10 @@ Chapter 1/5 页面里所有 `Ready to try your hand...` 对应的任务实验一
 | Text classification | done | `sequence_classification.ipynb`，已跑通训练、pipeline load、forward/logits probe、闭卷复现 | 后续只在 encoder classification 对比时回看 |
 | Token classification | done | `token_classification.ipynb`，已跑通 WNUT 数据加载、label alignment、小步训练、模型保存、`pipeline("ner")`；已记录用户复述 | 后续只在 per-token logits 对比时回看 |
 | Question answering | done | `question_answering.ipynb`，已跑通 SQuAD 数据加载、字符答案到 token span 对齐、DistilBERT QA 小样本训练、Hub push，并观察到独立 start/end argmax 的空 span 风险 | 后续只在 QA postprocess / eval 对比时回看 |
-| Summarization | done | `summarization.ipynb` 已跑通 BillSum / T5 / ROUGE / Seq2SeqTrainer / checkpoint 推理；已记录 [`2026-07-03-summarization-lab-recap.md`](../../notes/04-lesson-lab/2026-07-03-summarization-lab-recap.md) | 后续只在对比 seq2seq translation 时回看 |
-| Translation | next | 尚未开始 | 与 summarization 对比 source/target、prefix、labels、generate 和 metric |
-| Automatic speech recognition | planned | 尚未开始 | 只做轻量 pipeline / tiny sample，除非用户明确要 fine-tune |
-| Image classification | planned | 尚未开始 | 只做轻量 pipeline / tiny sample，除非用户明确要 fine-tune |
+| Summarization | done | `summarization.ipynb` 已跑通 BillSum / T5 / ROUGE / Seq2SeqTrainer / checkpoint 推理；已记录 [`2026-07-03-summarization-lab-recap.md`](../../notes/04-lesson-lab/2026-07-03-summarization-lab-recap.md) | 后续作为 encoder-decoder / seq2seq 代表任务回看 |
+| Translation | skipped/deferred | 用户决定当前不做 | 如后续补做，只作为 summarization 的 seq2seq 对照 |
+| Automatic speech recognition | skipped/deferred | 用户决定当前不做 | 非文本多模态任务不阻塞本 topic |
+| Image classification | skipped/deferred | 用户决定当前不做 | 非文本多模态任务不阻塞本 topic |
 
 ## 每个 lab 的统一验收模板
 
@@ -143,16 +143,16 @@ dataset sample
 - 为什么 `attention_mask` 不等于 label mask。
 - 为什么 token classification 的输出比 sequence classification 多一个 `seq_len` 维度。
 
-## 暂停 Chapter 2 的理由
+## 下一步进入 Chapter 1/6 的理由
 
-Chapter 2 `Behind the pipeline` 不是取消，而是后移。等 Chapter 1/5 的任务 labs 做完后，再回到 Chapter 2，会更容易看懂：
+Chapter 2 `Behind the pipeline` 不是取消，而是后移。当前先进入 Chapter 1/6 `Transformer Architectures`，因为已经完成的 5 个文本任务足够支撑一个更重要的归纳：
 
 ```text
-pipeline 不是一个固定流程
-而是围绕不同 task 选择 processor、model class、head 和 postprocess
+任务不是只换 pipeline 名字
+而是围绕输入理解方式、attention 可见范围、head / decoder 和输出形态选择架构
 ```
 
-也就是说，先多跑任务，再拆 pipeline，会更有感觉。
+也就是说，先把已跑过的任务映射到 encoder-only、decoder-only、encoder-decoder，再拆 pipeline，会更有感觉。Translation / ASR / Image classification 后续只有在需要补 seq2seq 或多模态直觉时再恢复。
 
 ## 来源
 

@@ -8,10 +8,11 @@
 
 ```text
 Chapter 1/5 task lab sweep
-  -> repeat task labs
-  -> observe input / batch / model / output shapes
-  -> compare task heads and postprocess
-  -> then return to Chapter 2 pipeline internals
+  -> completed text-task core through summarization
+  -> skip/defer Translation / ASR / Image classification
+  -> Chapter 1/6 Transformer Architectures / attention mechanisms
+  -> enter Chapter 1/8 LLM inference
+  -> connect Causal LM / attention to prefill, decode, sampling, and KV cache
 ```
 
 ## Lesson Sequence
@@ -22,7 +23,7 @@ Chapter 1/5 task lab sweep
 | Causal LM recipe | [`02-causal-lm-code-reading.md`](02-causal-lm-code-reading.md) | 解释 dataset -> tokenizer -> blocks -> labels |
 | Trainer loop | [`03-trainer-train-under-the-hood.md`](03-trainer-train-under-the-hood.md) | 观察 batch -> forward -> loss -> backward |
 | Sequence classification | [`04-sequence-classification-derivation.md`](04-sequence-classification-derivation.md) | 从任务契约反推 tokenizer、collator、model、metric、Trainer |
-| Chapter 1/5 task sweep | [`05-chapter1-5-task-lab-sweep.md`](05-chapter1-5-task-lab-sweep.md) | 完成本节 task labs，用重复建立任务输入输出和 head/postprocess 直觉 |
+| Chapter 1/5 task sweep | [`05-chapter1-5-task-lab-sweep.md`](05-chapter1-5-task-lab-sweep.md) | 完成文本主线任务观察，记录剩余 lab 的跳过/延后边界 |
 | Token classification | [`06-token-classification-derivation.md`](06-token-classification-derivation.md) | 理解 word-level 标签如何对齐到 token-level logits |
 | Question answering | [`07-question-answering-derivation.md`](07-question-answering-derivation.md) | 理解字符级 answer span 如何对齐到 token 级 start/end positions |
 | Summarization task shape | [`08-summarization-derivation.md`](08-summarization-derivation.md) | 理解 encoder-decoder 如何把长输入转换成短生成文本 |
@@ -32,12 +33,16 @@ Chapter 1/5 task lab sweep
 | Mixed precision | [`12-mixed-precision-fp16-bf16.md`](12-mixed-precision-fp16-bf16.md) | 区分 `fp16`、`bf16`、XPU 和本地 MPS 排障默认值 |
 | Summarization metric debug | [`13-summarization-compute-metrics-overflow.md`](13-summarization-compute-metrics-overflow.md) | 排查 `batch_decode(predictions)` 的 `OverflowError` |
 | Summarization inference | [`14-summarization-inference-generate.md`](14-summarization-inference-generate.md) | 理解 tokenizer、`generate`、`max_new_tokens`、`decode` 的推理链路 |
+| Chapter 1/6 architectures | [`15-chapter1-6-transformer-architectures.md`](15-chapter1-6-transformer-architectures.md) | 把已做过的任务映射到 encoder-only、decoder-only、encoder-decoder |
+| Chapter 1/8 LLM inference | [`16-chapter1-8-llm-inference.md`](16-chapter1-8-llm-inference.md) | 理解 prompt -> prefill -> decode -> sampling -> KV cache 的推理主线 |
 
 ## Required Observation
 
 用户需要亲自运行或复查 notebook，并把观察写入 [`../../notes/04-lesson-lab/`](../../notes/04-lesson-lab/) 下的独立 note 文件；[`../../notes/04-lesson-lab/README.md`](../../notes/04-lesson-lab/README.md) 只做索引：
 
-- chapter1/5 task sweep：每个 lab 的 input、batch keys/shape、model class、logits/generated output、postprocess、与上一个 task 的差异
+- chapter1/5 text-task sweep：已完成 lab 的 input、batch keys/shape、model class、logits/generated output、postprocess、与上一个 task 的差异
+- chapter1/6 architecture summary：encoder-only、decoder-only、encoder-decoder 的 attention 可见范围、典型任务、head / decoder 和输出形态
+- chapter1/8 LLM inference：prefill/decode、sampling controls、TTFT/TPOT/throughput/VRAM 和 KV cache
 - pipeline internals：tokenizer 输出、model logits、softmax scores、argmax label、`id2label` 映射
 - sequence classification：raw sample keys、tokenized sample keys、collated batch shapes、`outputs.loss`、`outputs.logits.shape`
 - question answering：`offset_mapping`、`sequence_ids`、`start_positions/end_positions`、`start_logits/end_logits` 和 decoded span

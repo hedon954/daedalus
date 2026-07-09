@@ -14,7 +14,7 @@
 
 | Chapter / Section | 概念目标 | 依赖 | 必做练习 | 状态 | 证据 |
 | --- | --- | --- | --- | --- | --- |
-| Chapter 1 Transformer Models | 建立 pipeline、Transformer、Causal LM 直觉 | 无 | Text generation / Causal LM quick run | in-progress | 已跑通 quick training |
+| Chapter 1 Transformer Models | 建立 pipeline、Transformer、Causal LM 和 LLM inference 直觉 | 无 | Text generation / Causal LM quick run；Chapter 1/5 文本任务观察；Chapter 1/6 架构归纳；Chapter 1/8 inference 主线 | in-progress | Chapter 1/5 已完成 5 个文本主线 lab；Chapter 1/6 架构与 attention mechanisms 已完成到可推进；Chapter 1/7 quiz 已越过；当前进入 Chapter 1/8 |
 | Chapter 2 Using Transformers | 理解 tokenizer、model、batch、Trainer 的基本组合 | Chapter 1 | tokenizer / Trainer lesson lab | planned | 待补 |
 
 ## Stop Rules

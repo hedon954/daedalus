@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`04-lesson-lab`
 - 状态：`active`
-- 下一步：继续 `04-lesson-lab`：进入 Chapter 1/5 Translation lab，对比 summarization 的 seq2seq 输入输出、task prefix、labels、generated ids 和 postprocess。
+- 下一步：继续 `04-lesson-lab`：进入 Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`，先读 LLM inference 的 attention/context、prefill/decode 两阶段、sampling controls 和 KV cache；Chapter 1/6 attention mechanisms 已完成到可推进，后续弱点再回看。
 
 ## 枚举约束
 

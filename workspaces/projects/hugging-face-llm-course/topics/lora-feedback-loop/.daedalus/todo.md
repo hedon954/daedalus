@@ -14,13 +14,13 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Current Path
 
-当前 active topic 已迁移为 course-learning：`01-need-aligner`、`02-syllabus-mapper`、`03-concept-roadmap` 已完成，当前处于 `04-lesson-lab`。
+当前 active topic 已迁移为 course-learning：`01-need-aligner`、`02-syllabus-mapper`、`03-concept-roadmap` 已完成，当前处于 `04-lesson-lab`。Chapter 1/5 文本主线任务观察已完成到 Summarization；剩余 Translation / ASR / Image classification 按用户决定跳过或延后，不再阻塞 Chapter 1/6。
 
 ## Now
 
-- 当前问题：用户希望先完成 Chapter 1/5 `How Transformers solve tasks` 里的 task labs，用机械式重复建立 Transformer 任务直觉。
-- 为什么现在做它：不建立课程概念路线，后面 LoRA / SFT / DPO 仍会变成换 recipe 抄代码。
-- 完成后解锁：能横向比较不同任务的 input、processor/tokenizer、head、loss、logits/generated output 和 postprocess，再回到 Chapter 2 拆 pipeline。
+- 当前问题：用户已进入 Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`，需要从模型架构转入 LLM inference 的运行过程。
+- 为什么现在做它：前面已经建立 Causal LM / 架构 / attention 的基础，Chapter 1/8 把这些基础连接到真实 LLM 生成时的 prompt、prefill、decode、sampling 和性能成本。
+- 完成后解锁：能解释 LLM 为什么逐 token 生成、TTFT/TPOT/throughput/VRAM 分别受什么影响，以及 KV cache 为什么是推理优化核心。
 
 ## Current Cursor
 
@@ -29,9 +29,19 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 - Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
 - Latest lesson evidence：用户已完成 `transformer-work/summarization.ipynb`，跑通 BillSum `ca_test` 数据加载、T5 summarization preprocessing、ROUGE 评估修复、Seq2SeqTrainer 训练和 `checkpoint-248` 推理；训练输出 `epoch=4.0`、`train_loss≈3.02`，推理样例已生成摘要。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：Chapter 2 `Behind the pipeline` 后移；当前继续 Chapter 1/5 task lab sweep，下一步做 translation lab，对比 seq2seq 任务共性。
+- Current open decision：Chapter 1/6 attention mechanisms 已完成到可推进；Chapter 1/7 quiz 已越过；当前进入 Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`。
 - Current QA boundary：QA lab 已完成基础观察；若后续追求可靠指标，需要补完整合法 span postprocess 与 SQuAD EM/F1，而不是复现 task guide 的单次示例输出。
 - Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
+
+## Reminder Queue
+
+这些事项是后续必须提醒用户亲自做的观察，不要因为 Agent 已解释过就标成完成。
+
+- [x] Chapter 1/6 架构映射：用户已能用“理解 encoder、生成 decoder；extract 是 encoder，generate new token 是 decoder；强依赖完整 input 的生成可用 decoder 续写或 encoder + decoder 先理解后生成”归纳三类架构。
+- [x] Chapter 1/6 attention mechanisms：完成 Agent-guided walkthrough；LSH / local / axial positional encodings guide 已留作回看。
+- [ ] Chapter 1/8 LLM inference：理解 attention/context、prompting、prefill/decode、sampling controls、TTFT/TPOT/throughput/VRAM 和 KV cache。
+- [ ] Chapter 2 前后 pipeline 拆解：手写一次 `pipeline("text-classification")` 的 tokenizer -> model -> postprocess 等价流程，打印 tokenizer 输出、logits、softmax、argmax 和 `id2label`。
+- [ ] Trainer 机制观察：在 notebook 中补 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device；手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
 
 ## Critical Checkpoint
 
@@ -83,15 +93,18 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] Lesson lab：已生成 `guides/04-lesson-lab/README.md`，并迁移 Trainer batch / forward / loss / backward 观察入口。
 - [x] Sequence classification derivation review：已补 raw/tokenized/collated/forward/logits 观察，并理解 loss/logits/argmax/id2label 链路。
 - [x] Sequence classification closed-book rewrite：盖住教程，按任务契约重写最小 flow，并验收通过。
-- [ ] Chapter 1/5 task lab sweep：完成本节 8 个 task labs，形成跨任务输入/输出/head/postprocess 对比。
+- [x] Chapter 1/5 task lab sweep：完成文本主线 5/8；剩余 Translation / ASR / Image classification 已按用户决定跳过/延后，不再阻塞 Chapter 1/6。
 - [x] Lab 1/8 Text generation / Causal LM：已完成 DistilGPT2 quick training run、perplexity、Hub 上传。
 - [x] Lab 2/8 Text classification：已完成 DistilBERT sequence classification、pipeline load、forward/logits probe、闭卷复现。
 - [x] Lab 3/8 Token classification：已观察 label alignment、token-level logits 任务契约、模型保存和 `pipeline("ner")` postprocess；用户已完成复述。
 - [x] Lab 4/8 Question answering：已观察 `offset_mapping`、`start_positions/end_positions`、`start_logits/end_logits`、空 span 后处理问题和官网示例输出不可作为 golden output 的边界。
 - [x] Lab 5/8 Summarization：已观察 encoder-decoder generation、T5 task prefix、seq2seq labels、ROUGE、`compute_metrics` decode 边界和 `model.generate` 推理链路。
-- [ ] Lab 6/8 Translation：观察 seq2seq translation 与 summarization 的共性差异。
-- [ ] Lab 7/8 Automatic speech recognition：观察 audio input、processor、generated transcript；先做轻量 pipeline / tiny sample。
-- [ ] Lab 8/8 Image classification：观察 image processor、pixel_values、image logits；先做轻量 pipeline / tiny sample。
+- [x] Lab 6/8 Translation：按用户决定跳过/延后；如后续补做，只作为 summarization 的 seq2seq 对照。
+- [x] Lab 7/8 Automatic speech recognition：按用户决定跳过/延后；不作为当前 Transformers language foundation 阻塞项。
+- [x] Lab 8/8 Image classification：按用户决定跳过/延后；不作为当前 Transformers language foundation 阻塞项。
+- [x] Chapter 1/6 Transformer Architectures：三类架构映射和 attention mechanisms 已完成到可推进，后续弱点可回看 guide。
+- [x] Chapter 1/7 Ungraded quiz：用户已越过并进入 Chapter 1/8。
+- [ ] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：理解 LLM inference 主线。
 - [ ] Pipeline internals：手写 `pipeline("text-classification")` 的 tokenizer -> model -> postprocess 等价流程。
 - [ ] Trainer batch 观察：在 notebook 中打印 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device。
 - [ ] Trainer forward 观察：手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
@@ -119,5 +132,12 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] 第一批候选样本 v0.4：根据“suggestion 是发给买家 Agent 的用户指令”修正当前有效版本。
 - [x] Transformers pipeline smoke test：用户已跑通最小分类 pipeline。
 - [x] 学习路径调整：先完成 HF Course 1/2，建立 Transformers 基础，再进入 LoRA。
+- [x] Chapter 1/5 scope cut：完成 5 个文本主线任务实验后，按用户决定跳过/延后 Translation / ASR / Image classification，进入 Chapter 1/6。
+- [x] Chapter 1/6 architecture families summary：完成 encoder-only、decoder-only、encoder-decoder 的任务形态归纳。
+- [x] Chapter 1/6 attention mechanisms walkthrough：完成 full attention / LSH attention / local attention / axial positional encodings 的慢动作解释。
 
 ## Canceled
+
+- Chapter 1/5 Translation lab：2026-07-07 用户决定当前不做；后续如需要补 seq2seq 对照再恢复。
+- Chapter 1/5 Automatic speech recognition lab：2026-07-07 用户决定当前不做；非文本多模态实验不阻塞本 topic。
+- Chapter 1/5 Image classification lab：2026-07-07 用户决定当前不做；非文本多模态实验不阻塞本 topic。

@@ -53,11 +53,11 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：04-lesson-lab / Chapter 1/5 task lab sweep。
-- 当前目标：先完成 `How Transformers solve tasks` 中的 8 个任务 labs，用重复建立不同任务的输入、模型架构、head、loss 和 postprocess 直觉。
-- 当前障碍：需要避免“机械重复”变成无意识抄 recipe；每个 lab 必须记录 input、batch、model class、output shape 和 task 差异。
-- 当前动作服务的产物：`guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md` 和后续各 lab notes。
-- 当前光标：Summarization lab 已完成；下一步做 translation lab，对比同为 seq2seq 的 source/target、prefix、labels、generate 和指标差异。
+- 当前阶段：04-lesson-lab / Chapter 1/8 LLM inference。
+- 当前目标：读 `Deep dive into Text Generation Inference with LLMs`，把前面的 Causal LM、attention、decoder-only 直觉连接到真实推理：prompt -> prefill -> decode -> sampling -> performance / KV cache。
+- 当前障碍：不要把 inference 当成单个 `generate()` 调用；需要分清 prefill 和 decode 两阶段，以及 TTFT / TPOT / throughput / VRAM 的不同成本来源。
+- 当前动作服务的产物：`guides/04-lesson-lab/16-chapter1-8-llm-inference.md`、`shared/course-progress.md` 和后续 Chapter 1/8 用户复述 note。
+- 当前光标：Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`。
 
 ## Contribution Back To Project
 
@@ -93,15 +93,18 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] 跑通 sequence classification pipeline load / inference。
 - [x] 完成 sequence classification derivation review。
 - [x] 完成 sequence classification closed-book rewrite。
-- [ ] 完成 Chapter 1/5 task lab sweep。
+- [x] 完成 Chapter 1/5 task lab sweep 的文本主线；剩余 Translation / ASR / Image classification 已按用户决定跳过/延后，不再阻塞 Chapter 1/6。
 - [x] Lab 1/8 Text generation / Causal LM。
 - [x] Lab 2/8 Text classification。
 - [x] Lab 3/8 Token classification。
 - [x] Lab 4/8 Question answering。
 - [x] Lab 5/8 Summarization。
-- [ ] Lab 6/8 Translation。
-- [ ] Lab 7/8 Automatic speech recognition。
-- [ ] Lab 8/8 Image classification。
+- [x] Lab 6/8 Translation：跳过/延后。
+- [x] Lab 7/8 Automatic speech recognition：跳过/延后。
+- [x] Lab 8/8 Image classification：跳过/延后。
+- [x] Chapter 1/6 Transformer Architectures：已完成 encoder-only、decoder-only、encoder-decoder 的任务适配归纳；attention mechanisms 已完成到可推进。
+- [x] Chapter 1/7 Ungraded quiz：用户已越过并进入 Chapter 1/8。
+- [ ] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：理解 inference 主线。
 - [ ] 手写 text-classification pipeline 等价流程。
 - [ ] 用户补充 `Trainer.train()` 的 batch / forward / loss / backward 观察。
 - [ ] 完成 HF Course 第 1、2 章 foundation sprint。

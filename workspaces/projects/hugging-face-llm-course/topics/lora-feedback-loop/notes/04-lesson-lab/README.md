@@ -4,9 +4,9 @@
 
 ## 当前入口
 
-- 当前 lab：Chapter 1/5 Translation。
-- 最近完成：Summarization，见 [`2026-07-03-summarization-lab-recap.md`](2026-07-03-summarization-lab-recap.md)。
-- 当前 guide：Chapter 1/5 总览见 [`../../guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md`](../../guides/04-lesson-lab/05-chapter1-5-task-lab-sweep.md)；Summarization 机制拆分见 [`../../guides/04-lesson-lab/08-summarization-derivation.md`](../../guides/04-lesson-lab/08-summarization-derivation.md) 起。
+- 当前 lab：Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`。
+- 最近完成：Chapter 1/6 架构选择总结，见 [`2026-07-07-chapter1-6-architecture-selection-summary.md`](2026-07-07-chapter1-6-architecture-selection-summary.md)。
+- 当前 guide：Chapter 1/8 LLM inference 见 [`../../guides/04-lesson-lab/16-chapter1-8-llm-inference.md`](../../guides/04-lesson-lab/16-chapter1-8-llm-inference.md)；Chapter 1/6 架构与 attention mechanisms 见 [`../../guides/04-lesson-lab/15-chapter1-6-transformer-architectures.md`](../../guides/04-lesson-lab/15-chapter1-6-transformer-architectures.md)。
 
 ## Notes
 
@@ -26,3 +26,7 @@
 | 2026-06-27 | [`Chapter 1/5 Task Lab Sweep 路线调整`](2026-06-27-chapter1-5-task-lab-sweep-route.md) | 记录先完成 8 个 task labs 的路线判断。 |
 | 2026-06-30 | [`Token Classification Lab 复述`](2026-06-30-token-classification-lab-recap.md) | 记录用户对 token classification 的复述、校正点和完成证据。 |
 | 2026-07-03 | [`Summarization Lab Recap`](2026-07-03-summarization-lab-recap.md) | 记录 BillSum summarization 训练、ROUGE 排障、checkpoint 推理和 seq2seq 观察。 |
+| 2026-07-07 | [`Chapter 1/6 Encoder-only 复述`](2026-07-07-chapter1-6-encoder-only-recap.md) | 记录用户对 encoder-only 任务形状的复述与下一步 decoder-only 检查问题。 |
+| 2026-07-07 | [`Chapter 1/6 Decoder-only 复述`](2026-07-07-chapter1-6-decoder-only-recap.md) | 记录用户对 decoder-only 续写任务形状的复述与下一步 encoder-decoder 检查问题。 |
+| 2026-07-07 | [`Chapter 1/6 Encoder-decoder 复述`](2026-07-07-chapter1-6-encoder-decoder-recap.md) | 记录用户对 summarization 架构选择的复述，以及“能做”和“更适合”的边界。 |
+| 2026-07-07 | [`Chapter 1/6 架构选择总结`](2026-07-07-chapter1-6-architecture-selection-summary.md) | 记录用户用任务形态反推 encoder-only、decoder-only、encoder-decoder 的最终归纳。 |
