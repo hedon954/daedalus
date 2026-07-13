@@ -32,6 +32,7 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | [`guides/06-practice-transfer/04-candidate-samples-v0.4.md`](../guides/06-practice-transfer/04-candidate-samples-v0.4.md) | 用户口吻 Agent 指令样本 | 已生成，待用户审核 |
 | [`guides/03-concept-roadmap/README.md`](../guides/03-concept-roadmap/README.md) | HF Course 1/2 概念路线图 | 已生成，当前执行 |
 | [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson guide 索引 | 已索引化，当前执行 |
+| [`guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md`](../guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md) | Chapter 3 数据处理、Trainer、full loop、Accelerate、learning curves 与 LoRA 迁移 guide | Agent 已完成全章预读；当前从 3/2 单 lesson 执行 |
 | [`guides/04-lesson-lab/06-token-classification-derivation.md`](../guides/04-lesson-lab/06-token-classification-derivation.md) | Token classification 任务契约与 label alignment guide | 已完成 |
 | [`guides/04-lesson-lab/07-question-answering-derivation.md`](../guides/04-lesson-lab/07-question-answering-derivation.md) | Question answering 字符答案到 token span 的任务契约与排障 guide | 已完成基础观察 |
 | [`guides/04-lesson-lab/08-summarization-derivation.md`](../guides/04-lesson-lab/08-summarization-derivation.md) | Summarization encoder-decoder 任务形状 guide | 已完成 |
@@ -53,11 +54,11 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：04-lesson-lab / Chapter 1/8 LLM inference。
-- 当前目标：读 `Deep dive into Text Generation Inference with LLMs`，把前面的 Causal LM、attention、decoder-only 直觉连接到真实推理：prompt -> prefill -> decode -> sampling -> performance / KV cache。
-- 当前障碍：不要把 inference 当成单个 `generate()` 调用；需要分清 prefill 和 decode 两阶段，以及 TTFT / TPOT / throughput / VRAM 的不同成本来源。
-- 当前动作服务的产物：`guides/04-lesson-lab/16-chapter1-8-llm-inference.md`、`shared/course-progress.md` 和后续 Chapter 1/8 用户复述 note。
-- 当前光标：Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`。
+- 当前阶段：04-lesson-lab / Chapter 3/2 Processing the data。
+- 当前目标：依据 Chapter 3 全章 guide，从 3/2 数据处理开始，把 Chapter 2 的 tokenizer/model 使用能力推进为 dataset processing -> Trainer API / full training loop -> evaluation 的微调闭环。
+- 当前障碍：不要把 fine-tuning 等同于单次 `Trainer.train()`；需要识别数据处理、batch、forward/loss、优化器、scheduler、evaluation 与分布式执行各自的职责。
+- 当前动作服务的产物：`guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md` 与后续用户运行观察。
+- 当前光标：Chapter 3/2 `Processing the data`（https://huggingface.co/learn/llm-course/en/chapter3/2）。
 
 ## Contribution Back To Project
 
@@ -104,10 +105,10 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] Lab 8/8 Image classification：跳过/延后。
 - [x] Chapter 1/6 Transformer Architectures：已完成 encoder-only、decoder-only、encoder-decoder 的任务适配归纳；attention mechanisms 已完成到可推进。
 - [x] Chapter 1/7 Ungraded quiz：用户已越过并进入 Chapter 1/8。
-- [ ] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：理解 inference 主线。
-- [ ] 手写 text-classification pipeline 等价流程。
-- [ ] 用户补充 `Trainer.train()` 的 batch / forward / loss / backward 观察。
-- [ ] 完成 HF Course 第 1、2 章 foundation sprint。
+- [x] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：用户确认 Chapter 1 已完成。
+- [x] 完成 HF Course 第 1、2 章 foundation sprint：用户于 2026-07-13 确认完成 Chapter 2。
+- [ ] Chapter 3/1 Introduction：建立 fine-tuning 章节路线与产出预期。
+- [ ] Chapter 3 数据处理、Trainer API、full training loop 与 evaluation 的可观察实验。
 - [ ] 解释并记录 pipeline 的 task、默认 model、tokenizer、config、postprocess。
 - [ ] 用户审核至少 5-10 条候选样本。
 

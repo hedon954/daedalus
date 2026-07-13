@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`04-lesson-lab`
 - 状态：`active`
-- 下一步：继续 `04-lesson-lab`：进入 Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`，先读 LLM inference 的 attention/context、prefill/decode 两阶段、sampling controls 和 KV cache；Chapter 1/6 attention mechanisms 已完成到可推进，后续弱点再回看。
+- 下一步：继续 `04-lesson-lab`：按 Chapter 3 全章 guide 只推进 3/2 `Processing the data`，先预测并打印 raw/tokenized/collated 三层 keys、length、shape 与 label mapping。
 
 ## 枚举约束
 

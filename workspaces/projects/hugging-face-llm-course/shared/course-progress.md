@@ -5,10 +5,10 @@
 ## Current Checkpoint
 
 - Active topic：`lora-feedback-loop`
-- 当前课程章节：Hugging Face LLM Course Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`
-- 当前 lesson / mechanism：LLM inference 如何从 prompt 到逐 token 生成，尤其是 prefill / decode、sampling controls、KV cache 和推理性能指标
-- 当前 open question：LLM 推理时哪些成本来自读 prompt，哪些成本来自逐 token 生成，哪些参数控制生成行为
-- 下一步：阅读 Chapter 1/8，先建立 inference 主线：attention/context -> prompting -> prefill/decode -> sampling -> performance/KV cache
+- 当前课程章节：Hugging Face LLM Course Chapter 3/2 `Processing the data`
+- 当前 lesson / mechanism：Chapter 3 全章 guide 已完成；当前只推进 3/2，观察 raw dataset -> paired tokenization -> `Dataset.map` -> dynamic padding -> training batch
+- 当前 open question：`Dataset.map(batched=True)` 的 preprocessing batch 与 DataLoader/collator 生成的训练 batch 有什么本质区别
+- 下一步：进入 Chapter 3/2 `Processing the data`，先预测并打印 raw/tokenized/collated 三层 keys、length、shape 与 label mapping
 
 ## Progress Board
 
@@ -17,10 +17,12 @@
 | Chapter 1/5 How Transformers solve tasks | done-with-scope-cut | 5/8 labs complete：Causal LM / sequence classification / token classification / question answering / summarization；Translation / ASR / Image classification 按用户决定跳过或延后 | 足够进入架构归纳 |
 | Chapter 1/6 Transformer Architectures | done-enough-to-advance | 架构家族已归纳；attention mechanisms 已完成 Agent-guided walkthrough，LSH/local/axial 可回看 guide | 若后续长上下文机制薄弱再回看 |
 | Chapter 1/7 Ungraded quiz | passed-through | 用户已进入 Chapter 1/8 | 不单独归档 quiz 答案 |
-| Chapter 1/8 Deep dive into Text Generation Inference with LLMs | active | 官方页标题已确认；当前准备读 inference 主线 | 当前读 LLM inference |
-| Chapter 2 Using Transformers | planned | tokenizer / model / Trainer observations | Chapter 1 后续小节后进入 |
+| Chapter 1/8 Deep dive into Text Generation Inference with LLMs | done-by-user-confirmation | 已有 inference 主线 guide；用户确认 Chapter 1 已完成并已越过 Chapter 2 | 机制弱点按需回看 |
+| Chapter 2 Using Transformers | done-by-user-confirmation | 已有 tokenizer、model、pipeline 与 forward 观察；用户于 2026-07-13 确认完成整章 | 深挖项不再阻塞前进 |
+| Chapter 3/1 Introduction | done | 官方页与本章路线已确认；全章 guide 已生成 | 进入 3/2 |
+| Chapter 3/2 Processing the data | active | guide 已给出预测、最小观察代码与通过标准 | 当前 lesson |
 
 ## Review Queue
 
-- Chapter 1/8 LLM inference：理解 attention/context、prompting、prefill/decode、sampling controls、TTFT/TPOT/throughput/VRAM 和 KV cache。
-- 后续提醒：Chapter 2 前后手写一次 `pipeline("text-classification")` 等价流程；进入 Trainer 复盘时补 batch keys / shape / device 和 `model(**batch)` 的 loss/logits 观察。
+- Chapter 1/8 inference 与 Chapter 2 的深挖项保留为按需复习，不再作为 Chapter 3 的前置阻塞。
+- Chapter 3：对比 Trainer API 与 full training loop；进入数据处理时观察 dataset -> tokenize -> dynamic padding -> batch，进入训练时补 batch keys / shape / device、loss/logits、optimizer/scheduler 与 evaluation 证据。

@@ -9,7 +9,7 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 - Project：`hugging-face-llm-course`
 - Topic：`lora-feedback-loop` - LoRA 微调与数据反馈闭环
 - 最终产物：闲鱼二手买家 Agent suggestion next action production-shaped mini LoRA lab、训练闭环 runbook、实验对比报告、业务迁移笔记。
-- 最小 lesson lab：HF Course 1/2 基础机制观察；后续迁移为 `suggestion dataset -> train -> eval -> error analysis -> feedback data -> retrain -> compare`。
+- 最小 lesson lab：HF Course 1/2 基础机制已完成；当前用 Chapter 3 微调训练链路连接 `suggestion dataset -> train -> eval -> error analysis -> feedback data -> retrain -> compare`。
 - 业务迁移目标：让用户从 AI Agent 应用层进入模型训练闭环层，提升下一份 AI 开发岗位竞争力。
 
 ## Current Path
@@ -18,9 +18,9 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：用户已进入 Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`，需要从模型架构转入 LLM inference 的运行过程。
-- 为什么现在做它：前面已经建立 Causal LM / 架构 / attention 的基础，Chapter 1/8 把这些基础连接到真实 LLM 生成时的 prompt、prefill、decode、sampling 和性能成本。
-- 完成后解锁：能解释 LLM 为什么逐 token 生成、TTFT/TPOT/throughput/VRAM 分别受什么影响，以及 KV cache 为什么是推理优化核心。
+- 当前问题：Chapter 3 全章 guide 已完成；用户需要从 3/2 开始亲自观察 raw dataset 如何经过 paired tokenization、`Dataset.map` 与 dynamic padding 变成训练 batch。
+- 为什么现在做它：Chapter 1/2 已建立模型、tokenizer 与 forward 基础，Chapter 3 开始系统连接数据处理、Trainer、手写训练循环、evaluation 与 Accelerate。
+- 完成后解锁：能解释并亲自观察 dataset -> batch -> forward/loss -> backward -> optimizer/scheduler -> evaluation，并为后续 LoRA/SFT feedback loop 建立训练基线。
 
 ## Current Cursor
 
@@ -29,7 +29,7 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 - Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
 - Latest lesson evidence：用户已完成 `transformer-work/summarization.ipynb`，跑通 BillSum `ca_test` 数据加载、T5 summarization preprocessing、ROUGE 评估修复、Seq2SeqTrainer 训练和 `checkpoint-248` 推理；训练输出 `epoch=4.0`、`train_loss≈3.02`，推理样例已生成摘要。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：Chapter 1/6 attention mechanisms 已完成到可推进；Chapter 1/7 quiz 已越过；当前进入 Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`。
+- Current open decision：用户于 2026-07-13 确认 Chapter 2 已完成；当前正式进入 Chapter 3/1 `Introduction`。
 - Current QA boundary：QA lab 已完成基础观察；若后续追求可靠指标，需要补完整合法 span postprocess 与 SQuAD EM/F1，而不是复现 task guide 的单次示例输出。
 - Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
 
@@ -39,9 +39,10 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 
 - [x] Chapter 1/6 架构映射：用户已能用“理解 encoder、生成 decoder；extract 是 encoder，generate new token 是 decoder；强依赖完整 input 的生成可用 decoder 续写或 encoder + decoder 先理解后生成”归纳三类架构。
 - [x] Chapter 1/6 attention mechanisms：完成 Agent-guided walkthrough；LSH / local / axial positional encodings guide 已留作回看。
-- [ ] Chapter 1/8 LLM inference：理解 attention/context、prompting、prefill/decode、sampling controls、TTFT/TPOT/throughput/VRAM 和 KV cache。
-- [ ] Chapter 2 前后 pipeline 拆解：手写一次 `pipeline("text-classification")` 的 tokenizer -> model -> postprocess 等价流程，打印 tokenizer 输出、logits、softmax、argmax 和 `id2label`。
-- [ ] Trainer 机制观察：在 notebook 中补 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device；手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
+- [x] Chapter 1/8 与 Chapter 2：用户确认已学完并正式进入 Chapter 3；未深挖项转为按需复习，不阻塞课程游标。
+- [x] Chapter 3/1 Introduction：全章路线已预读，并生成独立 Chapter 3 guide。
+- [ ] Chapter 3/2 数据观察：区分 preprocessing batch 与 training batch，打印 raw/tokenized/collated 三层 keys、length、shape 与 label mapping。
+- [ ] Chapter 3 后续实验：依次进入 Trainer、full loop、Accelerate 与 learning-curve 诊断；每次只推进一个 lesson。
 
 ## Critical Checkpoint
 
@@ -104,11 +105,12 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] Lab 8/8 Image classification：按用户决定跳过/延后；不作为当前 Transformers language foundation 阻塞项。
 - [x] Chapter 1/6 Transformer Architectures：三类架构映射和 attention mechanisms 已完成到可推进，后续弱点可回看 guide。
 - [x] Chapter 1/7 Ungraded quiz：用户已越过并进入 Chapter 1/8。
-- [ ] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：理解 LLM inference 主线。
-- [ ] Pipeline internals：手写 `pipeline("text-classification")` 的 tokenizer -> model -> postprocess 等价流程。
-- [ ] Trainer batch 观察：在 notebook 中打印 `batch.keys()`、`input_ids/attention_mask/labels` shape 和 device。
-- [ ] Trainer forward 观察：手动运行 `model(**batch)`，打印 `outputs.loss` 和 `outputs.logits.shape`。
-- [ ] HF Course 1/2：完成 Transformer Models 与 Using Transformers 的基础学习。
+- [x] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：用户确认 Chapter 1 已完成。
+- [x] HF Course 1/2：用户于 2026-07-13 确认完成 Transformer Models 与 Using Transformers。
+- [x] Chapter 3/1 Introduction：已生成全章机制与实验路线 guide。
+- [ ] Chapter 3/2 Processing the data：观察 dataset -> tokenize -> dynamic padding -> batch。
+- [ ] Chapter 3/3 Trainer API：观察 batch、forward、loss/logits、training/evaluation artifacts。
+- [ ] Chapter 3/4 Full training loop：观察 optimizer、scheduler、backward 与 Accelerate。
 - [ ] Causal LM recipe：解释并观察 dataset -> tokenizer -> blocks -> labels -> Trainer。
 - [ ] Pipeline 机制：解释 task -> model/tokenizer/config -> inference -> postprocess。
 - [ ] Baseline 固化：固定 model name，不依赖默认 pipeline model。
