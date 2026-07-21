@@ -45,6 +45,45 @@ Accelerate：在保留训练循环的同时抽象设备与分布式执行
 
 ## 3/2：数据处理不是格式转换，而是定义训练问题
 
+### 课程示例的 Dataset ID 已发生漂移
+
+课程正文仍展示：
+
+```python
+raw_datasets = load_dataset("glue", "mrpc")
+```
+
+但在本项目当前环境 `datasets==5.0.0` 中，短名 `"glue"` 会在 Hub URI 解析阶段失败：
+
+```text
+HfUriError: Repository id must be 'namespace/name', got 'glue'
+```
+
+当前应使用数据集仓库的完整 ID：
+
+```python
+from datasets import load_dataset
+
+raw_datasets = load_dataset("nyu-mll/glue", "mrpc")
+```
+
+同一环境已验证它能加载：
+
+```text
+train:      3668
+validation:  408
+test:       1725
+```
+
+这里两个参数的职责不同：
+
+```text
+"nyu-mll/glue" -> Hub dataset repository id（namespace/name）
+"mrpc"         -> 该 repository 内的 config / subset name
+```
+
+不要通过降级依赖来维持课程旧短名。优先查看当前官方 `load_dataset` 文档与 Hub 页面，使用规范、可定位的完整仓库 ID。课程代码是某个时间点的案例，不是永久稳定的 API contract。
+
 ### 从 DatasetDict 开始检查
 
 官方示例加载 `glue` / `mrpc`，得到 train、validation、test 三个 split。第一步不要急着 tokenize，而要确认：
@@ -231,6 +270,51 @@ Dataset 输出格式 -> torch tensors
 传入 collate_fn 做动态 padding
 ```
 
+### `shuffle=True` 打乱的到底是什么
+
+```python
+train_dataloader = DataLoader(
+    tokenized_datasets["train"],
+    shuffle=True,
+    batch_size=8,
+    collate_fn=data_collator,
+)
+```
+
+对于这种可以按索引访问的 map-style dataset，`shuffle=True` 会让 DataLoader 使用随机采样顺序。它打乱的是 dataset index：
+
+```text
+原始索引：0, 1, 2, 3, 4, 5, 6, 7, ...
+某个 epoch：5, 1, 7, 0, 3, 6, 2, 4, ...
+```
+
+然后才按照 `batch_size=8` 把这个索引序列切成 batch。每次重新迭代 DataLoader，也就是通常进入下一个 epoch 时，顺序会重新随机化。
+
+它不会：
+
+- 修改 dataset 在磁盘或内存中的原始顺序；
+- 打乱一句话内部的 token；
+- 把 `input_ids` 与对应的 `labels` 拆开；
+- 改变样本总数或类别含义。
+
+一个样本的所有字段仍作为整体被取出，`data_collator` 随后才把 8 个完整样本 pad 并堆叠成张量。
+
+训练集通常需要 shuffle，是因为数据可能按 label、长度、来源或时间排序。若不打乱，连续 batch 可能长期只包含相似样本，使每一步的梯度带有强烈顺序偏差；打乱后，每个 mini-batch 更有机会近似整体训练分布，并且不同 epoch 会看到不同的样本组合。
+
+验证集通常写成：
+
+```python
+eval_dataloader = DataLoader(
+    tokenized_datasets["validation"],
+    batch_size=8,
+    collate_fn=data_collator,
+)
+```
+
+即默认 `shuffle=False`。验证阶段不更新参数，打乱不会提升学习；固定顺序更利于复现、定位具体错误样本和比较多次评估。对 accuracy/F1 这类与顺序无关的全量指标，shuffle 通常不会改变最终数值，但没有必要增加随机性。
+
+最小观察实验：让 dataset 暂时返回或保留 `idx`，连续打印两个 epoch 的前两个 batch，预测 `idx` 顺序是否相同。若要做严格可复现实验，可显式给 DataLoader 传入带固定 seed 的 `torch.Generator`；但恢复训练、多 worker 和分布式采样还需要额外保存/控制随机状态。
+
 第一批 batch 必须先试跑 model forward：
 
 ```python
@@ -238,6 +322,65 @@ outputs = model(**batch)
 print(outputs.loss)
 print(outputs.logits.shape)
 ```
+
+### `model(**batch)` 是 Python 的关键字参数解包
+
+假设 collator 生成的 `batch` 是：
+
+```python
+batch = {
+    "input_ids": input_ids_tensor,
+    "attention_mask": attention_mask_tensor,
+    "token_type_ids": token_type_ids_tensor,
+    "labels": labels_tensor,
+}
+```
+
+在函数调用位置，`**mapping` 会把 mapping 的每个 key/value 展开成“参数名=参数值”。因此：
+
+```python
+outputs = model(**batch)
+```
+
+等价于：
+
+```python
+outputs = model(
+    input_ids=batch["input_ids"],
+    attention_mask=batch["attention_mask"],
+    token_type_ids=batch["token_type_ids"],
+    labels=batch["labels"],
+)
+```
+
+这也是为什么前面要把数据列 `label` 改名为 `labels`，并删除 `sentence1`、`sentence2`、`idx`：解包后的 key 必须是模型调用所接受的参数名。若 batch 含有模型不认识的 key，通常会得到 `unexpected keyword argument`；若缺少任务所需的 `labels`，模型仍可能返回 logits，但不会自动计算监督 loss。
+
+这不是 Transformers 专属语法。普通 Python 函数同样适用：
+
+```python
+def add(x, y):
+    return x + y
+
+values = {"x": 2, "y": 3}
+add(**values)  # 等价于 add(x=2, y=3)
+```
+
+与它对应，`*sequence` 解包的是位置参数：
+
+```python
+add(*[2, 3])   # 等价于 add(2, 3)
+add(**values)  # 等价于 add(x=2, y=3)
+```
+
+更底层地说，`model(...)` 调用的是 PyTorch `nn.Module` 的调用入口，它再执行模型的 `forward(...)`，并保留 hooks 等 Module 机制；正常代码应写 `model(**batch)`，不要绕过调用入口直接写 `model.forward(**batch)`。
+
+Notebook 中下一行：
+
+```python
+outputs.loss, outputs.logits.shape
+```
+
+只是构造一个包含两个值的 tuple，让 notebook 同时显示 loss 和 logits shape；它与 `**` 解包无关。
 
 它是训练前最便宜的契约检查：字段名、shape、label、head 的类别数和 forward 能否闭合，应在长时间训练前暴露。
 
@@ -265,6 +408,74 @@ for batch in train_dataloader:
 6. `zero_grad()` 清除本步梯度，否则下一步会继续累积。
 
 “梯度累积”正是有意不在每个 micro-batch 后 step/zero 的策略，因此不能把 `zero_grad()` 当无意义样板代码。
+
+### 训练循环中哪些顺序必须保持
+
+课程完整代码还包含进度条与 epoch：
+
+```python
+progress_bar = tqdm(range(num_training_steps))
+
+model.train()
+for epoch in range(num_epochs):
+    for batch in train_dataloader:
+        batch = {k: v.to(device) for k, v in batch.items()}
+        outputs = model(**batch)
+        loss = outputs.loss
+        loss.backward()
+
+        optimizer.step()
+        lr_scheduler.step()
+        optimizer.zero_grad()
+        progress_bar.update(1)
+```
+
+先区分“训练因果链”和“外围控制”：
+
+```text
+外围：tqdm、epoch/batch 循环、日志
+因果链：device -> forward -> loss -> backward -> optimizer -> scheduler -> clear grad
+```
+
+必须满足的顺序：
+
+1. batch 与 model 必须在兼容的 device 上，才能 forward。
+2. 必须先 forward 得到 loss，才能从该计算图执行 backward。
+3. 必须先 backward 产生梯度，optimizer 才有本步梯度可用。
+4. `optimizer.step()` 使用当前 learning rate 更新参数。
+5. 对课程中每个 optimizer step 都更新一次的 linear scheduler，应在 `optimizer.step()` 后调用；反过来可能跳过初始 learning-rate 值。
+6. 下一次非梯度累积的 backward 前，必须清掉旧梯度，因为 PyTorch 的 `.grad` 默认累加而不是覆盖。
+
+可以调整的位置：
+
+- `optimizer.zero_grad()` 可放在本步结尾，也可放在下一步 forward/backward 之前。两种写法都正确，关键是每个独立 optimizer update 只消费预期的梯度。
+- `model.train()` 放在全部 epoch 外面可以，因为模式会保持；如果中途执行过 `model.eval()` 做验证，下一轮训练前必须再次调用 `model.train()`。
+- `progress_bar.update(1)` 不参与数值计算。这里一批对应一次 optimizer update，所以在成功更新后加一最直观。
+- scheduler 的调用频率取决于类型：课程的 linear scheduler 按 optimizer step；某些 scheduler 按 epoch；`ReduceLROnPlateau` 则通常在 validation 后接收 metric。不能只凭变量名决定位置。
+
+`zero_grad()` 放开头的等价常见写法：
+
+```python
+model.train()
+for batch in train_dataloader:
+    optimizer.zero_grad()
+    batch = {k: v.to(device) for k, v in batch.items()}
+    outputs = model(**batch)
+    loss = outputs.loss
+    loss.backward()
+    optimizer.step()
+    lr_scheduler.step()
+```
+
+加入 gradient clipping 时，它必须放在梯度产生之后、参数更新之前：
+
+```text
+backward
+-> clip gradients
+-> optimizer.step
+```
+
+加入 gradient accumulation 时，`backward()` 仍每个 micro-batch 执行，但 `optimizer.step()`、`scheduler.step()` 和 `zero_grad()` 只在累积窗口结束时执行。此时 `num_training_steps` 和进度条应该数 optimizer updates，而不是所有 micro-batches；否则 scheduler 会走得过快，进度条也会失真。
 
 ### optimizer 与 scheduler 的关系
 
@@ -396,7 +607,7 @@ baseline -> changed model -> compare
 
 ## 本章建议的学习顺序
 
-当前只推进一个 lesson：先做 3/2 数据处理观察，不同时启动 Trainer 与 full loop。
+Chapter 3 已由用户确认读完。本文保留为 fine-tuning 机制与实验恢复入口；3/2-3/5 尚未明确提供的运行和曲线诊断证据继续保留，不冒充已验收。当前课程游标已推进到 Chapter 5/2，后续 Chapter 3 问题按需回看本文。
 
 ```text
 Checkpoint A — Data contract

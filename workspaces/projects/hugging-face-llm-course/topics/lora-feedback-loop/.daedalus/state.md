@@ -8,7 +8,7 @@
 - 生命周期：`active`
 - 当前阶段：`04-lesson-lab`
 - 状态：`active`
-- 下一步：继续 `04-lesson-lab`：按 Chapter 3 全章 guide 只推进 3/2 `Processing the data`，先预测并打印 raw/tokenized/collated 三层 keys、length、shape 与 label mapping。
+- 下一步：继续 `04-lesson-lab`：只推进 Chapter 5/2 `What if my dataset isn't on the Hub?`，先区分通用文件 loader、local/remote source、`data_files` split mapping 与 JSON `field`，并检查加载后的 DatasetDict 结构。
 
 ## 枚举约束
 

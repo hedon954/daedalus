@@ -18,9 +18,9 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 ## Now
 
-- 当前问题：Chapter 3 全章 guide 已完成；用户需要从 3/2 开始亲自观察 raw dataset 如何经过 paired tokenization、`Dataset.map` 与 dynamic padding 变成训练 batch。
-- 为什么现在做它：Chapter 1/2 已建立模型、tokenizer 与 forward 基础，Chapter 3 开始系统连接数据处理、Trainer、手写训练循环、evaluation 与 Accelerate。
-- 完成后解锁：能解释并亲自观察 dataset -> batch -> forward/loss -> backward -> optimizer/scheduler -> evaluation，并为后续 LoRA/SFT feedback loop 建立训练基线。
+- 当前问题：用户已读完 Chapter 3、Chapter 4 和 Chapter 5/1，当前进入 5/2，需要掌握非 Hub 数据的本地/远程加载契约。
+- 为什么现在做它：LoRA/SFT 业务数据通常来自本地文件、对象存储或远程服务，而不是现成 Hub dataset；需要先把 source、format、split 与 schema 显式化。
+- 完成后解锁：能用统一的 `load_dataset()` 入口加载本地/远程 CSV、text、JSON/pandas 数据，并验证 DatasetDict 的 split、columns、rows 与嵌套结构。
 
 ## Current Cursor
 
@@ -29,7 +29,7 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 - Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
 - Latest lesson evidence：用户已完成 `transformer-work/summarization.ipynb`，跑通 BillSum `ca_test` 数据加载、T5 summarization preprocessing、ROUGE 评估修复、Seq2SeqTrainer 训练和 `checkpoint-248` 推理；训练输出 `epoch=4.0`、`train_loss≈3.02`，推理样例已生成摘要。
 - Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：用户于 2026-07-13 确认 Chapter 2 已完成；当前正式进入 Chapter 3/1 `Introduction`。
+- Current open decision：用户确认 Chapter 5/2 之前的内容均已读完；当前正式进入 Chapter 5/2 `What if my dataset isn't on the Hub?`。
 - Current QA boundary：QA lab 已完成基础观察；若后续追求可靠指标，需要补完整合法 span postprocess 与 SQuAD EM/F1，而不是复现 task guide 的单次示例输出。
 - Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
 
@@ -41,8 +41,14 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 - [x] Chapter 1/6 attention mechanisms：完成 Agent-guided walkthrough；LSH / local / axial positional encodings guide 已留作回看。
 - [x] Chapter 1/8 与 Chapter 2：用户确认已学完并正式进入 Chapter 3；未深挖项转为按需复习，不阻塞课程游标。
 - [x] Chapter 3/1 Introduction：全章路线已预读，并生成独立 Chapter 3 guide。
-- [ ] Chapter 3/2 数据观察：区分 preprocessing batch 与 training batch，打印 raw/tokenized/collated 三层 keys、length、shape 与 label mapping。
-- [ ] Chapter 3 后续实验：依次进入 Trainer、full loop、Accelerate 与 learning-curve 诊断；每次只推进一个 lesson。
+- [x] Chapter 3/2、3/3 阅读进度：用户已读完并推进到 3/4。
+- [ ] Chapter 3/2、3/3 实验回看：区分 preprocessing/training batch，保留 Trainer 的 loss、metric 与 checkpoint 证据；不阻塞当前阅读游标。
+- [x] Chapter 3/4 full loop 机制：已拆解 dataset/DataLoader、shuffle、`**batch`、device、forward/loss、backward、optimizer、scheduler 与 zero-grad 顺序。
+- [ ] Chapter 3/4 运行证据：完整训练结果、evaluation 与 Accelerate 观察按需补齐，不阻塞当前游标。
+- [x] Chapter 3 剩余阅读：用户确认 3/5-3/7 已读完；曲线诊断实验保留待验收。
+- [x] Chapter 4 阅读：用户确认整章已读完；Hub 上传/model card 实践保留待验收。
+- [x] Chapter 5/1 Introduction：用户确认已读完。
+- [ ] Chapter 5/2：Agent 已验证课程 GitHub URL、最终 raw URL与本地压缩文件均可加载；待用户观察并复述 file loader、source、split mapping、自动解压与 JSON `field` 的职责。
 
 ## Critical Checkpoint
 
@@ -108,9 +114,13 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：用户确认 Chapter 1 已完成。
 - [x] HF Course 1/2：用户于 2026-07-13 确认完成 Transformer Models 与 Using Transformers。
 - [x] Chapter 3/1 Introduction：已生成全章机制与实验路线 guide。
-- [ ] Chapter 3/2 Processing the data：观察 dataset -> tokenize -> dynamic padding -> batch。
-- [ ] Chapter 3/3 Trainer API：观察 batch、forward、loss/logits、training/evaluation artifacts。
-- [ ] Chapter 3/4 Full training loop：观察 optimizer、scheduler、backward 与 Accelerate。
+- [x] Chapter 3/2 Processing the data：用户确认已读完；观察证据待回看验收。
+- [x] Chapter 3/3 Trainer API：用户确认已读完；训练与评估产物待回看验收。
+- [x] Chapter 3/4 Full training loop：用户确认完成机制学习；运行与 Accelerate 证据按需补齐。
+- [x] Chapter 3/5-3/7：用户确认已读完；learning curves 实验待回看。
+- [x] Chapter 4 Sharing models and tokenizers：用户确认已读完；Hub 实践待回看。
+- [x] Chapter 5/1 Introduction：用户确认已读完。
+- [ ] Chapter 5/2 What if my dataset isn't on the Hub?：加载本地与远程文件并检查 DatasetDict 契约。
 - [ ] Causal LM recipe：解释并观察 dataset -> tokenizer -> blocks -> labels -> Trainer。
 - [ ] Pipeline 机制：解释 task -> model/tokenizer/config -> inference -> postprocess。
 - [ ] Baseline 固化：固定 model name，不依赖默认 pipeline model。

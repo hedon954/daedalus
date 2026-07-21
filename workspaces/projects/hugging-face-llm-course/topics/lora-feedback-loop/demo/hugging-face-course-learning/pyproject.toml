@@ -10,6 +10,7 @@ dependencies = [
     "evaluate>=0.4.6",
     "ipykernel>=7.3.0",
     "ipywidgets>=8.1.8",
+    "jupyter>=1.1.1",
     "nltk>=3.9.4",
     "rouge-score>=0.1.2",
     "sacrebleu>=2.6.0",

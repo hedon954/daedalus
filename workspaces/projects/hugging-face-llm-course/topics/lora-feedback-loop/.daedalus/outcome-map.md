@@ -32,7 +32,8 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | [`guides/06-practice-transfer/04-candidate-samples-v0.4.md`](../guides/06-practice-transfer/04-candidate-samples-v0.4.md) | 用户口吻 Agent 指令样本 | 已生成，待用户审核 |
 | [`guides/03-concept-roadmap/README.md`](../guides/03-concept-roadmap/README.md) | HF Course 1/2 概念路线图 | 已生成，当前执行 |
 | [`guides/04-lesson-lab/README.md`](../guides/04-lesson-lab/README.md) | HF lesson guide 索引 | 已索引化，当前执行 |
-| [`guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md`](../guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md) | Chapter 3 数据处理、Trainer、full loop、Accelerate、learning curves 与 LoRA 迁移 guide | Agent 已完成全章预读；当前从 3/2 单 lesson 执行 |
+| [`guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md`](../guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md) | Chapter 3 数据处理、Trainer、full loop、Accelerate、learning curves 与 LoRA 迁移 guide | Chapter 3 已读完；保留未验收运行证据 |
+| [`guides/04-lesson-lab/18-chapter5-2-local-remote-dataset-loading.md`](../guides/04-lesson-lab/18-chapter5-2-local-remote-dataset-loading.md) | Chapter 5/2 本地/远程文件加载与 URL 探测排障 guide | Agent 已验证三种来源；待用户观察并复述数据契约 |
 | [`guides/04-lesson-lab/06-token-classification-derivation.md`](../guides/04-lesson-lab/06-token-classification-derivation.md) | Token classification 任务契约与 label alignment guide | 已完成 |
 | [`guides/04-lesson-lab/07-question-answering-derivation.md`](../guides/04-lesson-lab/07-question-answering-derivation.md) | Question answering 字符答案到 token span 的任务契约与排障 guide | 已完成基础观察 |
 | [`guides/04-lesson-lab/08-summarization-derivation.md`](../guides/04-lesson-lab/08-summarization-derivation.md) | Summarization encoder-decoder 任务形状 guide | 已完成 |
@@ -54,11 +55,11 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：04-lesson-lab / Chapter 3/2 Processing the data。
-- 当前目标：依据 Chapter 3 全章 guide，从 3/2 数据处理开始，把 Chapter 2 的 tokenizer/model 使用能力推进为 dataset processing -> Trainer API / full training loop -> evaluation 的微调闭环。
-- 当前障碍：不要把 fine-tuning 等同于单次 `Trainer.train()`；需要识别数据处理、batch、forward/loss、优化器、scheduler、evaluation 与分布式执行各自的职责。
-- 当前动作服务的产物：`guides/04-lesson-lab/17-chapter3-finetuning-pretrained-model.md` 与后续用户运行观察。
-- 当前光标：Chapter 3/2 `Processing the data`（https://huggingface.co/learn/llm-course/en/chapter3/2）。
+- 当前阶段：04-lesson-lab / Chapter 5/2 What if my dataset isn't on the Hub?。
+- 当前目标：从只会加载 Hub dataset 推进到能从本地或远程 CSV/text/JSON/pandas 文件构造结构正确的 DatasetDict。
+- 当前障碍：不要把一次 URL 探测失败等同于文件不存在；还需显式理解 `data_files` 如何绑定 source 与 split，以及 JSON `field` 如何选择嵌套数据入口。
+- 当前动作服务的产物：`shared/course-progress.md`、后续 Chapter 5 focused guide 与用户加载观察。
+- 当前光标：Chapter 5/2 `What if my dataset isn't on the Hub?`（https://huggingface.co/learn/llm-course/en/chapter5/2）。
 
 ## Contribution Back To Project
 
@@ -107,8 +108,14 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] Chapter 1/7 Ungraded quiz：用户已越过并进入 Chapter 1/8。
 - [x] Chapter 1/8 Deep dive into Text Generation Inference with LLMs：用户确认 Chapter 1 已完成。
 - [x] 完成 HF Course 第 1、2 章 foundation sprint：用户于 2026-07-13 确认完成 Chapter 2。
-- [ ] Chapter 3/1 Introduction：建立 fine-tuning 章节路线与产出预期。
-- [ ] Chapter 3 数据处理、Trainer API、full training loop 与 evaluation 的可观察实验。
+- [x] Chapter 3/1 Introduction：全章路线与产出预期已建立。
+- [x] Chapter 3/2 Processing the data：用户确认已读完；实验观察仍在待验收队列。
+- [x] Chapter 3/3 Fine-tuning with Trainer API：用户确认已读完；运行产物与指标仍在待验收队列。
+- [x] Chapter 3/4 A full training loop：用户已完成机制学习；完整训练运行证据按需补齐。
+- [x] Chapter 3/5-3/7：用户确认已读完；learning curves 观察与单变量诊断实验仍待验收。
+- [x] Chapter 4 Sharing models and tokenizers：用户确认已读完；Hub 上传与 model card 实践仍待验收。
+- [x] Chapter 5/1 Introduction：用户确认已读完。
+- [ ] Chapter 5/2 What if my dataset isn't on the Hub?：当前阅读与加载观察 lesson。
 - [ ] 解释并记录 pipeline 的 task、默认 model、tokenizer、config、postprocess。
 - [ ] 用户审核至少 5-10 条候选样本。
 

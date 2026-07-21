@@ -12,8 +12,11 @@ Chapter 1/5 task lab sweep
   -> skip/defer Translation / ASR / Image classification
   -> Chapter 1/6 Transformer Architectures / attention mechanisms
   -> complete Chapter 1/8 and Chapter 2 (user-confirmed)
-  -> enter Chapter 3/1 Fine-tuning a pretrained model
-  -> connect data processing to Trainer API and a full training loop
+  -> complete reading Chapter 3/1-3/3
+  -> complete reading Chapter 3 and Chapter 4
+  -> complete Chapter 5/1 Introduction
+  -> enter Chapter 5/2 non-Hub dataset loading
+  -> map format + local/remote source + split + schema into DatasetDict
 ```
 
 ## Lesson Sequence
@@ -37,6 +40,8 @@ Chapter 1/5 task lab sweep
 | Chapter 1/6 architectures | [`15-chapter1-6-transformer-architectures.md`](15-chapter1-6-transformer-architectures.md) | 把已做过的任务映射到 encoder-only、decoder-only、encoder-decoder |
 | Chapter 1/8 LLM inference | [`16-chapter1-8-llm-inference.md`](16-chapter1-8-llm-inference.md) | 理解 prompt -> prefill -> decode -> sampling -> KV cache 的推理主线 |
 | Chapter 3 fine-tuning | [`17-chapter3-finetuning-pretrained-model.md`](17-chapter3-finetuning-pretrained-model.md) | 从数据契约到 Trainer、full loop、Accelerate、learning curves 与 LoRA 迁移 |
+| Chapter 4 Hub sharing | [官方 Chapter 4](https://huggingface.co/learn/llm-course/en/chapter4/1) | Hub 仓库、预训练模型复用、分享与 model card；已读，实践待验收 |
+| Chapter 5 Datasets | [`18-chapter5-2-local-remote-dataset-loading.md`](18-chapter5-2-local-remote-dataset-loading.md) | 从本地/远程文件加载 DatasetDict，并排查 URL 探测、split mapping 与 JSON `field` |
 
 ## Required Observation
 
@@ -50,7 +55,7 @@ Chapter 1/5 task lab sweep
 - question answering：`offset_mapping`、`sequence_ids`、`start_positions/end_positions`、`start_logits/end_logits` 和 decoded span
 - summarization：`input_ids/attention_mask/labels` shape、`outputs.logits.shape`、`generated_ids` 和 decoded summary
 - causal LM / Trainer：`batch.keys()`、`input_ids / attention_mask / labels` 的 shape、dtype、device、shifted loss、至少一个 token 位置的 top-k prediction
-- chapter3：先完成 3/2 数据观察，区分 `Dataset.map(batched=True)` 与训练 batch，并打印 raw/tokenized/collated 三层 keys、length 与 shape；后续再进入 Trainer 与 full loop
+- chapter5/2：当前打印 loader format、local/remote source、`data_files`、split、rows、columns 与 nested field；Chapter 3/4 未明确提供的实践证据继续保留
 
 ## Exit Criteria
 
