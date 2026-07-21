@@ -12,7 +12,7 @@ phase: repo.phase3-practice
 
 ## Layer Contract
 
-本 prompt 只定义 repo mini demo 的设计约束。可验收目标来自 `Clarify Learning Goal`，核心 trade-off 解释来自 `Apply First Principles`。
+本 prompt 只定义 repo mini demo 的设计约束。可验收目标来自 `Clarify Learning Goal` 中已经确认的学习诉求，核心 trade-off 解释来自 `Apply First Principles`。
 
 本阶段不是从零设计 demo，而是定稿 `06-code-reader` 期间形成的 active topic `demo/design.md` 草案。代码阅读已经负责用源码证据填补关键不变量、数据结构、状态机和验收用例；本阶段负责裁剪、统一、验收和进入实现。
 

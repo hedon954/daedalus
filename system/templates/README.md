@@ -6,6 +6,10 @@ Reusable filesystem templates for daedalus artifacts.
 
 - [`backlog/item.md`](backlog/item.md)：全局 pre-learning candidate 模板。用于 `workspaces/backlog/<slug>.md`，不承载 active lifecycle state 或 learning artifacts。
 
+## Discovery
+
+- [`discovery/item.md`](discovery/item.md)：全局 pre-topic discovery 模板。用于 `workspaces/discovery/<slug>.md`，保存真实诉求假设、追问记录和选题候选，不承载 active lifecycle state 或 learning artifacts。
+
 ## Repo Learning
 
 - `repo/`：repo learning project 模板。

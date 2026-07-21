@@ -92,7 +92,7 @@ next-step guide = map for the next session
 
 Do not mix completed implementation and future planning in one commit unless they are inseparable.
 
-Use `type(scope): 中文描述` or `type: 中文描述`. Do not put unverified hypotheses in commit messages.
+Use `{topic}/{scope}: 中文描述`, for example `lora-feedback-loop/debugger-guide: 跑通 Causal LM 训练闭环` or `daedalus/cli: 修正 topic 校验规则`. Do not put unverified hypotheses in commit messages.
 
 ## Post-Commit Orientation
 

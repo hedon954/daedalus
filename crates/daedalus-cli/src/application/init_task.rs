@@ -23,9 +23,30 @@ pub struct InitTaskOptions {
     pub reason: Option<String>,
 }
 
+/// 初始化 course learning 任务所需的参数。
+#[derive(Debug, Clone)]
+pub struct InitCourseLearningOptions {
+    /// daedalus 项目根目录。
+    pub repo_root: PathBuf,
+    /// 用户提供的学习任务名称。
+    pub name: String,
+    /// 初始专题 slug。
+    pub topic_slug: String,
+    /// 初始专题标题。
+    pub topic_title: String,
+    /// 课程主页或课程材料入口。
+    pub course_url: String,
+    /// 是否允许在已有 active task 时继续创建任务。
+    pub allow_existing_active: bool,
+    /// 使用绕过选项时必须提供的具体原因。
+    pub reason: Option<String>,
+}
+
 /// 初始化学习任务后的输出。
 #[derive(Debug, Clone)]
 pub struct InitTaskOutput {
+    /// 学习项目类型。
+    pub project_kind: String,
     /// 新建学习任务目录。
     pub task_dir: PathBuf,
     /// 新建初始专题目录。
@@ -36,11 +57,85 @@ pub struct InitTaskOutput {
     pub topic_state_md: PathBuf,
 }
 
+#[derive(Debug, Clone)]
+struct InitLearningProjectOptions {
+    repo_root: PathBuf,
+    name: String,
+    topic_slug: String,
+    topic_title: String,
+    allow_existing_active: bool,
+    reason: Option<String>,
+    project_kind: LearningProjectKind,
+}
+
+#[derive(Debug, Clone)]
+enum LearningProjectKind {
+    RepoLearning,
+    CourseLearning { course_url: String },
+}
+
+impl LearningProjectKind {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::RepoLearning => "repo-learning",
+            Self::CourseLearning { .. } => "course-learning",
+        }
+    }
+
+    fn project_template(&self) -> &'static str {
+        match self {
+            Self::RepoLearning => "repo",
+            Self::CourseLearning { .. } => "course",
+        }
+    }
+
+    fn topic_template(&self) -> &'static str {
+        match self {
+            Self::RepoLearning => "repo-topic",
+            Self::CourseLearning { .. } => "course-topic",
+        }
+    }
+
+    fn course_url(&self) -> &str {
+        match self {
+            Self::RepoLearning => "",
+            Self::CourseLearning { course_url } => course_url,
+        }
+    }
+}
+
 /// 初始化一个 repo learning project 和初始 topic。
 ///
 /// 该 use case 会复制 project 模板、创建初始 topic，并立即分别渲染 project/topic
 /// `state.md`。
 pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
+    init_learning_project(InitLearningProjectOptions {
+        repo_root: options.repo_root,
+        name: options.name,
+        topic_slug: options.topic_slug,
+        topic_title: options.topic_title,
+        allow_existing_active: options.allow_existing_active,
+        reason: options.reason,
+        project_kind: LearningProjectKind::RepoLearning,
+    })
+}
+
+/// 初始化一个 course learning project 和初始 topic。
+pub fn init_course_learning(options: InitCourseLearningOptions) -> Result<InitTaskOutput> {
+    init_learning_project(InitLearningProjectOptions {
+        repo_root: options.repo_root,
+        name: options.name,
+        topic_slug: options.topic_slug,
+        topic_title: options.topic_title,
+        allow_existing_active: options.allow_existing_active,
+        reason: options.reason,
+        project_kind: LearningProjectKind::CourseLearning {
+            course_url: options.course_url,
+        },
+    })
+}
+
+fn init_learning_project(options: InitLearningProjectOptions) -> Result<InitTaskOutput> {
     workspace_fs::ensure_stable_workspace_layout(&options.repo_root)?;
 
     let active = workspace_fs::active_projects(&options.repo_root)?;
@@ -71,7 +166,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
         .repo_root
         .join("system")
         .join("templates")
-        .join("repo");
+        .join(options.project_kind.project_template());
     template_fs::copy_template_dir(
         &template_dir,
         &task_dir,
@@ -80,6 +175,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
             ("{{CREATED_AT}}", &created_at),
             ("{{TOPIC_SLUG}}", &topic_slug),
             ("{{TOPIC_TITLE}}", &topic_title),
+            ("{{COURSE_URL}}", options.project_kind.course_url()),
         ],
     )?;
     let topic_dir = task_dir.join("topics").join(&topic_slug);
@@ -88,7 +184,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
         .repo_root
         .join("system")
         .join("templates")
-        .join("repo-topic");
+        .join(options.project_kind.topic_template());
     template_fs::copy_template_dir(
         &topic_template_dir,
         &topic_dir,
@@ -97,6 +193,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
             ("{{CREATED_AT}}", &created_at),
             ("{{TOPIC_SLUG}}", &topic_slug),
             ("{{TOPIC_TITLE}}", &topic_title),
+            ("{{COURSE_URL}}", options.project_kind.course_url()),
         ],
     )?;
     sync_project_navigation(&task_dir)?;
@@ -106,6 +203,7 @@ pub fn init_repo_learning(options: InitTaskOptions) -> Result<InitTaskOutput> {
     sync_rust_analyzer_linked_projects(&options.repo_root)?;
 
     Ok(InitTaskOutput {
+        project_kind: options.project_kind.label().to_owned(),
         task_dir,
         topic_dir,
         state_md,

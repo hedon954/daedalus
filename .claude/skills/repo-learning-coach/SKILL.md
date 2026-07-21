@@ -20,6 +20,7 @@ Non-negotiables:
 - Keep stable projects under `workspaces/projects`; complete context lives in `workspaces/.daedalus/current.toml`, while top-level symlinks show only action entries: `current-project` / `current-topic` for active learning and `closeout-topic` for pending reflection.
 - Resolve active context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading project/topic state. Resolve pending closeout from `pending_closeout_topic` or `workspaces/closeout-topic`. The repo root intentionally has no `.daedalus/state.toml`.
 - Keep at most one active topic and at most one pending closeout topic. When no active topic exists, do not treat a selected project as the current learning entry.
+- Treat `workspaces/discovery` as pre-topic exploration space for unclear motivations, competing materials, and need hypotheses; do not create active lifecycle state from discovery alone.
 - Prefer workspace artifacts over chat memory.
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
 - Ground progress in code, tests, runtime evidence, and git diff before trusting markdown maps.
@@ -80,6 +81,7 @@ Closeout progression must follow `system/prompts/common/closeout-flow.md`: once 
 Load only the prompt(s) needed for the current action:
 
 - CLI lifecycle, render, validate, review, and deterministic knowledge checks: `system/prompts/repo/repo-learning-cli-contract.md`
+- Topic selection discovery before task cards or gatekeeping: `system/prompts/common/topic-discovery.md`
 - Human-owned notes, notes review, topic closeout retrospective, and knowledge-base gate: `system/prompts/common/human-owned-notes.md`
 - Resume or "where are we": `system/prompts/common/resume.md`
 - Checkpoint, cursor sync, pre-commit sync, post-commit orientation: `system/prompts/common/checkpoint-lifecycle.md`

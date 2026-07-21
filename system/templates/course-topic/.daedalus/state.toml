@@ -1,0 +1,90 @@
+# daedalus course learning topic state. 保留注释；确定性字段由 CLI 更新。
+#
+# Topic state 承载 course-learning 专题学习进度。Project state 只负责 project lifecycle
+# 和 active topic 指针。
+#
+# 枚举约束：
+# - topic.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
+# - stage.status 只能是：pending、active、blocked、paused、done。
+# - transition.action 只能是：init、enter、complete、block、resume、rollback、topic-await-reflection、topic-complete、topic-abandon。
+# - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
+# Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+# required_artifacts 表示阶段完成所需文件。CLI 只校验文件存在；
+# Agent 仍需确认 notes 是否包含用户确认、亲自实践或手写笔记后的证据。
+
+[topic]
+slug = "{{TOPIC_SLUG}}"
+title = "{{TOPIC_TITLE}}"
+kind = "course-learning-topic"
+parent_project = "../.."
+lifecycle = "active"
+current_phase = "01-need-aligner"
+next_action = "澄清课程学习诉求、目标能力和章节取舍，并填写 [`.daedalus/task-card.md`](task-card.md)。"
+
+[[stages]]
+id = "01-need-aligner"
+title = "对齐课程学习诉求"
+status = "active"
+required_artifacts = [".daedalus/task-card.md", ".daedalus/outcome-map.md"]
+
+[[stages]]
+id = "02-syllabus-mapper"
+title = "映射课程 syllabus"
+status = "pending"
+required_artifacts = ["guides/02-syllabus-mapper/README.md"]
+completion_mode = "inherited"
+inherited_from = "../../shared/syllabus-map.md"
+
+[[stages]]
+id = "03-concept-roadmap"
+title = "建立概念路线图"
+status = "pending"
+required_artifacts = ["guides/03-concept-roadmap/README.md", "../../shared/concept-map.md"]
+
+[[stages]]
+id = "04-lesson-lab"
+title = "把课程 lesson 变成可观察实验"
+status = "pending"
+required_artifacts = ["guides/04-lesson-lab/README.md", "notes/04-lesson-lab/README.md"]
+
+[[stages]]
+id = "05-mechanism-deep-dive"
+title = "拆解被 API 隐藏的机制"
+status = "pending"
+required_artifacts = ["guides/05-mechanism-deep-dive/README.md"]
+
+[[stages]]
+id = "06-practice-transfer"
+title = "迁移课程概念到真实任务"
+status = "pending"
+required_artifacts = ["guides/06-practice-transfer/README.md"]
+
+[[stages]]
+id = "07-capstone-lab"
+title = "完成课程驱动 mini project"
+status = "pending"
+required_artifacts = ["demo/design.md"]
+
+[[stages]]
+id = "08-review-loop"
+title = "复习与掌握度验证"
+status = "pending"
+required_artifacts = ["review/mastery-map.md", "review/question-bank.md"]
+
+[[stages]]
+id = "09-closeout-archive"
+title = "专题回顾与知识归档"
+status = "pending"
+required_artifacts = [
+    ".daedalus/artifact-index.md",
+    ".daedalus/long-context.md",
+    "reflection/candidate-map.md",
+    "reflection/closeout.md",
+]
+
+[[transitions]]
+stage = "01-need-aligner"
+action = "init"
+timestamp = "{{CREATED_AT}}"
+actor = "daedalus-cli"
+reason = "初始化 course learning topic。"

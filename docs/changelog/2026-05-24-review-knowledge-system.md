@@ -27,7 +27,7 @@
 - 新增 review / knowledge-system templates。
 - 更新 repo-learning skill、resume、reflection、export-knowledge，使复习与萃取都遵守第一性原理链路。
 - TUI 增加 read-only Review Focus 和 Knowledge Focus。
-- 新增迁移脚本 `system/bin/migrate-add-review-knowledge-system`。
+- 当前 Codex learning workspace 已手动补齐 review 与 knowledge-system scaffolding。
 - 当前 Codex learning workspace 已补齐 review 与 knowledge-system scaffolding。
 
 ## First-Principles Gate

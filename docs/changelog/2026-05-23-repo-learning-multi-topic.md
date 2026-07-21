@@ -50,8 +50,6 @@ Project state 只描述 lifecycle、active topic 和 topic 列表；10-stage 学
 
 - `daedalus init repo-learning <project> --topic <slug> --title <title>`
 - `daedalus topic new/list/activate/complete/abandon/validate`
-- `daedalus migrate repo-learning-multi-topic <old-task-dir> --topic <slug> --title <title> --execute`
-- `system/bin/migrate-repo-learning-to-multi-topic`
 - `system/bin/audit-daedalus-agent-instructions`
 
 调整：
@@ -93,10 +91,10 @@ topics/tools-permissions
 ## 重要修正
 
 - 修复 `state_toml` 对 `[topic]` 的硬索引 panic；project state 没有 `[topic]` 是正常情况。
-- 迁移器不再覆盖已有 `source/README.md`、`source/pull_source.sh`、`source/.gitignore`。
-- 迁移器会把 project `next_action` 指向 active topic 的真实进度。
+- 一次性升级过程不覆盖已有 `source/README.md`、`source/pull_source.sh`、`source/.gitignore`。
+- 一次性升级过程会把 project `next_action` 指向 active topic 的真实进度。
 - `validate_topic_workspace` 改为校验 `demo/`、`guides/`、`notes/` 目录存在，不再强制 `.gitkeep` 存在。
-- `.daedalus-migration-backup/` 已加入 `.gitignore`，避免迁移备份污染提交。
+- 一次性升级备份目录已加入 `.gitignore`，避免备份污染提交。
 
 ## 验证
 
@@ -116,10 +114,10 @@ RUSTC_WRAPPER= CARGO_TARGET_DIR=/private/tmp/daedalus-target cargo run --manifes
 - topic new / activate / list。
 - topic 未关闭时 project complete 被拒绝。
 - project complete 在 topic 关闭后释放 WIP。
-- legacy single-topic workspace 迁移到 multi-topic project。
+- legacy single-topic workspace 已完成到 multi-topic project 的一次性整理。
 
 ## 后续建议
 
 - TUI 目前是最小适配，后续可增加 project/topic 切换视图。
-- 迁移器目前适合本地一次性迁移，不追求复杂回滚；需要回滚时使用 `.daedalus-migration-backup/`。
+- 旧的一次性升级入口已从长期 CLI 中移除；后续结构调整直接手动整理具体文件。
 - 后续新增专题时，优先沉淀 shared/source-index、shared/glossary 和 shared/evidence-registry，减少重复读源码。

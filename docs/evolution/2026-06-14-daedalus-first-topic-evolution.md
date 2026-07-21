@@ -116,7 +116,6 @@ Project 不再随着 topic 完成而移动。topic 自己拥有完整 10-stage �
 ### 落地位置
 
 - `crates/daedalus-cli/src/application/topic.rs`
-- `crates/daedalus-cli/src/application/migrate.rs`
 - `crates/daedalus-cli/src/infrastructure/workspace_fs.rs`
 - `system/templates/repo/`
 - `system/templates/repo-topic/`
@@ -267,7 +266,7 @@ TUI 升级为 read-only learning cockpit：
 - 支持 todo、outcome-map、current guide、review / knowledge focus 的入口。
 - 支持滚动、翻页、返回和刷新。
 
-同时 CLI 增强了 topic、review、knowledge、ide、validate、migrate 等能力，承担确定性状态管理和校验。
+同时 CLI 增强了 topic、review、knowledge、ide、validate 等能力，承担确定性状态管理和校验。
 
 ### 落地位置
 
@@ -428,7 +427,7 @@ daedalus 把上下文入口写进 agent 原生加载机制：
 
 daedalus 补齐了轻量工程协议：
 
-- commit message hook：`type(scope): 中文描述` 或 `type: 中文描述`。
+- commit message hook：最初采用 `type(scope): 中文描述` 或 `type: 中文描述`，后续随 daedalus 从纯开发仓库演进为学习主题推进系统，更新为 `{topic}/{scope}: 中文描述`。
 - 长任务前给学习者一个可并行思考的小任务。
 - 微闭环后同步学习地图。
 - 提交后主动输出当前位置和下一步。
@@ -454,7 +453,7 @@ daedalus 补齐了轻量工程协议：
 - active topic 与 pending closeout 投影。
 - review / knowledge 校验。
 - workspace validate。
-- migration。
+- workspace structure update。
 - rust-analyzer linkedProjects 同步。
 
 ### knowledge web

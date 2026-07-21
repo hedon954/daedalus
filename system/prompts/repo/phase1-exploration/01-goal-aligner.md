@@ -5,6 +5,7 @@ phase: repo.phase1-exploration
 ---
 
 @system/prompts/common/clarify-goal.md
+@system/prompts/common/topic-discovery.md
 @system/prompts/common/gatekeeper.md
 @system/prompts/common/coach-questioning.md
 @system/prompts/common/critical-lens.md
@@ -30,14 +31,15 @@ phase: repo.phase1-exploration
 
 ## Repo-Specific Workflow
 
-1. 如果这是新的 repo learning project，先检查 WIP，然后直接用 `daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>` 初始化；不要手写 `.daedalus`、`state.toml`、`todo.md` 等模板文件。
-2. 如果 CLI 不可用，先报告阻塞原因，不要自动 fallback 到手写模板。
-3. 继承 `Clarify Learning Goal` 生成通用学习任务卡。
-4. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
-5. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
-6. 用 critical lens 检查：用户是为了获得可迁移能力而学习，还是只是因为素材流行、权威或被推荐。
-7. 如果目标无法导向 repo 选择、mini demo 或业务迁移，先要求用户收窄。
-8. 生成给用户的目标澄清指南时，写入 active topic 的 `guides/01-goal-aligner/README.md`；用户确认后的专题目标和验收标准写入 active topic 的 `.daedalus/task-card.md`。
+1. 如果用户只给出候选材料、技术方向或模糊焦虑，先继承 `Discover Learning Need`；在用户确认真实诉求前，不要推荐 repo，不要初始化 project/topic。
+2. 当 discovery summary 已能导向可验证产物时，继承 `Clarify Learning Goal` 生成通用学习任务卡。
+3. 继承 `Gate Learning Task` 判断是否值得进入 active learning。
+4. 如果这是新的 repo learning project，先检查 WIP，然后直接用 `daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>` 初始化；不要手写 `.daedalus`、`state.toml`、`todo.md` 等模板文件。
+5. 如果 CLI 不可用，先报告阻塞原因，不要自动 fallback 到手写模板。
+6. 将目标补充为 repo 可执行约束：候选技术方向、运行要求、mini demo 方向。
+7. 用 critical lens 检查：用户是为了获得可迁移能力而学习，还是只是因为素材流行、权威或被推荐。
+8. 如果目标无法导向 repo 选择、mini demo 或业务迁移，先要求用户收窄。
+9. 生成给用户的目标澄清指南时，写入 active topic 的 `guides/01-goal-aligner/README.md`；用户确认后的专题目标和验收标准写入 active topic 的 `.daedalus/task-card.md`。
 
 ## Output Delta
 
@@ -70,6 +72,7 @@ phase: repo.phase1-exploration
 ## Repo-Specific Constraints
 
 - 只在必要时提问，每次最多 3 个问题。
+- 不要把 discovery 阶段的材料候选当成已确认学习目标。
 - 不要在目标未明确时推荐 repo。
 - 学习目标必须能导向 mini demo 或业务方案。
 - 不要把“某个 repo 很优秀”当成学习理由；必须说明它服务哪个现实目标、它的约束和用户目标是否相近。
