@@ -146,6 +146,17 @@ pub fn validate_workspace(
             &topic.slug,
             Some(task_kind.as_str()),
         )?);
+        if let Ok(topic_doc) = state_toml::load_state_doc(&state_toml::state_path(&topic_dir))
+            && let Ok(topic_lifecycle) = state_toml::topic_lifecycle(&topic_doc)
+            && topic_lifecycle.as_str() != topic.lifecycle
+        {
+            issues.push(format!(
+                "topic `{}` lifecycle mismatch: project has `{}`, topic state has `{}`",
+                topic.slug,
+                topic.lifecycle,
+                topic_lifecycle.as_str()
+            ));
+        }
     }
 
     if reviews {
@@ -174,6 +185,7 @@ pub fn validate_workspace(
             active_topic_path.as_deref(),
             awaiting_reflection_topic_path.as_deref(),
         )?);
+        issues.extend(validate_parked_projection(repo_root, task_dir)?);
         let active_projects = workspace_fs::active_projects(repo_root)?;
         if active_projects.len() > 1 {
             issues.push("WIP violation: more than one active project exists".to_owned());
@@ -250,6 +262,64 @@ fn validate_current_projection(
         "closeout-topic",
         awaiting_reflection_topic,
         workspace_fs::pending_closeout_topic_dir(repo_root)?,
+    )?;
+    Ok(issues)
+}
+
+fn validate_parked_projection(repo_root: &Path, task_dir: &Path) -> Result<Vec<String>> {
+    use crate::domain::{MAX_MAX_PARKED_TOPICS, MIN_MAX_PARKED_TOPICS, TopicLifecycle};
+
+    let mut issues = Vec::new();
+    let pointers = workspace_fs::load_current_pointers(repo_root)?;
+    if !(MIN_MAX_PARKED_TOPICS..=MAX_MAX_PARKED_TOPICS).contains(&pointers.max_parked_topics) {
+        issues.push(format!(
+            "max_parked_topics must be {MIN_MAX_PARKED_TOPICS}-{MAX_MAX_PARKED_TOPICS}, got {}",
+            pointers.max_parked_topics
+        ));
+    }
+
+    let workspace_parked =
+        workspace_fs::workspace_topics_with_lifecycle(repo_root, TopicLifecycle::Parked)?;
+    let workspace_relatives: Vec<String> = workspace_parked
+        .iter()
+        .filter_map(|path| {
+            path.strip_prefix(workspace_fs::workspaces_root(repo_root))
+                .ok()
+                .map(|path| path.to_string_lossy().to_string())
+        })
+        .collect();
+    let mut listed = pointers.parked_topics.clone();
+    listed.sort();
+    let mut discovered = workspace_relatives.clone();
+    discovered.sort();
+    if listed != discovered {
+        issues.push(
+            "parked_topics in workspaces/.daedalus/current.toml does not match parked topic lifecycles"
+                .to_owned(),
+        );
+    }
+    let parked_count = u32::try_from(workspace_parked.len()).unwrap_or(u32::MAX);
+    if parked_count > pointers.max_parked_topics {
+        issues.push(format!(
+            "parked topic count {parked_count} exceeds max_parked_topics {}",
+            pointers.max_parked_topics
+        ));
+    }
+
+    let expected_latest = pointers.parked_topics.last().and_then(|path| {
+        workspace_fs::workspaces_root(repo_root)
+            .join(path)
+            .canonicalize()
+            .ok()
+    });
+    let stored_latest = workspace_fs::parked_topic_dir(repo_root)?;
+    validate_projected_path(
+        &mut issues,
+        repo_root,
+        task_dir,
+        "parked-topic",
+        expected_latest.as_deref(),
+        stored_latest,
     )?;
     Ok(issues)
 }

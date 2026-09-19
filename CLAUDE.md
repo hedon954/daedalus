@@ -7,9 +7,9 @@ daedalus is a filesystem-first deep learning coach. It guides a user from a real
 - Follow `system/prompts/common/agent-operating-contract.md`; the bullets below are the high-priority local contract.
 - Use Chinese for project-facing learning artifacts unless the user asks otherwise.
 - Prefer filesystem artifacts over hidden chat memory. Long-running learning state must be recoverable from files.
-- Keep WIP strict: `workspaces/projects` may contain many stable projects, but at most one topic can be active through `workspaces/.daedalus/current.toml`.
+- Keep WIP strict: `workspaces/projects` may contain many stable projects, but at most one topic can be active through `workspaces/.daedalus/current.toml`. Mid-flight topics may be parked up to `max_parked_topics` (default 1, allowed 1-3) without occupying the active slot.
 - Resolve active learning context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` first. Resolve pending closeout context from `pending_closeout_topic` or `workspaces/closeout-topic`. Do not look for `.daedalus/state.toml` at the repository root.
-- Treat project/topic `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` / `current-topic` are active-learning entry symlinks and should only appear when an active topic exists; `closeout-topic` is the pending reflection entry.
+- Treat project/topic `.daedalus/state.toml` and `workspaces/.daedalus/current.toml` as lifecycle sources of truth. `current-project` / `current-topic` are active-learning entry symlinks and should only appear when an active topic exists; `closeout-topic` is the pending reflection entry; `parked-topic` is the latest parked entry.
 - Treat `workspaces/discovery` as pre-topic exploration space: use it to preserve unclear motivations, need hypotheses, and selection questions before creating backlog candidates or active topics.
 - Ground implementation progress in current code, tests, runtime output, and git diff before trusting learning maps.
 - After review, validation, or commit changes completion status, risks, evidence, or next action, synchronize the relevant learning artifacts.

@@ -184,6 +184,12 @@ fn toml_string(doc: &DocumentMut, key: &str) -> String {
         .to_owned()
 }
 
+fn toml_array_contains(doc: &DocumentMut, key: &str, expected: &str) -> bool {
+    doc.get(key)
+        .and_then(|item| item.as_array())
+        .is_some_and(|array| array.iter().any(|item| item.as_str() == Some(expected)))
+}
+
 fn project_active_topic(doc: &DocumentMut) -> String {
     doc.get("project")
         .and_then(|item| item.as_table())
@@ -1689,7 +1695,7 @@ fn validate_reports_missing_required_file() {
 }
 
 #[test]
-fn topic_new_and_activate_manage_project_active_topic() {
+fn topic_activate_rejects_second_active_topic() {
     let repo = repo_fixture();
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -1722,11 +1728,6 @@ fn topic_new_and_activate_manage_project_active_topic() {
         .assert()
         .success()
         .stdout(predicates::str::contains("action: topic-new"));
-    assert!(
-        task_dir
-            .join("topics/sub-agent/.daedalus/state.toml")
-            .exists()
-    );
 
     Command::cargo_bin("daedalus")
         .expect("binary")
@@ -1739,30 +1740,252 @@ fn topic_new_and_activate_manage_project_active_topic() {
             task_dir.to_str().expect("utf8"),
         ])
         .assert()
-        .success()
-        .stdout(predicates::str::contains("action: topic-activate"));
+        .failure()
+        .stderr(predicates::str::contains("active topic already exists"));
+
+    let project_state = read_toml(&task_dir.join(".daedalus/state.toml"));
+    assert_eq!(project_active_topic(&project_state), "main");
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "main").as_deref(),
+        Some("active")
+    );
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "sub-agent").as_deref(),
+        Some("planned")
+    );
+}
+
+#[test]
+fn topic_park_releases_active_slot_and_activate_resumes() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "park-flow",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/park-flow");
+    let main_dir = active_topic_dir(&task_dir);
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "new",
+            "next-topic",
+            "--title",
+            "Next Topic",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success();
 
     Command::cargo_bin("daedalus")
         .expect("binary")
         .current_dir(repo.path())
         .args([
             "topic",
-            "list",
+            "park",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Need to start the next topic before finishing this one.",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("action: topic-park"));
+
+    let project_state = read_toml(&task_dir.join(".daedalus/state.toml"));
+    assert_eq!(project_active_topic(&project_state), "");
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "main").as_deref(),
+        Some("parked")
+    );
+    let topic_state = read_toml(&main_dir.join(".daedalus/state.toml"));
+    assert_eq!(topic_lifecycle(&topic_state), "parked");
+    assert!(topic_state.to_string().contains("status = \"paused\""));
+    assert!(!repo.path().join("workspaces/current-topic").exists());
+    assert!(repo.path().join("workspaces/parked-topic").exists());
+    let current = read_toml(&repo.path().join("workspaces/.daedalus/current.toml"));
+    assert_eq!(toml_string(&current, "current_topic"), "");
+    assert!(toml_array_contains(
+        &current,
+        "parked_topics",
+        "projects/park-flow/topics/main"
+    ));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "activate",
+            "next-topic",
             "--project-dir",
             task_dir.to_str().expect("utf8"),
         ])
         .assert()
         .success()
-        .stdout(predicates::str::contains("sub-agent"))
-        .stdout(predicates::str::contains("active"));
+        .stdout(predicates::str::contains("action: topic-activate"));
 
-    let project_state =
-        fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("project state");
-    assert!(project_state.contains("active_topic = \"sub-agent\""));
-    assert!(project_state.contains("slug = \"main\""));
-    assert!(project_state.contains("lifecycle = \"blocked\""));
-    assert!(project_state.contains("slug = \"sub-agent\""));
-    assert!(project_state.contains("lifecycle = \"active\""));
+    let project_state = read_toml(&task_dir.join(".daedalus/state.toml"));
+    assert_eq!(project_active_topic(&project_state), "next-topic");
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "main").as_deref(),
+        Some("parked")
+    );
+    assert_eq!(
+        project_topic_lifecycle(&project_state, "next-topic").as_deref(),
+        Some("active")
+    );
+    assert!(repo.path().join("workspaces/current-topic").exists());
+    assert!(repo.path().join("workspaces/parked-topic").exists());
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate", task_dir.to_str().expect("utf8"), "--all-topics"])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "activate",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("active topic already exists"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "park",
+            "next-topic",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Switch back to the parked topic.",
+        ])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("parked topic limit reached"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["topic", "park-limit", "2"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("max_parked_topics: 2"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "park",
+            "next-topic",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+            "--reason",
+            "Switch back to the parked topic.",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "topic",
+            "activate",
+            "main",
+            "--project-dir",
+            task_dir.to_str().expect("utf8"),
+        ])
+        .assert()
+        .success();
+
+    let topic_state = read_toml(&main_dir.join(".daedalus/state.toml"));
+    assert_eq!(topic_lifecycle(&topic_state), "active");
+    assert!(topic_state.to_string().contains("status = \"active\""));
+    let current = read_toml(&repo.path().join("workspaces/.daedalus/current.toml"));
+    assert_eq!(
+        toml_string(&current, "current_topic"),
+        "projects/park-flow/topics/main"
+    );
+    assert!(toml_array_contains(
+        &current,
+        "parked_topics",
+        "projects/park-flow/topics/next-topic"
+    ));
+    assert!(!toml_array_contains(
+        &current,
+        "parked_topics",
+        "projects/park-flow/topics/main"
+    ));
+    assert!(repo.path().join("workspaces/parked-topic").exists());
+}
+
+#[test]
+fn topic_park_limit_rejects_out_of_range_and_downsize() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "repo-learning",
+            "park-limit-flow",
+            "--topic",
+            "main",
+            "--title",
+            "Main Topic",
+        ])
+        .assert()
+        .success();
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["topic", "park-limit", "4"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("invalid parked topic limit"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["topic", "park-limit", "0"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("invalid parked topic limit"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["topic", "park-limit", "3"])
+        .assert()
+        .success();
 }
 
 #[test]

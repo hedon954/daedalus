@@ -6,6 +6,10 @@ Topic Board 记录当前 course learning project 的专题列表、课程章节�
 
 - `{{TOPIC_SLUG}}`：{{TOPIC_TITLE}}
 
+## Parked Topics
+
+- 无 parked topic。
+
 ## Topics
 
 | Topic | Title | Lifecycle | Path | Inherits |
@@ -19,6 +23,7 @@ Topic Board 记录当前 course learning project 的专题列表、课程章节�
 ## Rules
 
 - 新增专题必须使用 `daedalus topic new <slug> --title <title>`。
-- 切换专题必须使用 `daedalus topic activate <slug>`。
+- 中途换题必须先 `daedalus topic park <slug> --reason <reason>`，再 `daedalus topic activate <slug>`。
+- `activate` 不能覆盖当前 active topic。
 - 专题完成后必须反向更新 [`shared/evidence-registry.md`](../shared/evidence-registry.md)。
 - 专题进入 transfer/capstone 前，必须能指向已学习的课程概念和验证证据。

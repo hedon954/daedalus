@@ -227,6 +227,31 @@ pub fn awaiting_reflection_topic_count(doc: &DocumentMut) -> usize {
         .count()
 }
 
+/// 读取 project 中 parked topics 的数量。
+pub fn parked_topic_count(doc: &DocumentMut) -> usize {
+    topics(doc)
+        .iter()
+        .filter(|topic| topic.lifecycle == "parked")
+        .count()
+}
+
+/// 读取 project 中所有 parked topic slug。
+pub fn parked_topics(doc: &DocumentMut) -> Vec<String> {
+    topics(doc)
+        .into_iter()
+        .filter(|topic| topic.lifecycle == "parked")
+        .map(|topic| topic.slug)
+        .collect()
+}
+
+/// 读取 project 中某个 topic 的 lifecycle。
+pub fn project_topic_lifecycle(doc: &DocumentMut, slug: &str) -> Option<String> {
+    topics(doc)
+        .into_iter()
+        .find(|topic| topic.slug == slug)
+        .map(|topic| topic.lifecycle)
+}
+
 /// 读取 project 中第一个 awaiting-reflection topic。
 pub fn awaiting_reflection_topic(doc: &DocumentMut) -> Option<String> {
     topics(doc)
@@ -267,13 +292,12 @@ pub fn set_project_topic_path(doc: &mut DocumentMut, slug: &str, path: &str) -> 
     Err(DaedalusError::TopicNotFound(slug.to_owned()))
 }
 
-/// 将除目标 topic 外的 active topic 标记为 blocked。
-pub fn block_other_active_topics(doc: &mut DocumentMut, slug: &str) {
-    if let Some(array) = doc.get_mut("topics").and_then(Item::as_array_of_tables_mut) {
-        for topic in array.iter_mut() {
-            if topic["slug"].as_str() != Some(slug) && topic["lifecycle"].as_str() == Some("active")
-            {
-                topic["lifecycle"] = value("blocked");
+/// 将搁置期间暂停的阶段恢复为 active。
+pub fn resume_paused_stages(doc: &mut DocumentMut) {
+    if let Some(array) = doc.get_mut("stages").and_then(Item::as_array_of_tables_mut) {
+        for stage in array.iter_mut() {
+            if stage["status"].as_str() == Some(StageState::Paused.as_str()) {
+                stage["status"] = value(StageState::Active.as_str());
             }
         }
     }

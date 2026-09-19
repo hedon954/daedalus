@@ -419,6 +419,8 @@ pub struct TuiOverview {
     pub knowledge_summary: Vec<String>,
     /// closeout / reflection 循环摘要。
     pub reflection_summary: Vec<String>,
+    /// 中途搁置专题摘要。
+    pub parked_summary: Vec<String>,
     /// 任务关闭信息摘要。
     pub closure_summary: Vec<String>,
 }
@@ -671,6 +673,7 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
     );
     let current_guide_path = find_current_guide(adapter, &artifact_root, &current_phase);
     let reflection_summary = reflection_summary(adapter, &artifact_root);
+    let parked_summary = parked_summary(&doc);
 
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
@@ -703,8 +706,17 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         review_summary: review_summary(task_dir),
         knowledge_summary: knowledge_summary(task_dir),
         reflection_summary,
+        parked_summary,
         closure_summary,
     })
+}
+
+fn parked_summary(doc: &toml_edit::DocumentMut) -> Vec<String> {
+    state_toml::topics(doc)
+        .into_iter()
+        .filter(|topic| topic.lifecycle == "parked")
+        .map(|topic| format!("{} ({})", topic.slug, topic.title))
+        .collect()
 }
 
 fn non_empty_lines(values: &[String], empty_message: &str) -> Vec<String> {
@@ -937,6 +949,7 @@ mod tests {
             review_summary: Vec::new(),
             knowledge_summary: vec!["global knowledge-base index present".to_owned()],
             reflection_summary: Vec::new(),
+            parked_summary: Vec::new(),
             closure_summary: Vec::new(),
         }
     }

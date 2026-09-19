@@ -39,7 +39,7 @@ scope: common
 普通学习恢复时：
 
 1. 先从 repo root 读取 `workspaces/.daedalus/current.toml`，或通过 `workspaces/current-topic` symlink 定位 active topic；不要在 repo root 查找 `.daedalus/state.toml`。
-2. 同时检查 `pending_closeout_topic` 或 `workspaces/closeout-topic`。它表示已完成主体学习、等待用户主动回顾的 closeout debt，不是当前日常推进主线。
+2. 同时检查 `pending_closeout_topic` 或 `workspaces/closeout-topic`，以及 `parked_topics` 或 `workspaces/parked-topic`。前者是 closeout 债务，后者是中途搁置的专题；它们都不是当前日常推进主线。
 3. 再读取 active project 的 `.daedalus/project-map.md`、`.daedalus/topic-board.md` 和 project `.daedalus/state.toml`，确认 active topic。
 4. 再读取 active topic 中的学习任务卡、`.daedalus/outcome-map.md`、长期上下文、todo 和最近产物。
 5. 如果 todo 有 `Current Cursor`，把它当作恢复光标，而不是完成事实；先快速读取对应代码或产物确认它是否仍然成立。
@@ -73,6 +73,7 @@ scope: common
 - Current gap:
 - Current cursor:
 - Pending closeout:
+- Parked topics:
 - Why this gap matters:
 - What we will stop reading:
 - What becomes possible after this:

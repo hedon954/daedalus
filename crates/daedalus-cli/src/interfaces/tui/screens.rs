@@ -473,6 +473,12 @@ fn review_knowledge_preview(overview: &TuiOverview) -> Vec<String> {
             .iter()
             .map(|value| format!("reflection: {value}")),
     );
+    values.extend(
+        overview
+            .parked_summary
+            .iter()
+            .map(|value| format!("parked: {value}")),
+    );
     values
 }
 

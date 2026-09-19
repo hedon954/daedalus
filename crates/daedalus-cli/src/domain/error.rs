@@ -78,6 +78,20 @@ pub enum DaedalusError {
     /// Project 中存在多个 active topic。
     #[error("multiple active topics")]
     MultipleActiveTopics,
+    /// 工作区已有另一个 active topic，必须先释放 WIP。
+    #[error("active topic already exists: {0}")]
+    ActiveTopicAlreadyExists(String),
+    /// 已达到可配置的 parked topic 上限。
+    #[error("parked topic limit reached: {current}/{limit}")]
+    ParkedTopicLimitReached {
+        /// 当前已搁置数量。
+        current: u32,
+        /// 当前配置上限。
+        limit: u32,
+    },
+    /// parked 上限不在合法范围。
+    #[error("invalid parked topic limit: {0}")]
+    InvalidParkedTopicLimit(u32),
     /// Topic 不存在。
     #[error("topic not found: {0}")]
     TopicNotFound(String),

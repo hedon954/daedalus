@@ -5,10 +5,12 @@
 ## 当前状态
 
 - Project：`openai-codex-cli-deep-learning`
+- 类型：`repo-learning`
 - 生命周期：`idle`
 - Workspace Bucket：`projects`
 - Active Topic：`none`
 - Pending Closeout：`none`
+- Parked Topics：`none`
 - 下一步：当前没有 active topic；可以复盘 project，或用 `daedalus topic new` 启动新专题。
 
 ## Topics

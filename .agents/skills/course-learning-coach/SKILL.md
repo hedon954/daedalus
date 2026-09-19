@@ -22,7 +22,7 @@ learning need -> syllabus route -> concept mechanism -> smallest lesson lab
 
 ## Startup
 
-1. Resolve active context from `workspaces/.daedalus/current.toml`, `workspaces/current-project`, or `workspaces/current-topic`.
+1. Resolve active context from `workspaces/.daedalus/current.toml`, `workspaces/current-project`, or `workspaces/current-topic`. Also notice `parked-topic` and `closeout-topic`; they are debts, not the daily main line.
 2. Confirm the project state uses `task.kind = "course-learning"` and `project.source_kind = "course"`.
 3. If the metadata does not match course-learning, pause course-learning routing and repair the concrete files in place with user approval.
 4. Read project `shared/syllabus-map.md`, `shared/course-progress.md`, `shared/concept-map.md`, active topic `.daedalus/state.md`, `.daedalus/outcome-map.md`, and `.daedalus/todo.md`.

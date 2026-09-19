@@ -58,5 +58,6 @@ scope: common
 - 不要为了迎合用户而默认开启新任务。
 - 不要用 gatekeeper 代替 discovery；如果真实诉求尚不清楚，输出 `defer` 并要求先进入 `Discover Learning Need`。
 - 不要在 gatekeeper 中捕获新的 backlog candidate；新候选项使用 `Capture Backlog Candidate`。
-- 如果 active project 已存在，优先判断这是当前 project 的新 topic，还是应该关闭/暂停/归档当前 project。
+- 如果用户要中途开下一题，而当前 topic 还没学完，引导 `daedalus topic park <slug> --reason <reason>`，再 `daedalus topic activate`；不要只因为 WIP 已满就 `defer`。
 - 如果只是同一 repo/source 下的新学习方向，优先使用 `daedalus topic new`，不要新建第二个 project。
+- 已达到 `max_parked_topics` 时，必须先接回、完成或放弃一条 parked topic，不能继续搁置。

@@ -48,6 +48,18 @@ current_phase = "01-need-aligner"
 - `08-review-loop`
 - `09-closeout-archive`
 
+## Topic Lifecycle
+
+```text
+daedalus topic park <topic-slug> --reason <reason>
+daedalus topic park-limit <n>
+daedalus topic activate <topic-slug>
+```
+
+- Mid-flight switch requires `park` then `activate`.
+- `activate` cannot overwrite an existing active topic.
+- `max_parked_topics` defaults to 1 and may be set to 1, 2, or 3.
+
 ## Hard Rules
 
 - Create new guides with the course-learning stage names listed above.

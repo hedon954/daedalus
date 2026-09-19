@@ -4,14 +4,14 @@ use clap::{Args, Subcommand};
 
 use crate::application::topic::{
     ActivateTopicOptions, CloseTopicOptions, NewTopicOptions, activate_topic, close_topic,
-    new_topic, validate_topic,
+    new_topic, park_topic, set_park_limit, validate_topic,
 };
 use crate::domain::{DaedalusError, Result, TopicLifecycle};
 use crate::infrastructure::{state_toml, workspace_fs};
 use crate::interfaces::agent_cli::context::AgentCliContext;
 use crate::interfaces::agent_cli::executor::CmdExecutor;
 use crate::interfaces::agent_cli::presenter::{
-    print_topic, print_topic_list, print_topic_validation,
+    print_park_limit, print_topic, print_topic_list, print_topic_validation,
 };
 
 /// Topic 命令。
@@ -36,6 +36,10 @@ pub enum TopicSubcommand {
     List(TopicListArgs),
     /// 激活专题。
     Activate(TopicActivateArgs),
+    /// 搁置专题，释放 daily active 槽。
+    Park(TopicCloseArgs),
+    /// 设置工作区最多可搁置的专题数，合法范围 1 到 3。
+    ParkLimit(TopicParkLimitArgs),
     /// 完成专题。
     Complete(TopicCloseArgs),
     /// 主体学习完成，等待用户主动回顾。
@@ -120,6 +124,20 @@ pub struct TopicCloseArgs {
 }
 
 impl TopicCloseArgs {
+    async fn execute_park(self, ctx: AgentCliContext) -> Result<()> {
+        let project_dir = workspace_fs::default_project_dir(self.project_dir)?;
+        let output = park_topic(CloseTopicOptions {
+            repo_root: ctx.repo_root,
+            project_dir,
+            slug: self.slug,
+            lifecycle: TopicLifecycle::Parked,
+            reason: self.reason,
+            actor: "daedalus-cli".to_owned(),
+        })?;
+        print_topic(&output, ctx.format);
+        Ok(())
+    }
+
     async fn execute_with_lifecycle(
         self,
         ctx: AgentCliContext,
@@ -135,6 +153,20 @@ impl TopicCloseArgs {
             actor: "daedalus-cli".to_owned(),
         })?;
         print_topic(&output, ctx.format);
+        Ok(())
+    }
+}
+
+/// 设置 parked 上限参数。
+#[derive(Debug, Args)]
+pub struct TopicParkLimitArgs {
+    pub limit: u32,
+}
+
+impl CmdExecutor for TopicParkLimitArgs {
+    async fn execute(self, ctx: AgentCliContext) -> Result<()> {
+        let limit = set_park_limit(ctx.repo_root, self.limit)?;
+        print_park_limit(limit, ctx.format);
         Ok(())
     }
 }
@@ -165,6 +197,8 @@ impl CmdExecutor for TopicSubcommand {
             Self::New(args) => args.execute(ctx).await,
             Self::List(args) => args.execute(ctx).await,
             Self::Activate(args) => args.execute(ctx).await,
+            Self::Park(args) => args.execute_park(ctx).await,
+            Self::ParkLimit(args) => args.execute(ctx).await,
             Self::Complete(args) => {
                 args.execute_with_lifecycle(ctx, TopicLifecycle::Completed)
                     .await

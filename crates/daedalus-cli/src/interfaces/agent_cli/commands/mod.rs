@@ -26,8 +26,8 @@ pub use state::{
 };
 pub use task::{TaskAbandonArgs, TaskCommand, TaskCompleteArgs, TaskSubcommand};
 pub use topic::{
-    TopicActivateArgs, TopicCloseArgs, TopicCommand, TopicListArgs, TopicNewArgs, TopicSubcommand,
-    TopicValidateArgs,
+    TopicActivateArgs, TopicCloseArgs, TopicCommand, TopicListArgs, TopicNewArgs,
+    TopicParkLimitArgs, TopicSubcommand, TopicValidateArgs,
 };
 pub use validate::ValidateCommand;
 

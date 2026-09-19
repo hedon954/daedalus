@@ -25,4 +25,7 @@ pub use knowledge::KnowledgeSnapshot;
 pub use learning_task::{TaskLifecycle, WorkspaceBucket};
 pub use review::{ReviewLifecycle, ReviewMode, ReviewSnapshot, ReviewTarget};
 pub use stage::{StageSnapshot, StageState, StageTransitionKind};
-pub use topic::{TopicLifecycle, TopicSnapshot};
+pub use topic::{
+    DEFAULT_MAX_PARKED_TOPICS, MAX_MAX_PARKED_TOPICS, MIN_MAX_PARKED_TOPICS, TopicLifecycle,
+    TopicSnapshot, parse_max_parked_topics,
+};
