@@ -2,6 +2,8 @@
 
 /// TUI 需要展示的只读应用状态。
 pub mod app;
+/// learning type 到 TUI 语义的适配层。
+mod learning_types;
 /// 终端生命周期和渲染循环。
 pub mod presenter;
 /// ratatui 页面绘制函数。

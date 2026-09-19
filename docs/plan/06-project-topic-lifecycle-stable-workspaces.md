@@ -122,7 +122,7 @@ Claude Code 另行生成 `.claude/settings.json` 的 deny 配置；Codex 暂不�
 - 新增并维护 `current-project`、`current-topic` 软链接。
 - 调整项目、专题的创建、启动、完成、废弃、恢复命令。
 - 调整终端界面，从 `current.toml` 恢复当前学习现场。
-- 更新模板、提示词、说明文档和迁移脚本。
+- 更新模板、提示词、说明文档和手动整理说明。
 
 ## 验收标准
 

@@ -27,11 +27,11 @@ Project Shared Context 沉淀跨 topic 的 verified knowledge
 
 ## Architecture Decision
 
-daedalus 是本地项目，不需要长期兼容旧 workspace 结构。多专题改造应采用 **breaking migration**：
+daedalus 是本地项目，不需要长期兼容旧 workspace 结构。多专题改造应采用一次性破坏式升级：
 
 ```text
 新架构成为唯一架构。
-旧 workspace 通过一次性迁移脚本升级。
+旧 workspace 通过一次性手动整理进入新布局。
 CLI、prompt、validate 不长期保留 legacy 分支。
 ```
 
@@ -40,7 +40,7 @@ CLI、prompt、validate 不长期保留 legacy 分支。
 - 状态模型更简单，不需要同时支持 single-topic 和 multi-topic 两套语义。
 - `state` 命令、resume 规则、validate 规则都只面向新结构。
 - 后续学习任务不会继续生成旧布局。
-- 旧数据仍可保留，但通过迁移脚本进入新布局，而不是由运行时兼容逻辑兜底。
+- 旧数据仍可保留，但通过手动整理进入新布局，而不是由运行时兼容逻辑兜底。
 
 ## First Principles
 
@@ -429,7 +429,7 @@ daedalus topic validate <slug> --project-dir <path>
 - `topic complete`：校验 topic required artifacts，标记 topic lifecycle completed，但不移动 topic 目录。
 - `topic validate`：校验 topic 文件结构、state、required artifacts、inherited evidence 链接。
 
-### Command Model After Migration
+### Command Model After Filesystem Upgrade
 
 迁移完成后，现有 stage 命令默认操作 active topic，而不是 project root：
 
@@ -463,7 +463,6 @@ daedalus state complete 06-code-reader --topic tools-permissions
 - `state enter/complete/block/resume/rollback`：解析 topic state，再执行 stage transition。
 - `task complete/abandon`：关闭 project，要求 topic 状态满足关闭条件。
 - `topic new/list/activate/complete/abandon/validate`：管理 topic lifecycle。
-- `migrate repo-learning-multi-topic`：一次性迁移旧 workspace。
 - `validate`：先校验 project，再校验 active topic；必要时支持 `--all-topics`。
 - `state render`：需要区分 project state render 和 topic state render。
 
@@ -548,7 +547,7 @@ TUI 需要改的具体点：
 - progress gauge 使用 active topic 的 stage progress。
 - missing artifacts 使用 active topic 的 required artifacts。
 - todo focus 读取 active topic 的 `.daedalus/todo.md`。
-- recent transitions 默认显示 active topic transitions，另加 project-level migration / topic switch history。
+- recent transitions 默认显示 active topic transitions，另加 project-level structure update / topic switch history。
 - selector 列表增加 active topic 列，避免只看到 project 名称。
 - 页面文案从 `Task` / `Phase` 调整为 `Project` / `Topic` / `Stage`。
 
@@ -795,7 +794,7 @@ rg 旧命令/旧语义关键词 .claude system docs crates/docs
 输出需要人工确认的文件和行号
 ```
 
-更进一步可以做 allowlist，确保旧命令只出现在 migration 文档或历史记录中。
+更进一步可以做 allowlist，确保旧命令只出现在历史记录中。
 
 ### repo-learning-coach
 
@@ -855,34 +854,11 @@ Before starting a source reading or demo design step, declare whether the result
   - 哪些 architecture-map 需要更新？
   - 哪些 future topics 被发现？
 
-## Migration Strategy
+## One-Time Manual Upgrade Note
 
-### One-Time Breaking Migration
+因为不保留旧逻辑，旧 workspace 的升级必须是显式、一次性、可 review 的人工文件整理，不沉淀为长期 CLI 或脚本。
 
-因为不保留旧逻辑，迁移必须是显式、一次性、可回滚的。建议提供本地脚本：
-
-```text
-system/bin/migrate-repo-learning-to-multi-topic
-```
-
-使用方式：
-
-```text
-system/bin/migrate-repo-learning-to-multi-topic \
-  workspaces/02-learning/openai-codex-cli-deep-learning \
-  --topic tools-permissions \
-  --title "工具系统与权限系统"
-```
-
-脚本原则：
-
-- 默认 dry-run，先打印将要移动和生成的文件。
-- 正式执行前创建备份目录。
-- 只迁移 daedalus 自己的 workspace 文件，不碰 `source/codex` 这类外部源码内容。
-- 迁移后运行 `daedalus validate`。
-- 迁移失败时保留备份和 migration log，便于手动恢复。
-
-### Migration File Mapping
+### File Mapping
 
 旧结构到新结构的映射：
 
@@ -900,7 +876,7 @@ demo/                    -> topics/<slug>/demo/
 .daedalus/long-context.md   -> topics/<slug>/.daedalus/long-context.md
 ```
 
-迁移后 project root 新增：
+整理后 project root 新增：
 
 ```text
 shared/
@@ -913,9 +889,9 @@ topics/<slug>/
 
 project root 的旧 `.daedalus/*.md` 不再作为长期状态文件保留；它们会被移动到 topic 内。project root 只保留 project-level state、project-map、topic-board 和 project-level logs。
 
-### Migration Algorithm
+### Manual Upgrade Checklist
 
-脚本流程：
+人工整理流程：
 
 ```text
 1. 校验目标 workspace 是旧结构：
@@ -931,9 +907,7 @@ project root 的旧 `.daedalus/*.md` 不再作为长期状态文件保留；它�
    - [[stages]]
    - [[transitions]]
 
-3. 创建备份：
-   - .daedalus-migration-backup/<timestamp>/
-   - 保存原始 .daedalus、notes、guides、demo 的副本
+3. 必要时先用 git diff / git status 确认可回退状态。
 
 4. 创建新目录：
    - shared/
@@ -955,7 +929,7 @@ project root 的旧 `.daedalus/*.md` 不再作为长期状态文件保留；它�
 7. 生成 topic state：
    - current_phase 继承旧 task.current_phase
    - [[stages]] 继承旧 stages
-   - transitions 可以继承旧 transitions，并标记 migrated_from_root = true
+   - transitions 可以继承旧 transitions，并标记来源说明
 
 8. 渲染 state.md：
    - project state.md
@@ -965,20 +939,6 @@ project root 的旧 `.daedalus/*.md` 不再作为长期状态文件保留；它�
    - daedalus validate <project>
    - daedalus topic validate <slug>
 ```
-
-### Migration Script Shape
-
-第一版可以用 Rust CLI 实现，也可以先用 shell 脚本编排 CLI。为了保持确定性，最终建议落入 Rust CLI：
-
-```text
-daedalus migrate repo-learning-multi-topic \
-  <old-task-dir> \
-  --topic <slug> \
-  --title <title> \
-  --execute
-```
-
-`system/bin/migrate-repo-learning-to-multi-topic` 可以作为薄封装，方便本地直接运行。
 
 ## Implementation Phases
 
@@ -1021,7 +981,7 @@ daedalus migrate repo-learning-multi-topic \
 - project root state 不会出现 topic stage transition。
 - `daedalus validate` 能报告 project 问题和 active topic 问题。
 
-### Phase 3: Agent Instruction Migration
+### Phase 3: Agent Instruction Update
 
 目标：让所有 skill、prompt、模板和说明文档使用新 CLI 契约，避免 AI 按旧命令语义操作。
 
@@ -1042,16 +1002,15 @@ daedalus migrate repo-learning-multi-topic \
 - 所有阶段 prompt 都知道 notes/guides/demo 属于 active topic。
 - `repo-learning-coach` 明确禁止在 project root 手写 topic stage 状态。
 
-### Phase 4: Migration Script MVP
+### Phase 4: Current Workspace Manual Upgrade
 
-目标：把现有旧 workspace 一次性迁移到新结构。
+目标：把现有旧 workspace 一次性整理到新结构。
 
 改动：
 
-- 新增 `daedalus migrate repo-learning-multi-topic`。
-- 新增 `system/bin/migrate-repo-learning-to-multi-topic` 薄封装。
-- 迁移前自动备份。
-- 迁移后自动 validate。
+- 手动移动 workspace 文件到 project/topic 结构。
+- 保留原学习证据。
+- 整理后运行 validate。
 
 验收：
 
@@ -1144,9 +1103,6 @@ daedalus migrate repo-learning-multi-topic \
 - `topic_new_creates_topic_workspace`。
 - `topic_activate_updates_project_state_and_blocks_previous`。
 - `topic_validate_rejects_missing_required_topic_artifact`。
-- `migrate_single_topic_workspace_creates_project_and_topic`。
-- `migrate_single_topic_workspace_moves_artifacts_to_topic`。
-- `migrate_single_topic_workspace_preserves_stage_state`。
 - `state_command_from_project_root_uses_active_topic_state`。
 - `state_command_inside_topic_uses_topic_state`。
 - `task_complete_rejects_project_with_active_unfinished_topic`。
@@ -1173,7 +1129,7 @@ daedalus migrate repo-learning-multi-topic \
 ### Agent Instruction Audit Tests
 
 - `audit_daedalus_agent_instructions_flags_old_task_stage_language`。
-- `audit_daedalus_agent_instructions_allows_migration_docs_to_mention_legacy`。
+- `audit_daedalus_agent_instructions_blocks_legacy_commands`。
 - `repo_learning_skill_mentions_project_topic_stage_contract`。
 - `resume_prompt_reads_project_map_then_active_topic_map`。
 
@@ -1197,18 +1153,17 @@ daedalus migrate repo-learning-multi-topic \
 - 每条 evidence 必须有 source、boundary、transfer limit。
 - topic 草稿不得直接写入 shared。
 
-### Risk 3: 一次性迁移有破坏性
+### Risk 3: 一次性整理有破坏性
 
-不保留 legacy runtime 兼容会让迁移变成关键路径。
+不保留 legacy runtime 兼容会让人工整理变成关键路径。
 
 控制方式：
 
 ```text
-迁移脚本默认 dry-run
-迁移前自动备份
-迁移日志写入 .daedalus/migration-log.md
-迁移后自动 validate
-失败时不删除 backup
+整理前确认 git 状态
+小步移动文件
+整理后运行 validate
+必要时用 git diff review
 ```
 
 ### Risk 4: Topic stage 继承导致偷懒
@@ -1230,11 +1185,10 @@ daedalus migrate repo-learning-multi-topic \
 - `knowledge-base` 应该按 project 归档，还是按 topic 归档，再由 project entry 汇总？
 - shared architecture-map 是否应该允许 Mermaid/图片等非 markdown 资产？
 - topic 之间是否允许依赖 DAG，还是第一版只支持轻量 `inherits = []`？
-- 迁移脚本的备份目录是否默认保留在 workspace 内，还是放到 `/tmp` 并提示路径？
 
 ## Recommended First Slice
 
-第一步应该直接收敛文件契约和迁移路径，不保留 legacy 分支：
+第一步应该直接收敛文件契约和手动整理路径，不保留 legacy 分支：
 
 ```text
 1. 修改 repo 模板：root 只表示 project，topic 目录才有 10-stage state。
@@ -1243,7 +1197,7 @@ daedalus migrate repo-learning-multi-topic \
 4. 修改 daedalus state/validate/render：默认操作 active topic。
 5. 更新 repo-learning-coach、resume 和所有 repo phase prompts，统一新 CLI 命令语义。
 6. 新增指令审计脚本，防止旧命令语义残留。
-7. 新增 migrate repo-learning-multi-topic：把现有 Codex workspace 迁移过去。
+7. 手动整理现有 Codex workspace 到新结构。
 8. 修改 daedalus-tui：展示 project + active topic + topic stage。
 ```
 
@@ -1251,5 +1205,5 @@ daedalus migrate repo-learning-multi-topic \
 
 - 架构一次性变干净。
 - CLI 不需要长期支持两套 workspace 语义。
-- 当前 Codex 学习项目可以通过迁移脚本保留数据。
+- 当前 Codex 学习项目可以通过手动整理保留数据。
 - 后续 topic CLI 和 evidence registry 都建立在唯一结构上。

@@ -123,6 +123,6 @@ For long-running work:
 - Tie every reading step to a future output artifact.
 - Do not let chat become the only learning record. If the user answers, corrects, or validates an important point, update the relevant `notes/` file in the same turn.
 - Preserve the distinction between user understanding, Agent calibration, and verified source-code conclusions.
-- Do not accept a code-reading note that only explains call chains. It must explain production constraints, failure handling, invariants, trade-offs, and migration limits.
+- Do not accept a code-reading note that only explains call chains. It must explain production constraints, failure handling, invariants, trade-offs, and transfer limits.
 - Do not mark the task complete until demo/business transfer/knowledge archival are addressed.
 - Do not archive unverified summaries as knowledge.

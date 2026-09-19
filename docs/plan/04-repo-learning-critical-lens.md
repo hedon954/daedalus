@@ -455,7 +455,7 @@ flowchart LR
 - 更新 notes / guides 生成约定。
 - 如果模板由 Rust CLI 生成，更新对应生成逻辑和测试。
 
-### Step 5. Migrate current active Codex topic
+### Step 5. Update current active Codex topic
 
 对当前 Codex `tools-permissions` topic 做轻量迁移：
 

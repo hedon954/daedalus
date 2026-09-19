@@ -112,6 +112,7 @@ flowchart LR
 workspaces/
   current-topic        当前正在学习的 topic 入口
   closeout-topic       等待回顾总结的 topic 入口
+  discovery/           尚未立项前的选题探索
   backlog/             未来可能学习的候选项
   projects/
     <project>/
@@ -204,6 +205,7 @@ Topic: tools-permissions
 ```text
 workspaces/current-topic
 workspaces/closeout-topic
+workspaces/discovery
 workspaces/backlog
 knowledge-base
 apps/knowledge-web

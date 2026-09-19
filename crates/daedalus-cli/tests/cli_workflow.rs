@@ -28,6 +28,24 @@ fn repo_fixture() -> TempDir {
         &source_topic_template,
         &repo.join("system/templates/repo-topic"),
     );
+    let source_course_template = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("repo root")
+        .join("system/templates/course");
+    copy_dir(
+        &source_course_template,
+        &repo.join("system/templates/course"),
+    );
+    let source_course_topic_template = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("repo root")
+        .join("system/templates/course-topic");
+    copy_dir(
+        &source_course_topic_template,
+        &repo.join("system/templates/course-topic"),
+    );
     let source_review_template = manifest_dir
         .parent()
         .and_then(Path::parent)
@@ -309,6 +327,7 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
             .join("workspaces/.daedalus/project-index.toml")
             .exists()
     );
+    assert!(repo.path().join("workspaces/discovery").exists());
     assert!(repo.path().join("workspaces/current-project").exists());
     assert!(repo.path().join("workspaces/current-topic").exists());
     assert!(!repo.path().join("workspaces/02-learning").exists());
@@ -320,6 +339,110 @@ fn init_repo_learning_creates_state_and_rendered_markdown() {
     assert!(repo.path().join(".claude/settings.json").exists());
     assert!(topic_dir.join(".daedalus/task-card.md").exists());
     assert!(topic_dir.join(".daedalus/artifact-index.md").exists());
+}
+
+#[test]
+fn init_course_learning_creates_course_state_and_templates() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "course-learning",
+            "HF Course",
+            "--topic",
+            "lora-loop",
+            "--title",
+            "LoRA Loop",
+            "--course-url",
+            "https://huggingface.co/learn/llm-course/en",
+        ])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "ok: initialized course-learning project",
+        ));
+
+    let task_dir = repo.path().join("workspaces/projects/hf-course");
+    let topic_dir = task_dir.join("topics/lora-loop");
+    assert!(task_dir.join("shared/syllabus-map.md").exists());
+    assert!(task_dir.join("shared/course-progress.md").exists());
+    assert!(task_dir.join("shared/concept-map.md").exists());
+    assert!(!task_dir.join("shared/source-index.md").exists());
+    assert!(!task_dir.join("source/pull_source.sh").exists());
+    assert!(topic_dir.join("guides/04-lesson-lab/.gitkeep").exists());
+    assert!(
+        topic_dir
+            .join("guides/05-mechanism-deep-dive/.gitkeep")
+            .exists()
+    );
+    assert!(topic_dir.join("review/.gitkeep").exists());
+
+    let project_state =
+        fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("project state");
+    assert!(project_state.contains("kind = \"course-learning\""));
+    assert!(project_state.contains("source_kind = \"course\""));
+    assert!(project_state.contains("course_url = \"https://huggingface.co/learn/llm-course/en\""));
+
+    let topic_state =
+        fs::read_to_string(topic_dir.join(".daedalus/state.toml")).expect("topic state");
+    assert!(topic_state.contains("kind = \"course-learning-topic\""));
+    assert!(topic_state.contains("current_phase = \"01-need-aligner\""));
+    assert!(topic_state.contains("id = \"04-lesson-lab\""));
+    assert!(topic_state.contains("id = \"05-mechanism-deep-dive\""));
+
+    let rendered_state =
+        fs::read_to_string(task_dir.join(".daedalus/state.md")).expect("rendered state");
+    assert!(rendered_state.contains("类型：`course-learning`"));
+    assert!(rendered_state.contains("shared/syllabus-map.md"));
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("ok: workspace valid"));
+}
+
+#[test]
+fn validate_course_learning_requires_current_phase_in_todo() {
+    let repo = repo_fixture();
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args([
+            "init",
+            "course-learning",
+            "HF Course",
+            "--topic",
+            "lora-loop",
+            "--title",
+            "LoRA Loop",
+            "--course-url",
+            "https://huggingface.co/learn/llm-course/en",
+        ])
+        .assert()
+        .success();
+
+    let task_dir = repo.path().join("workspaces/projects/hf-course");
+    let topic_dir = task_dir.join("topics/lora-loop");
+    fs::write(
+        topic_dir.join(".daedalus/todo.md"),
+        "# Todo\n\n缺少当前阶段恢复坐标。\n",
+    )
+    .expect("overwrite todo");
+
+    Command::cargo_bin("daedalus")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["validate"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "current_phase `01-need-aligner` is not recoverable",
+        ));
 }
 
 #[test]
@@ -2210,100 +2333,4 @@ fn topic_complete_rejects_unfinished_topic() {
         fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("project state");
     assert!(project_state.contains("active_topic = \"main\""));
     assert!(project_state.contains("lifecycle = \"active\""));
-}
-
-#[test]
-fn migrate_repo_learning_multi_topic_moves_legacy_workspace() {
-    let repo = repo_fixture();
-    let task_dir = repo.path().join("workspaces/projects/legacy-task");
-    fs::create_dir_all(task_dir.join(".daedalus")).expect("daedalus dir");
-    fs::create_dir_all(task_dir.join("notes/06-code-reader")).expect("notes dir");
-    fs::create_dir_all(task_dir.join("guides/06-code-reader")).expect("guides dir");
-    fs::create_dir_all(task_dir.join("demo/src")).expect("demo dir");
-    fs::create_dir_all(task_dir.join("source")).expect("source dir");
-    fs::write(task_dir.join(".daedalus/task-card.md"), "# 旧任务卡\n").expect("task-card");
-    fs::write(task_dir.join(".daedalus/outcome-map.md"), "# Outcome Map\n").expect("outcome");
-    fs::write(task_dir.join(".daedalus/todo.md"), "# Todo\n").expect("todo");
-    fs::write(task_dir.join("notes/06-code-reader/README.md"), "# Notes\n").expect("notes");
-    fs::write(
-        task_dir.join("guides/06-code-reader/README.md"),
-        "# Guides\n",
-    )
-    .expect("guides");
-    fs::write(task_dir.join("demo/README.md"), "# Demo\n").expect("demo");
-    fs::write(
-        task_dir.join("source/pull_source.sh"),
-        "REPO_URL=\"https://example.com/old.git\"\n",
-    )
-    .expect("pull source");
-    fs::write(
-        task_dir.join(".daedalus/state.toml"),
-        r#"
-[task]
-name = "legacy-task"
-kind = "repo-learning"
-created_at = "2026-05-01 00:00:00"
-lifecycle = "active"
-workspace_bucket = "02-learning"
-current_phase = "01-goal-aligner"
-next_action = "继续旧任务。"
-
-[[stages]]
-id = "01-goal-aligner"
-title = "对齐 Repo 学习目标"
-status = "active"
-required_artifacts = [".daedalus/task-card.md", ".daedalus/outcome-map.md"]
-
-[[transitions]]
-stage = "01-goal-aligner"
-action = "init"
-timestamp = "2026-05-01 00:00:00"
-actor = "daedalus-cli"
-reason = "初始化旧任务。"
-"#,
-    )
-    .expect("state");
-
-    Command::cargo_bin("daedalus")
-        .expect("binary")
-        .current_dir(repo.path())
-        .args([
-            "migrate",
-            "repo-learning-multi-topic",
-            task_dir.to_str().expect("utf8"),
-            "--topic",
-            "tools-permissions",
-            "--title",
-            "工具与权限",
-            "--execute",
-        ])
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("ok: migration completed"));
-
-    let topic_dir = task_dir.join("topics/tools-permissions");
-    assert!(task_dir.join(".daedalus/project-map.md").exists());
-    assert!(task_dir.join("shared/source-index.md").exists());
-    assert!(topic_dir.join("notes/06-code-reader/README.md").exists());
-    assert!(topic_dir.join("guides/06-code-reader/README.md").exists());
-    assert!(topic_dir.join("demo/README.md").exists());
-    assert!(topic_dir.join(".daedalus/task-card.md").exists());
-    assert!(!task_dir.join("notes").exists());
-    assert!(!task_dir.join("guides").exists());
-    assert!(!task_dir.join("demo").exists());
-
-    let project_state =
-        fs::read_to_string(task_dir.join(".daedalus/state.toml")).expect("project state");
-    assert!(project_state.contains("mode = \"multi-topic\""));
-    assert!(project_state.contains("created_at = \"2026-05-01 00:00:00\""));
-    assert!(project_state.contains("active_topic = \"tools-permissions\""));
-    assert!(project_state.contains("action = \"migrate\""));
-    assert!(project_state.contains("继续 active topic `tools-permissions`"));
-    let topic_state =
-        fs::read_to_string(topic_dir.join(".daedalus/state.toml")).expect("topic state");
-    assert!(topic_state.contains("[topic]"));
-    assert!(topic_state.contains("slug = \"tools-permissions\""));
-    assert!(topic_state.contains("current_phase = \"01-goal-aligner\""));
-    let pull_source = fs::read_to_string(task_dir.join("source/pull_source.sh")).expect("source");
-    assert!(pull_source.contains("https://example.com/old.git"));
 }

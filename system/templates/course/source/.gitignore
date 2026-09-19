@@ -1,0 +1,6 @@
+# 外部源码默认不进入 daedalus 仓库。
+*
+!.gitignore
+!.gitkeep
+!README.md
+!pull_source.sh

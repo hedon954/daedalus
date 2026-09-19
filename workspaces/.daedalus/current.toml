@@ -1,5 +1,5 @@
 schema_version = 1
-current_project = "projects/openai-codex-cli-deep-learning"
-current_topic = ""
+current_project = "projects/hugging-face-llm-course"
+current_topic = "projects/hugging-face-llm-course/topics/lora-feedback-loop"
 pending_closeout_project = ""
 pending_closeout_topic = ""

@@ -6,7 +6,6 @@ use crate::application::init_task::InitTaskOutput;
 use crate::application::knowledge::{
     KnowledgeListOutput, KnowledgeOutput, KnowledgeValidationOutput,
 };
-use crate::application::migrate::MigrateRepoLearningOutput;
 use crate::application::render::RenderedState;
 use crate::application::review::{
     ReviewListOutput, ReviewOutput, ReviewSessionOutput, ReviewValidationOutput,
@@ -21,7 +20,7 @@ use crate::interfaces::agent_cli::args::OutputFormat;
 pub fn print_init(output: &InitTaskOutput, format: OutputFormat) {
     match format {
         OutputFormat::Text => {
-            println!("ok: initialized repo learning project");
+            println!("ok: initialized {} project", output.project_kind);
             println!("project_dir: {}", output.task_dir.display());
             println!("topic_dir: {}", output.topic_dir.display());
             println!("state_md: {}", output.state_md.display());
@@ -33,6 +32,7 @@ pub fn print_init(output: &InitTaskOutput, format: OutputFormat) {
             json!({
                 "ok": true,
                 "action": "init",
+                "project_kind": output.project_kind,
                 "project_dir": output.task_dir,
                 "topic_dir": output.topic_dir,
                 "state_md": output.state_md,
@@ -438,47 +438,6 @@ pub fn print_knowledge_validation(output: &KnowledgeValidationOutput, format: Ou
                 "ok": true,
                 "action": output.action,
                 "root": output.root
-            })
-        ),
-    }
-}
-
-/// 输出迁移结果。
-pub fn print_migration(output: &MigrateRepoLearningOutput, format: OutputFormat) {
-    match format {
-        OutputFormat::Text => {
-            if output.execute {
-                println!("ok: migration completed");
-            } else {
-                println!("ok: migration dry-run");
-            }
-            println!("project_dir: {}", output.project_dir.display());
-            println!("topic_dir: {}", output.topic_dir.display());
-            if let Some(backup_dir) = &output.backup_dir {
-                println!("backup_dir: {}", backup_dir.display());
-            }
-            if let Some(state_md) = &output.state_md {
-                println!("state_md: {}", state_md.display());
-            }
-            if let Some(topic_state_md) = &output.topic_state_md {
-                println!("topic_state_md: {}", topic_state_md.display());
-            }
-            for action in &output.planned_actions {
-                println!("action: {action}");
-            }
-        }
-        OutputFormat::Json => println!(
-            "{}",
-            json!({
-                "ok": true,
-                "action": "migrate-repo-learning-multi-topic",
-                "execute": output.execute,
-                "project_dir": &output.project_dir,
-                "topic_dir": &output.topic_dir,
-                "backup_dir": &output.backup_dir,
-                "state_md": &output.state_md,
-                "topic_state_md": &output.topic_state_md,
-                "planned_actions": &output.planned_actions
             })
         ),
     }

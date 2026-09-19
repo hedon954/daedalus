@@ -6,3 +6,10 @@ name = "openai-codex-cli-deep-learning"
 lifecycle = "idle"
 path = "projects/openai-codex-cli-deep-learning"
 active_topic = ""
+
+[[projects]]
+slug = "hugging-face-llm-course"
+name = "hugging-face-llm-course"
+lifecycle = "active"
+path = "projects/hugging-face-llm-course"
+active_topic = "lora-feedback-loop"

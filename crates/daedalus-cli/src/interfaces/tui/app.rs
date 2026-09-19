@@ -4,6 +4,11 @@ use std::path::{Path, PathBuf};
 use crate::domain::{DaedalusError, Result};
 use crate::infrastructure::{state_toml, workspace_fs};
 
+use super::learning_types::{
+    build_next_action, find_current_guide, learning_source_reference, learning_type_adapter,
+    reflection_summary, relative_display,
+};
+
 const WORKSPACE_BUCKETS: [&str; 1] = ["projects"];
 
 /// TUI 当前页面。
@@ -335,6 +340,10 @@ pub struct TuiTaskSummary {
     pub bucket: String,
     /// 生命周期。
     pub lifecycle: String,
+    /// 学习类型。
+    pub learning_kind: String,
+    /// 面向 TUI 的学习类型标签。
+    pub learning_label: String,
     /// Active topic。
     pub active_topic: String,
     /// 当前 topic 阶段。
@@ -362,6 +371,22 @@ pub struct TuiOverview {
     pub topic_dir: Option<PathBuf>,
     /// 任务生命周期状态。
     pub lifecycle: String,
+    /// 学习类型。
+    pub learning_kind: String,
+    /// 面向 TUI 的学习类型标签。
+    pub learning_label: String,
+    /// 学习材料类型。
+    pub source_kind: String,
+    /// 学习材料入口。
+    pub source_reference: Option<String>,
+    /// 当前阶段/课程阶段的显示标签。
+    pub current_unit_label: String,
+    /// 进度单位标签。
+    pub progress_unit_label: String,
+    /// 当前阅读入口标签。
+    pub current_reading_label: String,
+    /// closeout / reflection 摘要标签。
+    pub closeout_label: String,
     /// workspace bucket。
     pub workspace_bucket: String,
     /// 当前阶段 ID。
@@ -392,7 +417,7 @@ pub struct TuiOverview {
     pub review_summary: Vec<String>,
     /// Knowledge 摘要。
     pub knowledge_summary: Vec<String>,
-    /// 10-reflection 循环摘要。
+    /// closeout / reflection 循环摘要。
     pub reflection_summary: Vec<String>,
     /// 任务关闭信息摘要。
     pub closure_summary: Vec<String>,
@@ -413,7 +438,7 @@ impl TuiOverview {
                 self.evidence_lines(),
             )),
             DetailSource::Guide => self.file_detail(
-                "Current Reading",
+                &self.current_reading_label,
                 self.current_guide_path.as_deref(),
                 "No current actionable document was found. Use todo/outcome-map for the next step.",
             ),
@@ -449,10 +474,10 @@ impl TuiOverview {
                     "No knowledge-base focus yet.",
                 ));
                 lines.push(String::new());
-                lines.push("Reflection Loop".to_owned());
+                lines.push(self.closeout_label.clone());
                 lines.extend(indented_or_empty(
                     &self.reflection_summary,
-                    "No reflection loop artifacts yet.",
+                    "No closeout artifacts yet.",
                 ));
                 Ok(self.virtual_detail(
                     "Review / Knowledge Focus",
@@ -471,8 +496,18 @@ impl TuiOverview {
     /// Overview 第一屏的证据和漂移摘要。
     pub fn evidence_lines(&self) -> Vec<String> {
         vec![
+            format!("Type: {} ({})", self.learning_label, self.learning_kind),
             format!(
-                "Stage: {} / {} ({}/{})",
+                "Source: {}{}",
+                self.source_kind,
+                self.source_reference
+                    .as_ref()
+                    .map(|value| format!(" -> {value}"))
+                    .unwrap_or_default()
+            ),
+            format!(
+                "{}: {} / {} ({}/{})",
+                self.current_unit_label,
                 self.current_phase,
                 self.current_status,
                 self.done_stage_count,
@@ -484,7 +519,8 @@ impl TuiOverview {
             format!("Reflection loop items: {}", self.reflection_summary.len()),
             format!("Transitions recorded: {}", self.recent_transitions.len()),
             format!(
-                "Current reading: {}",
+                "{}: {}",
+                self.current_reading_label,
                 self.current_guide_path
                     .as_ref()
                     .map(|path| relative_display(&self.artifact_root, path))
@@ -498,7 +534,8 @@ impl TuiOverview {
     pub fn reading_map_lines(&self) -> Vec<String> {
         vec![
             format!(
-                "g  Current: {}",
+                "g  {}: {}",
+                self.current_reading_label,
                 self.current_guide_path
                     .as_ref()
                     .map(|path| relative_display(&self.artifact_root, path))
@@ -557,6 +594,10 @@ impl TuiOverview {
 /// 从学习任务目录加载 TUI 只读总览数据。
 pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
     let doc = state_toml::load_state_doc(&state_toml::state_path(task_dir))?;
+    let learning_kind = state_toml::task_kind(&doc);
+    let adapter = learning_type_adapter(&learning_kind);
+    let source_kind = state_toml::project_source_kind(&doc);
+    let source_reference = learning_source_reference(adapter, &doc);
     let (topic_dir, topic_doc) = active_topic_doc(task_dir, &doc)?;
     let active_topic = topic_doc
         .as_ref()
@@ -622,13 +663,14 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
     }
 
     let next_action = build_next_action(
+        adapter,
         &artifact_root,
         &current_phase,
         &current_status,
         state_toml::next_action(progress_doc),
     );
-    let current_guide_path = find_current_guide(&artifact_root, &current_phase);
-    let reflection_summary = reflection_summary(&artifact_root);
+    let current_guide_path = find_current_guide(adapter, &artifact_root, &current_phase);
+    let reflection_summary = reflection_summary(adapter, &artifact_root);
 
     Ok(TuiOverview {
         task_name: state_toml::task_name(&doc),
@@ -637,6 +679,14 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         active_topic_title,
         topic_dir,
         lifecycle,
+        learning_kind,
+        learning_label: adapter.label.to_owned(),
+        source_kind,
+        source_reference,
+        current_unit_label: adapter.current_unit_label.to_owned(),
+        progress_unit_label: adapter.progress_unit_label.to_owned(),
+        current_reading_label: adapter.current_reading_label.to_owned(),
+        closeout_label: adapter.closeout_label.to_owned(),
         workspace_bucket,
         current_phase,
         current_status,
@@ -655,186 +705,6 @@ pub fn load_overview(task_dir: &Path) -> Result<TuiOverview> {
         reflection_summary,
         closure_summary,
     })
-}
-
-fn build_next_action(
-    artifact_root: &Path,
-    current_phase: &str,
-    current_status: &str,
-    fallback: String,
-) -> String {
-    if current_phase == "10-reflection" {
-        return reflection_next_action(artifact_root, current_status, fallback);
-    }
-
-    let guide_dir = artifact_root.join("guides").join(current_phase);
-    if let Some(guide) = find_action_guide(&guide_dir)
-        && let Ok(content) = fs::read_to_string(&guide)
-    {
-        let mut lines = Vec::new();
-        let relative_guide = relative_display(artifact_root, &guide);
-        lines.push(format!("Current: {current_phase} / {current_status}"));
-        if let Some(slice) = markdown_value(&content, "Current slice") {
-            lines.push(format!("Slice: {slice}"));
-        }
-        if let Some(gap) = markdown_value(&content, "Current gap") {
-            lines.push(format!("Gap: {gap}"));
-        }
-        let actions = action_card_items(&content);
-        if !actions.is_empty() {
-            lines.push(format!("Next: {}", actions.join(" -> ")));
-        }
-        if let Some(after) = markdown_value(&content, "After this") {
-            lines.push(format!("Unlocks: {after}"));
-        }
-        lines.push(format!("Current reading: {relative_guide}"));
-        return lines.join("\n");
-    }
-
-    if let Some(todo_summary) = todo_now_summary(&artifact_root.join(".daedalus").join("todo.md")) {
-        return todo_summary;
-    }
-
-    fallback
-}
-
-fn reflection_next_action(artifact_root: &Path, current_status: &str, fallback: String) -> String {
-    let root = artifact_root.join("reflection");
-    if !root.exists() {
-        return fallback;
-    }
-    [
-        format!("Current: 10-reflection / {current_status}"),
-        "Loop: 知识候选表 -> 用户 closeout -> Agent challenge -> 知识库归档".to_owned(),
-        format!(
-            "Next: {}",
-            if root.join("candidate-map.md").exists() {
-                "打开 reflection/candidate-map.md，围绕候选表逐项确认状态"
-            } else {
-                "创建 reflection/candidate-map.md，并用既有 guides / notes / demo / tests 查漏补缺"
-            }
-        ),
-        format!(
-            "Current reading: {}",
-            relative_display(artifact_root, &root.join("candidate-map.md"))
-        ),
-    ]
-    .join("\n")
-}
-
-fn find_current_guide(artifact_root: &Path, current_phase: &str) -> Option<PathBuf> {
-    if current_phase == "10-reflection" {
-        let candidate_map = artifact_root.join("reflection").join("candidate-map.md");
-        if candidate_map.exists() {
-            return Some(candidate_map);
-        }
-    }
-    find_action_guide(&artifact_root.join("guides").join(current_phase))
-}
-
-fn find_action_guide(guide_dir: &Path) -> Option<PathBuf> {
-    let mut candidates = Vec::new();
-    let entries = fs::read_dir(guide_dir).ok()?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
-            continue;
-        };
-        if path.is_file()
-            && name.ends_with(".md")
-            && name != "README.md"
-            && name.contains("slice")
-            && is_actionable_guide(&path)
-        {
-            candidates.push(path);
-        }
-    }
-    candidates.sort();
-    candidates.pop()
-}
-
-fn is_actionable_guide(path: &Path) -> bool {
-    let Ok(content) = fs::read_to_string(path) else {
-        return false;
-    };
-    if markdown_value(&content, "Current slice")
-        .map(|value| value.to_lowercase().contains("completed"))
-        .unwrap_or(false)
-    {
-        return false;
-    }
-    content.contains("## Action Card")
-}
-
-fn markdown_value(content: &str, key: &str) -> Option<String> {
-    let prefix = format!("- {key}:");
-    content.lines().find_map(|line| {
-        line.trim()
-            .strip_prefix(&prefix)
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .map(ToOwned::to_owned)
-    })
-}
-
-fn action_card_items(content: &str) -> Vec<String> {
-    let mut in_action_card = false;
-    let mut values = Vec::new();
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed == "## Action Card" {
-            in_action_card = true;
-            continue;
-        }
-        if in_action_card && trimmed.starts_with("## ") {
-            break;
-        }
-        if in_action_card
-            && trimmed.starts_with("### ")
-            && let Some((_, title)) = trimmed.trim_start_matches("### ").split_once(". ")
-        {
-            values.push(title.to_owned());
-        }
-        if values.len() >= 3 {
-            break;
-        }
-    }
-    values
-}
-
-fn todo_now_summary(path: &Path) -> Option<String> {
-    let content = fs::read_to_string(path).ok()?;
-    let mut in_now = false;
-    let mut lines = Vec::new();
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed == "## Now" {
-            in_now = true;
-            continue;
-        }
-        if in_now && trimmed.starts_with("## ") {
-            break;
-        }
-        if in_now
-            && trimmed.starts_with("- ")
-            && (trimmed.contains("当前问题")
-                || trimmed.contains("当前待解决")
-                || trimmed.contains("完成后解锁"))
-        {
-            lines.push(trimmed.trim_start_matches("- ").to_owned());
-        }
-        if lines.len() >= 4 {
-            break;
-        }
-    }
-    (!lines.is_empty()).then(|| lines.join("\n"))
-}
-
-fn relative_display(root: &Path, path: &Path) -> String {
-    path.strip_prefix(root)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .replace(std::path::MAIN_SEPARATOR, "/")
 }
 
 fn non_empty_lines(values: &[String], empty_message: &str) -> Vec<String> {
@@ -894,6 +764,8 @@ pub fn scan_task_summaries(repo_root: &Path) -> Result<Vec<TuiTaskSummary>> {
 
 fn summary_from_task_dir(task_dir: &Path, bucket: &str) -> Result<TuiTaskSummary> {
     let doc = state_toml::load_state_doc(&state_toml::state_path(task_dir))?;
+    let learning_kind = state_toml::task_kind(&doc);
+    let adapter = learning_type_adapter(&learning_kind);
     let (_, topic_doc) = active_topic_doc(task_dir, &doc)?;
     let progress_doc = topic_doc.as_ref().unwrap_or(&doc);
     let active_topic = topic_doc
@@ -914,6 +786,8 @@ fn summary_from_task_dir(task_dir: &Path, bucket: &str) -> Result<TuiTaskSummary
         path: task_dir.to_path_buf(),
         bucket: bucket.to_owned(),
         lifecycle: task_field(&doc, "lifecycle").unwrap_or_else(|| "unknown".to_owned()),
+        learning_kind,
+        learning_label: adapter.label.to_owned(),
         active_topic,
         current_phase,
         current_status,
@@ -1017,18 +891,6 @@ fn knowledge_summary(task_dir: &Path) -> Vec<String> {
     values
 }
 
-fn reflection_summary(artifact_root: &Path) -> Vec<String> {
-    let root = artifact_root.join("reflection");
-    [("候选表", "candidate-map.md")]
-        .into_iter()
-        .filter_map(|(label, file)| {
-            let path = root.join(file);
-            path.exists()
-                .then(|| format!("{label}: {}", relative_display(artifact_root, &path)))
-        })
-        .collect()
-}
-
 fn bucket_order(bucket: &str) -> usize {
     WORKSPACE_BUCKETS
         .iter()
@@ -1048,6 +910,14 @@ mod tests {
             active_topic_title: "Tools Permissions".to_owned(),
             topic_dir: None,
             lifecycle: "active".to_owned(),
+            learning_kind: "repo-learning".to_owned(),
+            learning_label: "Repo Learning".to_owned(),
+            source_kind: "repo".to_owned(),
+            source_reference: Some("demo-repo".to_owned()),
+            current_unit_label: "Stage".to_owned(),
+            progress_unit_label: "repo stages".to_owned(),
+            current_reading_label: "Current Guide".to_owned(),
+            closeout_label: "Reflection Loop".to_owned(),
             workspace_bucket: "projects".to_owned(),
             current_phase: "08-demo-coder".to_owned(),
             current_status: "active".to_owned(),
@@ -1072,109 +942,107 @@ mod tests {
     }
 
     #[test]
-    fn next_action_prefers_slice_action_guide() {
+    fn course_learning_overview_uses_course_adapter() {
         let temp = tempfile::TempDir::new().expect("temp dir");
-        let root = temp.path();
-        let guide_dir = root.join("guides/08-demo-coder");
-        fs::create_dir_all(&guide_dir).expect("guide dir");
+        let project = temp.path().join("course-project");
+        let topic = project.join("topics/lora-loop");
+        fs::create_dir_all(project.join(".daedalus")).expect("project state dir");
+        fs::create_dir_all(topic.join(".daedalus")).expect("topic state dir");
+        fs::create_dir_all(topic.join("guides/04-lesson-lab")).expect("lesson guide dir");
         fs::write(
-            guide_dir.join("slice-6-hardening.md"),
-            r#"# Slice 6 Hardening Guide
+            project.join(".daedalus/state.toml"),
+            r#"
+[task]
+name = "course-project"
+kind = "course-learning"
+lifecycle = "active"
+workspace_bucket = "projects"
 
-## Learning Navigation
+[project]
+mode = "multi-topic"
+active_topic = "lora-loop"
+source_kind = "course"
+source_name = "HF Course"
+course_url = "https://huggingface.co/learn/llm-course/en"
 
-- Current slice: Slice 6 Agent Orchestrator
-- Current gap: live path 已跑通，但 deterministic tests 和安全阀不足
-- After this: 可以把 approval / sandbox / retry 接入 ReAct loop
-
-## Action Card
-
-### 1. Add `max_turns`
-
-### 2. Emit `ToolCallFinished`
-
-### 3. Add Fake LLM Tests
-
-## Completion Criteria
+[[topics]]
+slug = "lora-loop"
+title = "LoRA Loop"
+lifecycle = "active"
+path = "topics/lora-loop"
+inherits = []
 "#,
         )
-        .expect("guide");
-
-        let next_action =
-            build_next_action(root, "08-demo-coder", "active", "short fallback".to_owned());
-
-        assert!(next_action.contains("Current: 08-demo-coder / active"));
-        assert!(next_action.contains("Slice: Slice 6 Agent Orchestrator"));
-        assert!(next_action.contains("Gap: live path 已跑通"));
-        assert!(next_action.contains("Next: Add `max_turns` -> Emit `ToolCallFinished`"));
-        assert!(next_action.contains("Current reading: guides/08-demo-coder/slice-6-hardening.md"));
-        assert!(!next_action.contains("short fallback"));
-    }
-
-    #[test]
-    fn next_action_accepts_numbered_slice_guide_and_ignores_completed_guide() {
-        let temp = tempfile::TempDir::new().expect("temp dir");
-        let root = temp.path();
-        let guide_dir = root.join("guides/08-demo-coder");
-        fs::create_dir_all(&guide_dir).expect("guide dir");
+        .expect("project state");
         fs::write(
-            guide_dir.join("07-slice-7-policy-composition.md"),
-            r#"# Slice 7
+            topic.join(".daedalus/state.toml"),
+            r#"
+[topic]
+slug = "lora-loop"
+title = "LoRA Loop"
+kind = "course-learning-topic"
+lifecycle = "active"
+current_phase = "04-lesson-lab"
+next_action = "进入 lesson lab。"
 
-## Learning Navigation
-
-- Current slice: Slice 7 completed
-- Current gap: old completed work
-
-## Action Card
-
-### 1. Old completed action
+[[stages]]
+id = "04-lesson-lab"
+title = "把课程 lesson 变成可观察实验"
+status = "active"
+required_artifacts = ["guides/04-lesson-lab/README.md"]
 "#,
         )
-        .expect("completed guide");
+        .expect("topic state");
+        fs::write(topic.join(".daedalus/todo.md"), "# Todo\n").expect("todo");
+        fs::write(topic.join(".daedalus/outcome-map.md"), "# Outcome\n").expect("outcome");
         fs::write(
-            guide_dir.join("08-slice-8-event-protocol.md"),
-            r#"# Slice 8
+            topic.join("guides/04-lesson-lab/README.md"),
+            r#"# Trainer Batch Lesson
 
-## Learning Navigation
+## Lesson Lab
 
-- Current slice: Slice 8 Event Protocol Hardening
-- Current gap: event protocol is not observable enough
-- After this: README can explain the command safety trace
+- Lesson：Trainer batch / forward / loss
+- 当前问题：用户已经跑通训练，但还不知道 batch 如何进入 model。
 
-## Action Card
+## Next Lesson Lab
 
-### 1. Define event protocol
-
-### 2. Emit shell runtime events
+- 打印 `batch.keys()` 和 tensor shape
+- 手动运行 `model(**batch)`
 "#,
         )
-        .expect("active guide");
+        .expect("lesson guide");
 
-        let next_action =
-            build_next_action(root, "08-demo-coder", "active", "short fallback".to_owned());
+        let overview = load_overview(&project).expect("overview");
 
-        assert!(next_action.contains("Slice: Slice 8 Event Protocol Hardening"));
-        assert!(next_action.contains("Gap: event protocol is not observable enough"));
-        assert!(next_action.contains("Next: Define event protocol -> Emit shell runtime events"));
-        assert!(
-            next_action
-                .contains("Current reading: guides/08-demo-coder/08-slice-8-event-protocol.md")
+        assert_eq!(overview.learning_kind, "course-learning");
+        assert_eq!(overview.learning_label, "Course Learning");
+        assert_eq!(overview.source_kind, "course");
+        assert_eq!(
+            overview.source_reference.as_deref(),
+            Some("https://huggingface.co/learn/llm-course/en")
         );
-        assert!(!next_action.contains("Old completed action"));
-    }
-
-    #[test]
-    fn reflection_phase_uses_candidate_map_as_current_reading() {
-        let temp = tempfile::TempDir::new().expect("temp dir");
-        let root = temp.path();
-        let guide = root.join("reflection/candidate-map.md");
-        fs::create_dir_all(guide.parent().expect("reflection parent")).expect("reflection dir");
-        fs::write(&guide, "# 知识候选表\n").expect("reflection");
-
-        let current_guide = find_current_guide(root, "10-reflection").expect("current guide");
-
-        assert_eq!(current_guide, guide);
+        assert_eq!(overview.current_unit_label, "Course Stage");
+        assert_eq!(overview.progress_unit_label, "course stages");
+        assert_eq!(overview.current_reading_label, "Course Guide");
+        assert_eq!(
+            overview.current_guide_path.as_deref(),
+            Some(topic.join("guides/04-lesson-lab/README.md").as_path())
+        );
+        assert!(
+            overview
+                .next_action
+                .contains("Course Stage: 04-lesson-lab / active")
+        );
+        assert!(
+            overview
+                .next_action
+                .contains("Focus: Trainer batch / forward / loss")
+        );
+        assert!(
+            overview
+                .next_action
+                .contains("Course Guide: guides/04-lesson-lab/README.md")
+        );
     }
 
     #[test]

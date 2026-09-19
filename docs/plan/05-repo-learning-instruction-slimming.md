@@ -303,7 +303,7 @@ review 或验证改变完成度、风险、下一步，则更新学习地图。
 - `system/prompts/repo/phase3-practice/08-demo-coder.md`
 - any prompt that repeats checkpoint lifecycle details.
 
-## Migration Plan
+## Rollout Plan
 
 ### Phase 1: Extract Shared Contracts
 

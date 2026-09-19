@@ -1,0 +1,132 @@
+# daedalus course learning topic state. 保留注释；确定性字段由 CLI 更新。
+#
+# Topic state 承载 course-learning 专题学习进度。Project state 只负责 project lifecycle
+# 和 active topic 指针。
+#
+# 枚举约束：
+# - topic.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
+# - stage.status 只能是：pending、active、blocked、paused、done。
+# - transition.action 只能是：init、enter、complete、block、resume、rollback、topic-await-reflection、topic-complete、topic-abandon。
+# - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
+# Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
+# required_artifacts 表示阶段完成所需文件。CLI 只校验文件存在；
+# Agent 仍需确认 notes 是否包含用户确认、亲自实践或手写笔记后的证据。
+
+[topic]
+slug = "lora-feedback-loop"
+title = "LoRA 微调与数据反馈闭环"
+kind = "course-learning-topic"
+parent_project = "../.."
+lifecycle = "active"
+current_phase = "04-lesson-lab"
+next_action = "继续 `04-lesson-lab`：只推进 Chapter 5/2 `What if my dataset isn't on the Hub?`，先区分通用文件 loader、local/remote source、`data_files` split mapping 与 JSON `field`，并检查加载后的 DatasetDict 结构。"
+
+[[stages]]
+id = "01-need-aligner"
+title = "对齐课程学习诉求"
+status = "done"
+required_artifacts = [".daedalus/task-card.md", ".daedalus/outcome-map.md"]
+
+[[stages]]
+id = "02-syllabus-mapper"
+title = "映射课程 syllabus"
+status = "done"
+required_artifacts = ["guides/02-syllabus-mapper/README.md"]
+
+[[stages]]
+id = "03-concept-roadmap"
+title = "建立概念路线图"
+status = "done"
+required_artifacts = ["guides/03-concept-roadmap/README.md", "../../shared/concept-map.md"]
+
+[[stages]]
+id = "04-lesson-lab"
+title = "把课程 lesson 变成可观察实验"
+status = "active"
+required_artifacts = ["guides/04-lesson-lab/README.md", "notes/04-lesson-lab/README.md"]
+
+[[stages]]
+id = "05-mechanism-deep-dive"
+title = "拆解被 API 隐藏的机制"
+status = "pending"
+required_artifacts = ["guides/05-mechanism-deep-dive/README.md"]
+
+[[stages]]
+id = "06-practice-transfer"
+title = "迁移课程概念到真实任务"
+status = "pending"
+required_artifacts = ["guides/06-practice-transfer/README.md"]
+
+[[stages]]
+id = "07-capstone-lab"
+title = "完成课程驱动 mini project"
+status = "pending"
+required_artifacts = ["demo/design.md"]
+
+[[stages]]
+id = "08-review-loop"
+title = "复习与掌握度验证"
+status = "pending"
+required_artifacts = ["review/mastery-map.md", "review/question-bank.md"]
+
+[[stages]]
+id = "09-closeout-archive"
+title = "专题回顾与知识归档"
+status = "pending"
+required_artifacts = [".daedalus/artifact-index.md", ".daedalus/long-context.md", "reflection/candidate-map.md", "reflection/closeout.md"]
+
+[[transitions]]
+stage = "01-need-aligner"
+action = "init"
+timestamp = "2026-06-14 14:42:45"
+actor = "daedalus-cli"
+reason = "初始化 course learning topic。"
+
+[[transitions]]
+stage = "01-need-aligner"
+action = "complete"
+timestamp = "2026-06-14 20:44:11"
+actor = "daedalus-cli"
+reason = "用户确认 fine-tuning suitability、第一轮手机品类和 suggestion next action 质量标准，01 目标对齐完成。"
+
+[[transitions]]
+stage = "02-syllabus-mapper"
+action = "enter"
+timestamp = "2026-06-14 20:44:11"
+actor = "daedalus-cli"
+reason = "进入 Hugging Face LLM Course source/material scout，选择支持 baseline + LoRA 对照实验的最小材料集合。"
+
+[[transitions]]
+stage = "02-syllabus-mapper"
+action = "complete"
+timestamp = "2026-06-14 21:32:51"
+actor = "daedalus-cli"
+reason = "完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。"
+
+[[transitions]]
+stage = "06-practice-transfer"
+action = "enter"
+timestamp = "2026-06-14 21:32:51"
+actor = "daedalus-cli"
+reason = "进入问题路线图阶段，将默认方案转成数据生成标准、审核问题和 demo 设计前置问题。"
+
+[[transitions]]
+stage = "03-concept-roadmap"
+action = "resume"
+timestamp = "2026-06-23 00:53:42"
+actor = "daedalus-cli"
+reason = "将 topic 阶段映射为 course-learning 阶段，并迁移 guide/notes 到 course-learning 目录。"
+
+[[transitions]]
+stage = "03-concept-roadmap"
+action = "complete"
+timestamp = "2026-06-23 01:03:06"
+actor = "daedalus-cli"
+reason = "完成 HF Course 1/2 concept roadmap，并同步 shared concept/progress/syllabus maps。"
+
+[[transitions]]
+stage = "04-lesson-lab"
+action = "enter"
+timestamp = "2026-06-23 01:03:06"
+actor = "daedalus-cli"
+reason = "进入 course-learning lesson lab，执行 Trainer 拆解 guide 并沉淀用户观察证据。"

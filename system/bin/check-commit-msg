@@ -4,18 +4,8 @@ import sys
 from pathlib import Path
 
 
-ALLOWED_TYPES = (
-    "feat",
-    "fix",
-    "docs",
-    "style",
-    "refactor",
-    "perf",
-    "test",
-    "build",
-    "ci",
-    "chore",
-    "revert",
+COMMIT_SUBJECT_PATTERN = re.compile(
+    r"^[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*: .+"
 )
 
 
@@ -34,19 +24,13 @@ def main() -> int:
     if subject.startswith(("Merge ", "Revert ")):
         return 0
 
-    pattern = re.compile(
-        r"^("
-        + "|".join(ALLOWED_TYPES)
-        + r")(\([a-z0-9-]+\))?: .+"
-    )
-
-    if pattern.match(subject):
+    if COMMIT_SUBJECT_PATTERN.match(subject):
         return 0
 
     print("Invalid commit message.")
-    print("Expected: type(scope): Chinese description")
-    print("     or: type: Chinese description")
-    print("Example: docs(learning): 增加当前光标同步机制")
+    print("Expected: topic/scope: Chinese description")
+    print("Example: lora-feedback-loop/debugger-guide: 跑通 Causal LM 训练闭环")
+    print("Example: daedalus/cli: 修正 topic 校验规则")
     print(f"Actual:   {subject}")
     return 1
 

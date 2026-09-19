@@ -47,10 +47,9 @@ pub fn validate_workspace(
         ".daedalus/validation-log.md",
         "shared/README.md",
         "shared/evidence-registry.md",
-        "shared/source-index.md",
         "topics/.gitkeep",
         "source/.gitignore",
-        "source/pull_source.sh",
+        "source/README.md",
     ];
 
     for path in required {
@@ -77,6 +76,7 @@ pub fn validate_workspace(
             state_toml::state_kind(&doc)
         ));
     }
+    issues.extend(validate_project_learning_kind(task_dir, &doc));
 
     match state_toml::task_lifecycle(&doc) {
         Ok(TaskLifecycle::Completed) => {
@@ -105,6 +105,7 @@ pub fn validate_workspace(
         issues.push("state.md is stale or missing".to_owned());
     }
     issues.extend(validate_project_navigation(task_dir, &doc)?);
+    let task_kind = state_toml::task_kind(&doc);
 
     let active_count = state_toml::active_topic_count(&doc);
     if active_count > 1 {
@@ -140,7 +141,11 @@ pub fn validate_workspace(
     };
     for topic in topic_targets {
         let topic_dir = task_dir.join(&topic.path);
-        issues.extend(validate_topic_workspace(&topic_dir, &topic.slug)?);
+        issues.extend(validate_topic_workspace_with_kind(
+            &topic_dir,
+            &topic.slug,
+            Some(task_kind.as_str()),
+        )?);
     }
 
     if reviews {
@@ -179,6 +184,47 @@ pub fn validate_workspace(
         task_dir: task_dir.to_path_buf(),
         issues,
     })
+}
+
+fn validate_project_learning_kind(task_dir: &Path, doc: &toml_edit::DocumentMut) -> Vec<String> {
+    let mut issues = Vec::new();
+    let task_kind = state_toml::task_kind(doc);
+    let source_kind = state_toml::project_source_kind(doc);
+    match task_kind.as_str() {
+        "repo-learning" => {
+            if source_kind != "repo" {
+                issues.push(format!(
+                    "repo-learning project source_kind should be `repo`, got `{source_kind}`"
+                ));
+            }
+            for path in ["shared/source-index.md", "source/pull_source.sh"] {
+                if !task_dir.join(path).exists() {
+                    issues.push(format!("missing repo-learning file: {path}"));
+                }
+            }
+        }
+        "course-learning" => {
+            if source_kind != "course" {
+                issues.push(format!(
+                    "course-learning project source_kind should be `course`, got `{source_kind}`"
+                ));
+            }
+            if state_toml::course_url(doc).is_none() {
+                issues.push("course-learning project missing project.course_url".to_owned());
+            }
+            for path in [
+                "shared/syllabus-map.md",
+                "shared/course-progress.md",
+                "shared/concept-map.md",
+            ] {
+                if !task_dir.join(path).exists() {
+                    issues.push(format!("missing course-learning file: {path}"));
+                }
+            }
+        }
+        other => issues.push(format!("unsupported task kind: `{other}`")),
+    }
+    issues
 }
 
 fn validate_current_projection(
@@ -331,6 +377,14 @@ fn same_path(left: &Path, right: &Path) -> Result<bool> {
 
 /// 校验 topic workspace。
 pub fn validate_topic_workspace(topic_dir: &Path, slug: &str) -> Result<Vec<String>> {
+    validate_topic_workspace_with_kind(topic_dir, slug, None)
+}
+
+fn validate_topic_workspace_with_kind(
+    topic_dir: &Path,
+    slug: &str,
+    project_kind: Option<&str>,
+) -> Result<Vec<String>> {
     let mut issues = Vec::new();
     let required = [
         ".daedalus/task-card.md",
@@ -377,6 +431,11 @@ pub fn validate_topic_workspace(topic_dir: &Path, slug: &str) -> Result<Vec<Stri
             state_toml::topic_slug(&doc)
         ));
     }
+    if project_kind == Some("course-learning")
+        || state_toml::topic_kind(&doc) == "course-learning-topic"
+    {
+        issues.extend(validate_course_topic_workspace(topic_dir, slug, &doc)?);
+    }
     if state_toml::active_stage_count(&doc) > 1 {
         issues.push(format!("topic `{slug}` has multiple active stages"));
     }
@@ -405,6 +464,68 @@ pub fn validate_topic_workspace(topic_dir: &Path, slug: &str) -> Result<Vec<Stri
                     ));
                 }
             }
+        }
+    }
+    Ok(issues)
+}
+
+fn validate_course_topic_workspace(
+    topic_dir: &Path,
+    slug: &str,
+    doc: &toml_edit::DocumentMut,
+) -> Result<Vec<String>> {
+    let mut issues = Vec::new();
+    let topic_kind = state_toml::topic_kind(doc);
+    if topic_kind != "course-learning-topic" {
+        issues.push(format!(
+            "course-learning topic `{slug}` kind should be `course-learning-topic`, got `{topic_kind}`"
+        ));
+    }
+    for path in [
+        "guides/01-need-aligner",
+        "guides/02-syllabus-mapper",
+        "guides/03-concept-roadmap",
+        "guides/04-lesson-lab",
+        "guides/05-mechanism-deep-dive",
+        "guides/06-practice-transfer",
+        "guides/07-capstone-lab",
+        "guides/08-review-loop",
+        "guides/09-closeout-archive",
+        "review",
+    ] {
+        if !topic_dir.join(path).is_dir() {
+            issues.push(format!(
+                "course-learning topic `{slug}` missing directory: {path}"
+            ));
+        }
+    }
+
+    if let Some(current_phase) = state_toml::current_phase(doc) {
+        let todo_path = topic_dir.join(".daedalus/todo.md");
+        if todo_path.exists() {
+            let todo = fs::read_to_string(&todo_path).map_err(|source| DaedalusError::Io {
+                path: todo_path,
+                source,
+            })?;
+            if !todo.contains(&current_phase) {
+                issues.push(format!(
+                    "course-learning topic `{slug}` current_phase `{current_phase}` is not recoverable from .daedalus/todo.md"
+                ));
+            }
+        }
+    }
+
+    for stage in state_toml::stages(doc) {
+        if matches!(
+            stage.id.as_str(),
+            "06-practice-transfer" | "07-capstone-lab"
+        ) && matches!(stage.status.as_str(), "active" | "done")
+            && !topic_dir.join("../../shared/concept-map.md").exists()
+        {
+            issues.push(format!(
+                "course-learning topic `{slug}` stage `{}` requires ../../shared/concept-map.md",
+                stage.id
+            ));
         }
     }
     Ok(issues)

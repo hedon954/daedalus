@@ -59,7 +59,7 @@ Knowledge System Extraction
   - `daedalus knowledge validate`
 - `daedalus validate --reviews --knowledge`。
 - TUI read-only Review Focus / Knowledge Focus。
-- 迁移脚本：`system/bin/migrate-add-review-knowledge-system`。
+- 当前 Codex learning project 已补充 review / knowledge-system scaffolding。
 - 当前 Codex learning project 已补充 review / knowledge-system scaffolding。
 
 仍然刻意不做的范围：
@@ -947,9 +947,9 @@ daedalus knowledge extract --topic tools-permissions
 - 生成 knowledge extraction candidates。
 - 确认 `daedalus validate --all-topics` 不受 review 影响。
 
-## Migration Strategy
+## Existing Workspace Update Strategy
 
-因为 daedalus 是本地项目，可以继续采用 breaking migration 思路。但 review system 是新增能力，不需要迁移旧 review 数据。
+review system 是新增能力，不需要移动旧 review 数据。
 
 需要做的迁移：
 
@@ -957,13 +957,7 @@ daedalus knowledge extract --topic tools-permissions
 - 给已有 topic 增加 `.daedalus/reviews/README.md` 可选入口。
 - 给已有 project `shared/` 增加 `knowledge-system/` 可选入口。
 
-这些可以由一个脚本完成：
-
-```bash
-system/bin/migrate-add-review-knowledge-system <project-dir>
-```
-
-脚本只新增缺失目录和 README，不移动原学习产物。
+这些属于一次性手动整理：只新增缺失目录和 README，不移动原学习产物。
 
 ## Product Boundaries
 
