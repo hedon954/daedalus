@@ -8,30 +8,31 @@ Todo 是动态路径看板。学习证据变化、阶段完成、学习路径需
 
 - Project：`hugging-face-llm-course`
 - Topic：`lora-feedback-loop` - LoRA 微调与数据反馈闭环
-- 最终产物：闲鱼二手买家 Agent suggestion next action production-shaped mini LoRA lab、训练闭环 runbook、实验对比报告、业务迁移笔记。
-- 最小 lesson lab：HF Course 1/2 基础机制已完成；当前用 Chapter 3 微调训练链路连接 `suggestion dataset -> train -> eval -> error analysis -> feedback data -> retrain -> compare`。
+- 最终产物：SFT 博文系列、Qwen3 Full/LoRA 脱敏实验复盘、训练数据 preflight、评测与反馈闭环说明。
+- 最小 review：从一条 suggestion 样本闭卷推导 `chat template -> tokens/labels -> loss -> parameter update`，再用真实实验验证。
 - 业务迁移目标：让用户从 AI Agent 应用层进入模型训练闭环层，提升下一份 AI 开发岗位竞争力。
 
 ## Current Path
 
-当前 active topic 已迁移为 course-learning：`01-need-aligner`、`02-syllabus-mapper`、`03-concept-roadmap` 已完成，当前处于 `04-lesson-lab`。Chapter 1/5 文本主线任务观察已完成到 Summarization；剩余 Translation / ASR / Image classification 按用户决定跳过或延后，不再阻塞 Chapter 1/6。
+课程阅读已由用户于 2026-08-27 确认为 0–12 章全部完成；已有 lesson labs 和真实 Qwen3 Full/LoRA 迁移。专题已从 `08-review-loop` 中途搁置，不再占用 daily active 槽。接回后继续用博文而不是继续阅读来检验掌握度。
 
 ## Now
 
-- 当前问题：用户已读完 Chapter 3、Chapter 4 和 Chapter 5/1，当前进入 5/2，需要掌握非 Hub 数据的本地/远程加载契约。
-- 为什么现在做它：LoRA/SFT 业务数据通常来自本地文件、对象存储或远程服务，而不是现成 Hub dataset；需要先把 source、format、split 与 schema 显式化。
-- 完成后解锁：能用统一的 `load_dataset()` 入口加载本地/远程 CSV、text、JSON/pandas 数据，并验证 DatasetDict 的 split、columns、rows 与嵌套结构。
+- 当前状态：`parked`。用户决定先释放 active 槽，启动下一题。
+- 接回命令：`daedalus topic activate lora-feedback-loop`
+- 接回后的问题：能否把课程知识和真实工作经验写成可验证、可反驳、可迁移的 SFT 技术文章。
+- 完成后解锁：进入 capstone/closeout 判断，确认哪些结论真正掌握、哪些需要回补、哪些可以进入 knowledge-base 或公开博客。
 
 ## Current Cursor
 
 Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段状态时，必须用当前代码、测试、运行输出或用户已验证观察重新校准。
 
-- Course frontier：已进入 `demo/hugging-face-course-learning`；用户完成 `transformer-work/casual_language_model.ipynb` 的 `max_steps=200` Causal LM quick training run。
-- Latest lesson evidence：用户已完成 `transformer-work/summarization.ipynb`，跑通 BillSum `ca_test` 数据加载、T5 summarization preprocessing、ROUGE 评估修复、Seq2SeqTrainer 训练和 `checkpoint-248` 推理；训练输出 `epoch=4.0`、`train_loss≈3.02`，推理样例已生成摘要。
-- Already wired：project/topic 已通过 daedalus lifecycle 初始化；task-card / outcome-map 已填入确认过的主线目标。
-- Current open decision：用户确认 Chapter 5/2 之前的内容均已读完；当前正式进入 Chapter 5/2 `What if my dataset isn't on the Hub?`。
-- Current QA boundary：QA lab 已完成基础观察；若后续追求可靠指标，需要补完整合法 span postprocess 与 SQuAD EM/F1，而不是复现 task guide 的单次示例输出。
-- Do not suggest：不要恢复旧仓库学习阶段命名；不要把 DDIA 升级为第二个 active topic。
+- Reading frontier：Hugging Face LLM Course 当前 0–12 章全部阅读完毕（用户确认）。
+- Local evidence：DistilGPT2、sequence classification、token classification、QA、summarization 等 labs 已保留；具体掌握边界见 `review/mastery-map.md`。
+- Real-work evidence：用户确认用 Qwen3 1.7B、约 27k 数据执行过 Full SFT 与 LoRA；仅归档脱敏事实，精确结果仍待补。
+- Current review：博文 1《SFT 到底学了什么：从 next-token loss 到行为蒸馏》。
+- Lifecycle：`parked`；恢复点仍是 `08-review-loop` 博文 1。
+- Do not suggest：不要再把“第一次跑 LoRA”或 Chapter 5/2 当作默认下一步；不要把未确认的 0.6B 历史实验与 1.7B 实验合并。不要在未 `activate` 前继续推进本 topic。
 
 ## Reminder Queue
 
@@ -48,7 +49,10 @@ Current Cursor 是恢复定位器，不是完成证明。恢复或判断阶段�
 - [x] Chapter 3 剩余阅读：用户确认 3/5-3/7 已读完；曲线诊断实验保留待验收。
 - [x] Chapter 4 阅读：用户确认整章已读完；Hub 上传/model card 实践保留待验收。
 - [x] Chapter 5/1 Introduction：用户确认已读完。
-- [ ] Chapter 5/2：Agent 已验证课程 GitHub URL、最终 raw URL与本地压缩文件均可加载；待用户观察并复述 file loader、source、split mapping、自动解压与 JSON `field` 的职责。
+- [x] Chapter 5–12 阅读：用户于 2026-08-27 确认全部读完；实践和掌握度在 review 中分别验收。
+- [ ] 博文 1：写出中心论点、机制图和 SFT 最小伪代码。
+- [ ] 博文 2：补一个真实、脱敏的 training sample preflight。
+- [ ] 博文 3：补 Qwen3 1.7B Full/LoRA 实验矩阵和结果。
 
 ## Critical Checkpoint
 
@@ -120,11 +124,12 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 - [x] Chapter 3/5-3/7：用户确认已读完；learning curves 实验待回看。
 - [x] Chapter 4 Sharing models and tokenizers：用户确认已读完；Hub 实践待回看。
 - [x] Chapter 5/1 Introduction：用户确认已读完。
-- [ ] Chapter 5/2 What if my dataset isn't on the Hub?：加载本地与远程文件并检查 DatasetDict 契约。
-- [ ] Causal LM recipe：解释并观察 dataset -> tokenizer -> blocks -> labels -> Trainer。
-- [ ] Pipeline 机制：解释 task -> model/tokenizer/config -> inference -> postprocess。
-- [ ] Baseline 固化：固定 model name，不依赖默认 pipeline model。
-- [ ] 用户审核：用户至少审核 5-10 条样本，校准 keep/revise/weak/reject 口径。
+- [x] Hugging Face LLM Course 0–12：全部阅读完毕（用户确认）。
+- [x] 真实 Qwen3 practice transfer：1.7B、约 27k、Full SFT 与 LoRA 均已执行（用户确认）。
+- [ ] SFT 机制：通过博文 1 闭卷解释 dataset -> template -> tokens/labels -> loss -> update。
+- [ ] Full/LoRA：通过博文 3 补齐公平实验矩阵、最佳 checkpoint 和结果解释。
+- [ ] Dataset/Eval：通过博文 4–5 补齐 27k 数据画像、split、rubric 和 failure slices。
+- [ ] Feedback loop：确认是否完成反馈数据再训练与独立 held-out 对比。
 
 ## Stage Exit Criteria
 
@@ -135,6 +140,8 @@ Critical Checkpoint 只记录会影响后续判断的关键取舍，不写成聊
 
 ## Done
 
+- [x] Course reading：用户于 2026-08-27 确认当前 Hugging Face LLM Course 0–12 章全部读完。
+- [x] Real-work transfer：用户确认 Qwen3 1.7B、约 27k、Full SFT 与 LoRA 两种训练均已执行。
 - [x] 01-need-aligner：完成 topic 目标、业务任务、fine-tuning suitability、第一轮品类和核心质量标准确认。
 - [x] 02-syllabus-mapper：完成材料入口、schema、工程形态、默认模型、训练环境和数据规模收敛。
 - [x] 06-practice-transfer input：数据集与问题路线产物已迁入 course-learning 阶段目录。

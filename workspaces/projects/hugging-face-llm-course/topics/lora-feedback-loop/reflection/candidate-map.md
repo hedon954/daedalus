@@ -6,13 +6,17 @@
 
 | 候选 | 为什么值得看 | 证据 | 状态 |
 | --- | --- | --- | --- |
-|  |  |  | 候选中 |
+| SFT 是条件行为分布的重塑，而不是 JSON 记忆 | 能把 causal LM、teacher forcing、loss mask 与 suggestion policy distillation 串成同一机制；适合作为 SFT 系列的第一篇核心博文。 | `guides/08-review-loop/01-sft-blog-series-mastery-plan.md`；真实 Qwen3 SFT 事实边界 | 候选中 |
+| Full SFT 与 LoRA 的选择是优化自由度问题 | 成本只是表层；真正需要讨论数据约束、Base 能力距离、低秩更新、泛化和部署形态，并用公平实验而非单次分数支撑。 | Qwen3 1.7B / 27k Full 与 LoRA 用户确认实践；博文 3 验收计划 | 候选中 |
+| Suggestion List SFT 的数据资产是 latent policy | Plan3/Plan0、action 分布、eligibility、组合多样性和 decision boundary 共同决定 student learnability，比样本总数更重要。 | `guides/06-practice-transfer/` 四版 schema；博文 4 验收计划 | 候选中 |
+| 评测与反馈闭环必须分离模型质量和系统路由质量 | eligible、invoked、generation 与 end-to-end 指标分层，才能避免 middleware skip 或 Judge 漂移被误归因给模型。 | 博文 5、6 问题库；真实评测细节待脱敏归档 | 候选中 |
 
 ## 底层原理
 
 | 候选 | 为什么值得看 | 证据 | 状态 |
 | --- | --- | --- | --- |
-|  |  |  | 候选中 |
+| 原始数据正确不等于模型训练输入正确 | Chat template、tokenizer、truncation、EOS、labels 和 loss mask 之后的 `(input_ids, labels)` 才是最终事实源；应固化为 Dataset Preflight。 | tokenizer/LM block lesson evidence；历史 SFT 排障线索；博文 2 | 候选中 |
+| SFT 与 GRPO 使用不同反馈信号 | SFT 提高示范 token 的似然；GRPO 对模型采样结果做组内相对奖励优化。理解边界可以防止“有 Judge 就上 RL”的错误迁移。 | 用户确认 Chapter 11、12 已读；博文 8 待闭卷验证 | 候选中 |
 
 ## 工程模式
 

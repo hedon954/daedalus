@@ -7,21 +7,21 @@
 # - task.lifecycle 只能是：active、idle、abandoned。
 # - task.workspace_bucket 固定为：projects。
 # - project.active_topic 必须指向 `[[topics]]` 中存在的 topic slug。
-# - topics.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
-# - transition.action 只能是：init、topic-new、topic-activate、topic-await-reflection、topic-complete、topic-abandon、migrate、task-complete、abandon。
+# - topics.lifecycle 只能是：planned、active、blocked、parked、awaiting-reflection、completed、abandoned、skipped。
+# - transition.action 只能是：init、topic-new、topic-activate、topic-park、topic-await-reflection、topic-complete、topic-abandon、migrate、task-complete、abandon。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
 
 [task]
 name = "hugging-face-llm-course"
 kind = "course-learning"
 created_at = "2026-06-14 14:42:45"
-lifecycle = "active"
+lifecycle = "idle"
 workspace_bucket = "projects"
-next_action = "继续 course-learning active topic `lora-feedback-loop`，按课程阶段推进下一份 guide。"
+next_action = "当前没有 active topic；可以用 `daedalus topic activate` 接回 parked topic，或启动新专题。"
 
 [project]
 mode = "multi-topic"
-active_topic = "lora-feedback-loop"
+active_topic = ""
 source_kind = "course"
 source_name = "hugging-face-llm-course"
 course_url = "https://huggingface.co/learn/llm-course/en"
@@ -29,7 +29,7 @@ course_url = "https://huggingface.co/learn/llm-course/en"
 [[topics]]
 slug = "lora-feedback-loop"
 title = "LoRA 微调与数据反馈闭环"
-lifecycle = "active"
+lifecycle = "parked"
 path = "topics/lora-feedback-loop"
 inherits = []
 
@@ -46,3 +46,10 @@ action = "migrate"
 timestamp = "2026-06-23 00:53:42"
 actor = "daedalus-cli"
 reason = "确认项目使用 course-learning 语义。"
+
+[[transitions]]
+stage = "project"
+action = "topic-park"
+timestamp = "2026-09-19 16:50:39"
+actor = "daedalus-cli"
+reason = "用户决定中途搁置，先释放 active 槽以便启动下一题。"

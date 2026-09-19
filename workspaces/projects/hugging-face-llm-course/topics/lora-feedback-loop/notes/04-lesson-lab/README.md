@@ -4,9 +4,10 @@
 
 ## 当前入口
 
-- 当前 lab：Chapter 1/8 `Deep dive into Text Generation Inference with LLMs`。
-- 最近完成：Chapter 1/6 架构选择总结，见 [`2026-07-07-chapter1-6-architecture-selection-summary.md`](2026-07-07-chapter1-6-architecture-selection-summary.md)。
-- 当前 guide：Chapter 1/8 LLM inference 见 [`../../guides/04-lesson-lab/16-chapter1-8-llm-inference.md`](../../guides/04-lesson-lab/16-chapter1-8-llm-inference.md)；Chapter 1/6 架构与 attention mechanisms 见 [`../../guides/04-lesson-lab/15-chapter1-6-transformer-architectures.md`](../../guides/04-lesson-lab/15-chapter1-6-transformer-architectures.md)。
+- 课程阅读：用户于 2026-08-27 确认 Hugging Face LLM Course 全部阅读完毕。
+- Lesson lab：已有运行证据保留在本索引；阅读完成不自动补写缺失实验或用户复述。
+- 当前学习入口：转入 [`../../guides/08-review-loop/README.md`](../../guides/08-review-loop/README.md)，通过 SFT 博文写作检验机制、实验和迁移掌握度。
+- 真实业务实践：Qwen3 1.7B、约 27k、Full SFT 与 LoRA 的已确认事实见 [`../../guides/06-practice-transfer/05-qwen3-suggestion-sft-practice-evidence.md`](../../guides/06-practice-transfer/05-qwen3-suggestion-sft-practice-evidence.md)。
 
 ## Notes
 
