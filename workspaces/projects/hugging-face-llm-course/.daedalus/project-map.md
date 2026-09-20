@@ -6,7 +6,7 @@ Project Map 是长期 course learning project 的导航仪表盘。它描述课�
 
 - 长期学习素材：Hugging Face LLM Course 及其相关官方文档、notebooks 和开源示例
 - 课程材料入口：[`source/`](../source)
-- 当前 active topic：`lora-feedback-loop`
+- 当前 active topic：`none`
 - 最终希望沉淀的跨专题能力：以 Hugging Face LLM Course 为主学习材料，用系统工程第一性原理理解 AI 模型、训练、评测、反馈和部署链路，避免只停留在应用层 glue code。
 
 ## Shared Context
@@ -22,10 +22,8 @@ Project Map 是长期 course learning project 的导航仪表盘。它描述课�
 
 ## Active Topic
 
-- slug：`lora-feedback-loop`
-- title：LoRA 微调与数据反馈闭环
-- topic workspace：[`topics/lora-feedback-loop`](../topics/lora-feedback-loop)
-- topic outcome map：[`topics/lora-feedback-loop/.daedalus/outcome-map.md`](../topics/lora-feedback-loop/.daedalus/outcome-map.md)
+- 无 active topic。
+- 下一步：复盘 project，或用 `daedalus topic new` / `daedalus topic activate` 启动新专题。
 
 ## Project Stop Rules
 

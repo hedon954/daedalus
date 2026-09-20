@@ -237,6 +237,24 @@ pub fn print_topic_list(
     }
 }
 
+/// 输出 parked 上限设置结果。
+pub fn print_park_limit(limit: u32, format: OutputFormat) {
+    match format {
+        OutputFormat::Text => {
+            println!("ok: parked topic limit updated");
+            println!("max_parked_topics: {limit}");
+        }
+        OutputFormat::Json => println!(
+            "{}",
+            json!({
+                "ok": true,
+                "action": "topic-park-limit",
+                "max_parked_topics": limit
+            })
+        ),
+    }
+}
+
 /// 输出 topic 校验结果。
 pub fn print_topic_validation(project_dir: &std::path::Path, slug: &str, format: OutputFormat) {
     match format {
@@ -476,6 +494,26 @@ fn print_text_error(error: &DaedalusError) {
                 "next: complete or move the active task before initializing a new one; use --allow-existing-active --reason <reason> only with explicit approval"
             );
         }
+        DaedalusError::ActiveTopicAlreadyExists(slug) => {
+            eprintln!("error: active topic already exists");
+            eprintln!("topic: {slug}");
+            eprintln!(
+                "next: park, await-reflection, or abandon `{slug}` before activating another topic"
+            );
+        }
+        DaedalusError::ParkedTopicLimitReached { current, limit } => {
+            eprintln!("error: parked topic limit reached");
+            eprintln!("current: {current}");
+            eprintln!("limit: {limit}");
+            eprintln!(
+                "next: activate, complete, or abandon a parked topic, or raise the limit with `daedalus topic park-limit <n>` (1-3)"
+            );
+        }
+        DaedalusError::InvalidParkedTopicLimit(limit) => {
+            eprintln!("error: invalid parked topic limit");
+            eprintln!("limit: {limit}");
+            eprintln!("next: choose a parked topic limit from 1 to 3");
+        }
         DaedalusError::TaskMoveDestinationExists(path) => {
             eprintln!("error: task move destination already exists");
             eprintln!("to_task_dir: {}", path.display());
@@ -547,6 +585,25 @@ fn print_json_error(error: &DaedalusError) {
             "error": "task_already_active",
             "task_dir": path,
             "next": "complete or move the active task before initializing a new one; use --allow-existing-active --reason <reason> only with explicit approval"
+        }),
+        DaedalusError::ActiveTopicAlreadyExists(slug) => json!({
+            "ok": false,
+            "error": "active_topic_already_exists",
+            "topic": slug,
+            "next": "park, await-reflection, or abandon the active topic before activating another topic"
+        }),
+        DaedalusError::ParkedTopicLimitReached { current, limit } => json!({
+            "ok": false,
+            "error": "parked_topic_limit_reached",
+            "current": current,
+            "limit": limit,
+            "next": "activate, complete, or abandon a parked topic, or raise the limit with daedalus topic park-limit <n> (1-3)"
+        }),
+        DaedalusError::InvalidParkedTopicLimit(limit) => json!({
+            "ok": false,
+            "error": "invalid_parked_topic_limit",
+            "limit": limit,
+            "next": "choose a parked topic limit from 1 to 3"
         }),
         DaedalusError::TaskMoveDestinationExists(path) => json!({
             "ok": false,

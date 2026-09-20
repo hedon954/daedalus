@@ -4,9 +4,9 @@
 # 和 active topic 指针。
 #
 # 枚举约束：
-# - topic.lifecycle 只能是：planned、active、blocked、awaiting-reflection、completed、abandoned、skipped。
+# - topic.lifecycle 只能是：planned、active、blocked、parked、awaiting-reflection、completed、abandoned、skipped。
 # - stage.status 只能是：pending、active、blocked、paused、done。
-# - transition.action 只能是：init、enter、complete、block、resume、rollback、topic-await-reflection、topic-complete、topic-abandon。
+# - transition.action 只能是：init、enter、complete、block、resume、rollback、topic-park、topic-await-reflection、topic-complete、topic-abandon。
 # - transition.approval_source 只能是：user-confirmed、artifact-equivalent、stage-not-applicable。
 # Agent 不要发明新的枚举值；如需新增，先修改 Rust 领域模型、模板和测试。
 # required_artifacts 表示阶段完成所需文件。CLI 只校验文件存在；
@@ -17,9 +17,9 @@ slug = "lora-feedback-loop"
 title = "LoRA 微调与数据反馈闭环"
 kind = "course-learning-topic"
 parent_project = "../.."
-lifecycle = "active"
-current_phase = "04-lesson-lab"
-next_action = "继续 `04-lesson-lab`：只推进 Chapter 5/2 `What if my dataset isn't on the Hub?`，先区分通用文件 loader、local/remote source、`data_files` split mapping 与 JSON `field`，并检查加载后的 DatasetDict 结构。"
+lifecycle = "parked"
+current_phase = "08-review-loop"
+next_action = "已搁置：用户决定中途搁置，先释放 active 槽以便启动下一题。接回：`daedalus topic activate lora-feedback-loop`。搁置前：继续 `08-review-loop`：先写博文 1《SFT 到底学了什么：从 next-token loss 到行为蒸馏》，闭卷画出 suggestion 样本从 chat template 到 tokens、labels、loss 和参数更新的因果链。"
 
 [[stages]]
 id = "01-need-aligner"
@@ -42,7 +42,7 @@ required_artifacts = ["guides/03-concept-roadmap/README.md", "../../shared/conce
 [[stages]]
 id = "04-lesson-lab"
 title = "把课程 lesson 变成可观察实验"
-status = "active"
+status = "done"
 required_artifacts = ["guides/04-lesson-lab/README.md", "notes/04-lesson-lab/README.md"]
 
 [[stages]]
@@ -54,7 +54,7 @@ required_artifacts = ["guides/05-mechanism-deep-dive/README.md"]
 [[stages]]
 id = "06-practice-transfer"
 title = "迁移课程概念到真实任务"
-status = "pending"
+status = "done"
 required_artifacts = ["guides/06-practice-transfer/README.md"]
 
 [[stages]]
@@ -66,7 +66,7 @@ required_artifacts = ["demo/design.md"]
 [[stages]]
 id = "08-review-loop"
 title = "复习与掌握度验证"
-status = "pending"
+status = "paused"
 required_artifacts = ["review/mastery-map.md", "review/question-bank.md"]
 
 [[stages]]
@@ -130,3 +130,38 @@ action = "enter"
 timestamp = "2026-06-23 01:03:06"
 actor = "daedalus-cli"
 reason = "进入 course-learning lesson lab，执行 Trainer 拆解 guide 并沉淀用户观察证据。"
+
+[[transitions]]
+stage = "04-lesson-lab"
+action = "complete"
+timestamp = "2026-08-27 21:36:21"
+actor = "daedalus-cli"
+reason = "用户于 2026-08-27 确认 Hugging Face LLM Course 当前 0–12 章已全部阅读；已有 lesson-lab 产物保留为实验与机制回补入口，未验证的运行证据转入 review 缺口。"
+
+[[transitions]]
+stage = "06-practice-transfer"
+action = "enter"
+timestamp = "2026-08-27 21:36:21"
+actor = "daedalus-cli"
+reason = "同步用户已完成的真实工作迁移：Qwen3 1.7B、约 27k 数据、Full SFT 与 LoRA 两种训练。"
+
+[[transitions]]
+stage = "06-practice-transfer"
+action = "complete"
+timestamp = "2026-08-27 21:36:21"
+actor = "daedalus-cli"
+reason = "真实工作迁移事实已由用户确认，并已建立脱敏实践证据边界；精确配置、评测结果和反馈再训练证据留待 review 补齐。"
+
+[[transitions]]
+stage = "08-review-loop"
+action = "enter"
+timestamp = "2026-08-27 21:36:21"
+actor = "daedalus-cli"
+reason = "课程阅读全部完成，进入以 SFT 博文、掌握度地图和闭卷问题库驱动的复习与掌握度验证。"
+
+[[transitions]]
+stage = "topic"
+action = "topic-park"
+timestamp = "2026-09-19 16:50:39"
+actor = "daedalus-cli"
+reason = "用户决定中途搁置，先释放 active 槽以便启动下一题。"

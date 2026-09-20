@@ -86,7 +86,7 @@ fn discover_linked_projects(repo_root: &Path) -> Vec<String> {
         projects.insert("crates/Cargo.toml".to_owned());
     }
 
-    for entry in ["current-topic", "closeout-topic"] {
+    for entry in ["current-topic", "closeout-topic", "parked-topic"] {
         let manifest = repo_root
             .join("workspaces")
             .join(entry)

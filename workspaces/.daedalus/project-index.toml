@@ -10,6 +10,6 @@ active_topic = ""
 [[projects]]
 slug = "hugging-face-llm-course"
 name = "hugging-face-llm-course"
-lifecycle = "active"
+lifecycle = "idle"
 path = "projects/hugging-face-llm-course"
-active_topic = "lora-feedback-loop"
+active_topic = ""

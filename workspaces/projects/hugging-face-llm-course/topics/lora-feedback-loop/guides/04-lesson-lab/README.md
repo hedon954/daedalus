@@ -2,9 +2,11 @@
 
 本阶段把已经跑通的 Hugging Face Course 示例转成可观察实验。目标不是继续抄 recipe，而是让用户能解释每个对象在训练链路里的职责、输入输出和可验证证据。
 
-## Current Lesson
+## Stage Status
 
-当前 lesson：
+课程阅读主线已由用户于 2026-08-27 确认全部完成。本目录保留已做实验、历史阅读路径和机制回补入口；它不表示所有 notebook 或运行证据都已验收。当前掌握度验证入口是 [`../08-review-loop/README.md`](../08-review-loop/README.md)。
+
+历史 lesson 路径：
 
 ```text
 Chapter 1/5 task lab sweep
@@ -15,8 +17,10 @@ Chapter 1/5 task lab sweep
   -> complete reading Chapter 3/1-3/3
   -> complete reading Chapter 3 and Chapter 4
   -> complete Chapter 5/1 Introduction
-  -> enter Chapter 5/2 non-Hub dataset loading
+  -> enter Chapter 5/2 non-Hub dataset loading (historical cursor)
   -> map format + local/remote source + split + schema into DatasetDict
+  -> user-confirmed reading completion through current Chapters 0-12
+  -> enter 08-review-loop for article-based mastery checks
 ```
 
 ## Lesson Sequence
@@ -55,7 +59,7 @@ Chapter 1/5 task lab sweep
 - question answering：`offset_mapping`、`sequence_ids`、`start_positions/end_positions`、`start_logits/end_logits` 和 decoded span
 - summarization：`input_ids/attention_mask/labels` shape、`outputs.logits.shape`、`generated_ids` 和 decoded summary
 - causal LM / Trainer：`batch.keys()`、`input_ids / attention_mask / labels` 的 shape、dtype、device、shifted loss、至少一个 token 位置的 top-k prediction
-- chapter5/2：当前打印 loader format、local/remote source、`data_files`、split、rows、columns 与 nested field；Chapter 3/4 未明确提供的实践证据继续保留
+- chapter5/2：已读；若文章推导暴露数据加载弱点，再打印 loader format、local/remote source、`data_files`、split、rows、columns 与 nested field。Chapter 3/4 未明确提供的实践证据继续保留
 
 ## Exit Criteria
 

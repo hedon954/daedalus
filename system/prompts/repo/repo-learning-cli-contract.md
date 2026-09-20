@@ -15,6 +15,8 @@ Follow the global daedalus CLI usage rule in `system/prompts/common/agent-operat
 ```text
 daedalus init repo-learning <project-name> --topic <topic-slug> --title <topic-title>
 daedalus topic new <topic-slug> --title <topic-title>
+daedalus topic park <topic-slug> --reason <reason>
+daedalus topic park-limit <n>
 daedalus topic activate <topic-slug>
 daedalus topic await-reflection <topic-slug> --reason <reason>
 daedalus topic complete <topic-slug> --reason <reason>
@@ -24,6 +26,9 @@ daedalus task complete --reason <reason>
 Interpretation:
 
 ```text
+topic park releases the daily active slot for a mid-flight topic and keeps it resumable.
+topic park-limit sets how many parked topics the workspace may keep at once; default 1, allowed 1-3.
+topic activate starts or resumes a topic; it refuses if another topic is already active.
 topic await-reflection releases the daily active slot after stages 01-09 are done, while preserving one pending closeout debt.
 topic complete closes one topic after user closeout retrospective and knowledge archival are done.
 task complete closes the whole learning project.

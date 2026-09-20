@@ -138,7 +138,9 @@ pub fn activate_topic(options: ActivateTopicOptions) -> Result<TopicOutput> {
     if !state_toml::topic_exists(&project_doc, &options.slug) {
         return Err(DaedalusError::TopicNotFound(options.slug));
     }
-    state_toml::block_other_active_topics(&mut project_doc, &options.slug);
+    ensure_can_activate(&options.repo_root, &topic_dir)?;
+    let was_parked = state_toml::project_topic_lifecycle(&project_doc, &options.slug).as_deref()
+        == Some(TopicLifecycle::Parked.as_str());
     state_toml::set_project_topic_lifecycle(
         &mut project_doc,
         &options.slug,
@@ -164,11 +166,17 @@ pub fn activate_topic(options: ActivateTopicOptions) -> Result<TopicOutput> {
     let topic_state_path = state_toml::state_path(&topic_dir);
     let mut topic_doc = state_toml::load_state_doc(&topic_state_path)?;
     state_toml::set_topic_lifecycle(&mut topic_doc, TopicLifecycle::Active);
+    if was_parked {
+        state_toml::resume_paused_stages(&mut topic_doc);
+    }
     state_toml::save_state_doc(&topic_state_path, &topic_doc)?;
 
     let _ = render_state(&project_dir)?;
     let state_md = render_state(&topic_dir)?.path;
     workspace_fs::sync_current_workspace(&options.repo_root, Some(&project_dir), Some(&topic_dir))?;
+    if was_parked {
+        workspace_fs::remove_parked_topic(&options.repo_root, &topic_dir)?;
+    }
     sync_rust_analyzer_linked_projects(&options.repo_root)?;
     Ok(TopicOutput {
         project_dir,
@@ -177,6 +185,119 @@ pub fn activate_topic(options: ActivateTopicOptions) -> Result<TopicOutput> {
         action: "topic-activate".to_owned(),
         state_md,
     })
+}
+
+/// 搁置 topic，释放 daily active 槽。
+pub fn park_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
+    let reason = options.reason.trim();
+    if reason.is_empty() {
+        return Err(DaedalusError::TaskLifecycleReasonRequired);
+    }
+    let project_dir = options.project_dir;
+    let topic_dir = workspace_fs::topic_dir_by_slug(&project_dir, &options.slug)?;
+    let project_state_path = state_toml::state_path(&project_dir);
+    let mut project_doc = state_toml::load_state_doc(&project_state_path)?;
+    if !state_toml::topic_exists(&project_doc, &options.slug) {
+        return Err(DaedalusError::TopicNotFound(options.slug));
+    }
+    let current_lifecycle =
+        state_toml::project_topic_lifecycle(&project_doc, &options.slug).unwrap_or_default();
+    if current_lifecycle != TopicLifecycle::Active.as_str()
+        && current_lifecycle != TopicLifecycle::Blocked.as_str()
+    {
+        return Err(DaedalusError::InvalidTopicLifecycleTransition(format!(
+            "topic `{}` cannot be parked from `{current_lifecycle}`",
+            options.slug
+        )));
+    }
+    ensure_park_limit_allows(&options.repo_root, &topic_dir)?;
+
+    state_toml::set_project_topic_lifecycle(
+        &mut project_doc,
+        &options.slug,
+        TopicLifecycle::Parked,
+    )?;
+    if state_toml::active_topic(&project_doc).as_deref() == Some(options.slug.as_str()) {
+        state_toml::set_active_topic(&mut project_doc, "");
+    }
+    state_toml::append_transition(
+        &mut project_doc,
+        Transition {
+            stage: "project".to_owned(),
+            action: "topic-park".to_owned(),
+            timestamp: clock::now_local_timestamp(),
+            actor: options.actor.clone(),
+            reason: reason.to_owned(),
+            approval_source: None,
+        },
+    );
+    state_toml::save_state_doc(&project_state_path, &project_doc)?;
+
+    let topic_state_path = state_toml::state_path(&topic_dir);
+    let mut topic_doc = state_toml::load_state_doc(&topic_state_path)?;
+    let previous_next = state_toml::next_action(&topic_doc);
+    state_toml::set_topic_lifecycle(&mut topic_doc, TopicLifecycle::Parked);
+    state_toml::pause_active_stages(&mut topic_doc);
+    let reason_text = reason.trim_end_matches(['。', '.', '！', '!', '？', '?']);
+    state_toml::set_next_action(
+        &mut topic_doc,
+        &format!(
+            "已搁置：{reason_text}。接回：`daedalus topic activate {}`。搁置前：{previous_next}",
+            options.slug
+        ),
+    );
+    state_toml::append_transition(
+        &mut topic_doc,
+        Transition {
+            stage: "topic".to_owned(),
+            action: "topic-park".to_owned(),
+            timestamp: clock::now_local_timestamp(),
+            actor: options.actor,
+            reason: reason.to_owned(),
+            approval_source: None,
+        },
+    );
+    state_toml::save_state_doc(&topic_state_path, &topic_doc)?;
+    let state_md = render_state(&topic_dir)?.path;
+
+    if state_toml::active_topic_count(&project_doc) == 0 {
+        state_toml::set_task_lifecycle(&mut project_doc, TaskLifecycle::Idle);
+        state_toml::set_workspace_bucket(&mut project_doc, WorkspaceBucket::Projects);
+        state_toml::set_next_action(
+            &mut project_doc,
+            "当前没有 active topic；可以用 `daedalus topic activate` 接回 parked topic，或启动新专题。",
+        );
+        state_toml::save_state_doc(&project_state_path, &project_doc)?;
+    }
+
+    sync_project_navigation(&project_dir)?;
+    let _ = render_state(&project_dir)?;
+    let current_topic = workspace_fs::current_topic_dir(&options.repo_root)?;
+    if current_topic
+        .as_ref()
+        .is_some_and(|current| same_topic_dir(&options.repo_root, current, &topic_dir))
+    {
+        workspace_fs::sync_current_workspace(&options.repo_root, None, None)?;
+    }
+    workspace_fs::add_parked_topic(&options.repo_root, &topic_dir)?;
+    sync_rust_analyzer_linked_projects(&options.repo_root)?;
+    Ok(TopicOutput {
+        project_dir,
+        topic_dir,
+        slug: options.slug,
+        action: "topic-park".to_owned(),
+        state_md,
+    })
+}
+
+/// 设置工作区 parked topic 上限。
+pub fn set_park_limit(repo_root: PathBuf, limit: u32) -> Result<u32> {
+    let parked = workspace_fs::workspace_topics_with_lifecycle(&repo_root, TopicLifecycle::Parked)?;
+    let current = u32::try_from(parked.len()).unwrap_or(u32::MAX);
+    if current > limit {
+        return Err(DaedalusError::ParkedTopicLimitReached { current, limit });
+    }
+    workspace_fs::set_max_parked_topics(&repo_root, limit)
 }
 
 /// 关闭 topic。
@@ -188,6 +309,12 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
     let project_dir = options.project_dir;
     let topic_dir = workspace_fs::topic_dir_by_slug(&project_dir, &options.slug)?;
     let mut output_topic_dir = topic_dir.clone();
+    if matches!(
+        options.lifecycle,
+        TopicLifecycle::Completed | TopicLifecycle::Abandoned
+    ) {
+        workspace_fs::remove_parked_topic(&options.repo_root, &topic_dir)?;
+    }
     match options.lifecycle {
         TopicLifecycle::Completed => validate_topic_completion(&topic_dir, &options.slug)?,
         TopicLifecycle::AwaitingReflection => {
@@ -331,6 +458,39 @@ pub fn close_topic(options: CloseTopicOptions) -> Result<TopicOutput> {
         action: action.to_owned(),
         state_md,
     })
+}
+
+fn ensure_can_activate(repo_root: &Path, topic_dir: &Path) -> Result<()> {
+    let actives = workspace_fs::workspace_topics_with_lifecycle(repo_root, TopicLifecycle::Active)?;
+    for active in actives {
+        if !same_topic_dir(repo_root, &active, topic_dir) {
+            let slug = active
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("unknown");
+            return Err(DaedalusError::ActiveTopicAlreadyExists(slug.to_owned()));
+        }
+    }
+    Ok(())
+}
+
+fn ensure_park_limit_allows(repo_root: &Path, topic_dir: &Path) -> Result<()> {
+    let pointers = workspace_fs::load_current_pointers(repo_root)?;
+    let parked = workspace_fs::workspace_topics_with_lifecycle(repo_root, TopicLifecycle::Parked)?;
+    if parked
+        .iter()
+        .any(|existing| same_topic_dir(repo_root, existing, topic_dir))
+    {
+        return Ok(());
+    }
+    let current = u32::try_from(parked.len()).unwrap_or(u32::MAX);
+    if current >= pointers.max_parked_topics {
+        return Err(DaedalusError::ParkedTopicLimitReached {
+            current,
+            limit: pointers.max_parked_topics,
+        });
+    }
+    Ok(())
 }
 
 fn same_topic_dir(repo_root: &Path, left: &Path, right: &Path) -> bool {

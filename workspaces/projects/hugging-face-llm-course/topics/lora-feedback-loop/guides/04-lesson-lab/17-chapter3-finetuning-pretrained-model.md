@@ -607,7 +607,7 @@ baseline -> changed model -> compare
 
 ## 本章建议的学习顺序
 
-Chapter 3 已由用户确认读完。本文保留为 fine-tuning 机制与实验恢复入口；3/2-3/5 尚未明确提供的运行和曲线诊断证据继续保留，不冒充已验收。当前课程游标已推进到 Chapter 5/2，后续 Chapter 3 问题按需回看本文。
+Chapter 3 已由用户确认读完。本文保留为 fine-tuning 机制与实验恢复入口；3/2-3/5 尚未明确提供的运行和曲线诊断证据继续保留，不冒充已验收。课程阅读现已全部完成，后续由 review 博文暴露薄弱点，再按需回看本文。
 
 ```text
 Checkpoint A — Data contract

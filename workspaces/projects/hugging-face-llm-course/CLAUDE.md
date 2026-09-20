@@ -26,7 +26,8 @@
 - Topic 的 `topics/<slug>/.daedalus/state.toml` 才描述 course-learning 阶段进度。
 - 创建新的 course learning project 必须使用 `daedalus init course-learning <project-name> --topic <topic-slug> --title <topic-title> --course-url <url>`。
 - 创建新专题必须使用 `daedalus topic new <topic-slug> --title <topic-title>`。
-- 切换专题必须使用 `daedalus topic activate <topic-slug>`。
+- 中途换题必须先 `daedalus topic park <topic-slug> --reason <reason>`，再 `daedalus topic activate <topic-slug>`。
+- `activate` 不能覆盖当前 active topic。
 - 推进阶段时，`daedalus state enter/complete/block/resume <stage-id>` 默认操作 active topic，不操作 project root。
 - 如需指定专题，使用 `daedalus state complete <stage-id> --topic <topic-slug>`。
 - 关闭专题使用 `daedalus topic complete <topic-slug> --reason <reason>`；关闭整个 project 才使用 `daedalus task complete --reason <reason>`。

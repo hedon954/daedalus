@@ -7,7 +7,7 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 - Project：`hugging-face-llm-course`
 - Topic：`lora-feedback-loop` - LoRA 微调与数据反馈闭环
 - 最终要获得的能力：用系统化训练闭环理解 AI fine-tuning，而不是停留在 API glue code；能判断数据、训练、评测、反馈和迁移边界。
-- 最小可验证 lesson lab：先用 Hugging Face Course 1/2 建立 Transformers 基础，再迁移到闲鱼二手买家 Agent 的 suggestion next action LoRA feedback loop lab。
+- 最小可验证成果：用博文重建 SFT 机制，并用已完成的 Qwen3 suggestion Full/LoRA 实践检验数据、训练、评测和反馈边界。
 - 现实问题中的迁移目标：为 AI Agent 开发补齐模型层和训练层判断力，形成下一份 AI 开发岗位可展示、可解释的技术作品。
 
 ## Inherited Context
@@ -46,6 +46,10 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 | [`notes/04-lesson-lab/README.md`](../notes/04-lesson-lab/README.md) | Lesson lab notes 索引 | 已索引化 |
 | [`notes/04-lesson-lab/2026-06-30-token-classification-lab-recap.md`](../notes/04-lesson-lab/2026-06-30-token-classification-lab-recap.md) | Token classification 用户复述与完成证据 | 已完成 |
 | [`notes/04-lesson-lab/2026-07-03-summarization-lab-recap.md`](../notes/04-lesson-lab/2026-07-03-summarization-lab-recap.md) | Summarization notebook 运行、排障和推理证据 | 已完成 |
+| [`guides/06-practice-transfer/05-qwen3-suggestion-sft-practice-evidence.md`](../guides/06-practice-transfer/05-qwen3-suggestion-sft-practice-evidence.md) | 真实 Qwen3 1.7B / 27k Full 与 LoRA 的已确认事实和证据边界 | 已归档事实，实验细节待补 |
+| [`guides/08-review-loop/01-sft-blog-series-mastery-plan.md`](../guides/08-review-loop/01-sft-blog-series-mastery-plan.md) | 八篇 SFT 博文的论点、证据和掌握度门槛 | 已生成，当前执行 |
+| [`review/mastery-map.md`](../review/mastery-map.md) | 解释、运行、改写、迁移四级掌握度地图 | 已生成，待用户写作验收 |
+| [`review/question-bank.md`](../review/question-bank.md) | 以开放题和最小复现检验掌握度 | 已生成，待逐篇回答 |
 | [`demo/design.md`](../demo/design.md) | mini demo 设计草案与定稿 | 待填 |
 | [`demo/README.md`](../demo/README.md) | mini demo 实现、运行和验收说明 | 待填 |
 | [`guides/06-practice-transfer/README.md`](../guides/06-practice-transfer/README.md) | 业务迁移练习 | 待填 |
@@ -55,11 +59,13 @@ Outcome Map 是 topic 导航仪表盘，不是聊天总结。每次继续学习�
 
 Current Position 是学习地图，不是实现事实源。涉及实现阶段时，必须用当前代码、测试、运行输出和用户已验证观察校准后再判断完成度。
 
-- 当前阶段：04-lesson-lab / Chapter 5/2 What if my dataset isn't on the Hub?。
-- 当前目标：从只会加载 Hub dataset 推进到能从本地或远程 CSV/text/JSON/pandas 文件构造结构正确的 DatasetDict。
-- 当前障碍：不要把一次 URL 探测失败等同于文件不存在；还需显式理解 `data_files` 如何绑定 source 与 split，以及 JSON `field` 如何选择嵌套数据入口。
-- 当前动作服务的产物：`shared/course-progress.md`、后续 Chapter 5 focused guide 与用户加载观察。
-- 当前光标：Chapter 5/2 `What if my dataset isn't on the Hub?`（https://huggingface.co/learn/llm-course/en/chapter5/2）。
+- 当前阶段：`08-review-loop`；课程 0–12 章已全部阅读完毕（用户于 2026-08-27 确认）。
+- 当前生命周期：`parked`。用户于 2026-09-19 中途搁置，先释放 active 槽。
+- 接回命令：`daedalus topic activate lora-feedback-loop`
+- 当前目标：用博文证明能独立解释、复现、改写和迁移 SFT，而不是继续累积阅读量。
+- 当前真实实践：Qwen3 1.7B、约 27k suggestion 数据、Full SFT 与 LoRA 均已实际执行。
+- 当前证据缺口：两种训练的公平对照、精确配置与结果、真实数据画像、eval protocol 和 feedback retrain 尚未脱敏归档。
+- 当前 checkpoint：博文 1《SFT 到底学了什么：从 next-token loss 到行为蒸馏》。
 
 ## Contribution Back To Project
 
@@ -115,9 +121,13 @@ practice-transfer -> capstone/review -> knowledge-base entry
 - [x] Chapter 3/5-3/7：用户确认已读完；learning curves 观察与单变量诊断实验仍待验收。
 - [x] Chapter 4 Sharing models and tokenizers：用户确认已读完；Hub 上传与 model card 实践仍待验收。
 - [x] Chapter 5/1 Introduction：用户确认已读完。
-- [ ] Chapter 5/2 What if my dataset isn't on the Hub?：当前阅读与加载观察 lesson。
-- [ ] 解释并记录 pipeline 的 task、默认 model、tokenizer、config、postprocess。
-- [ ] 用户审核至少 5-10 条候选样本。
+- [x] Hugging Face LLM Course 0–12：用户于 2026-08-27 确认全部阅读完毕；不等同于全部掌握。
+- [x] 真实业务迁移：用户确认 Qwen3 1.7B、约 27k、Full SFT 与 LoRA 均已训练。
+- [ ] 博文 1：闭卷解释 SFT objective、causal shift、teacher forcing、loss mask 和 behavioral distillation。
+- [ ] 博文 2：用真实样本证明 chat template、tokenizer、truncation、EOS 与 labels 正确。
+- [ ] 博文 3：补齐 Qwen3 1.7B Full-vs-LoRA 的公平对照矩阵、结果和竞争性解释。
+- [ ] 博文 4–5：补齐 27k 数据画像、session split、action policy 与 eval protocol。
+- [ ] 博文 6：确认是否完成 feedback data retrain；没有第二轮就不能声称形成反馈闭环。
 
 ## Why This Step Matters
 
@@ -130,12 +140,13 @@ Critical Lens 用来防止把学习素材当成权威。它不是反对模仿，
 - 当前素材中可能被过度神化的设计：Hugging Face 工具链和热门 fine-tuning recipe 可能把工具使用伪装成能力掌握。
 - 当前 demo 需要忠实模仿的核心机制：面向真实 Agent 子任务的数据集构造、adapter 训练、独立 eval、错误样本反馈和再训练对比。
 - 当前 demo 不应无意识照抄的设计：大规模训练工程、复杂 RLHF pipeline、榜单导向调参。
-- 当前还没有验证的素材假设：小模型和小数据集能否足够展示 suggestion next action 质量的可评测变化；模糊、边界和 negative/unsafe case 是否能被 eval 稳定区分。
+- 当前还没有验证的素材假设：Qwen3 1.7B Full/LoRA 的结果差异能否归因于更新方式；27k 数据是否覆盖 decision boundary；反馈数据是否带来独立 held-out 改善。
 - 当前可以尝试简化、改进或丢弃的部分：先用小任务和轻量模型证明闭环，不追生产级平台。
 - 当前迁移到业务场景前必须重新验证的约束：真实任务数据质量、评测一致性、隐私/合规、训练成本和线上回归风险。
 
 ## Stop Rules
 
 - 不学与 North Star、lesson lab、迁移任务或知识归档无关的课程细节。
-- 不因为课程还有章节没覆盖完就继续学。
+- 不再因为课程目录推进阅读；只有写作暴露具体弱点时才回补对应章节或 mechanism。
 - 不把 Agent-only 预读写成用户已经掌握的 notes。
+- 不把未确认的 0.6B 历史分数并入 1.7B / 27k 实验，也不把助手推断写成实验结论。

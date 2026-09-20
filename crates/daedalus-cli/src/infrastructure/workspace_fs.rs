@@ -1,10 +1,13 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::{DaedalusError, Result, WorkspaceBucket};
+use crate::domain::{
+    DEFAULT_MAX_PARKED_TOPICS, DaedalusError, Result, TopicLifecycle, WorkspaceBucket,
+    parse_max_parked_topics,
+};
 use crate::infrastructure::state_toml;
 use serde_json::{Value, json};
-use toml_edit::{DocumentMut, Item, value};
+use toml_edit::{Array, DocumentMut, Item, value};
 
 /// 从给定目录向上查找 daedalus 项目根目录。
 ///
@@ -61,6 +64,36 @@ pub fn workspace_state_root(repo_root: &Path) -> PathBuf {
 /// 当前学习现场指针文件。
 pub fn current_toml_path(repo_root: &Path) -> PathBuf {
     workspace_state_root(repo_root).join("current.toml")
+}
+
+/// `workspaces/.daedalus/current.toml` 中的工作区指针和 WIP 策略。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CurrentWorkspacePointers {
+    /// 当前 active project，相对 `workspaces/`。
+    pub current_project: Option<String>,
+    /// 当前 active topic，相对 `workspaces/`。
+    pub current_topic: Option<String>,
+    /// pending closeout project，相对 `workspaces/`。
+    pub pending_closeout_project: Option<String>,
+    /// pending closeout topic，相对 `workspaces/`。
+    pub pending_closeout_topic: Option<String>,
+    /// 可配置的 parked topic 上限。
+    pub max_parked_topics: u32,
+    /// 全部 parked topic，相对 `workspaces/`，最近一次搁置在最后。
+    pub parked_topics: Vec<String>,
+}
+
+impl CurrentWorkspacePointers {
+    fn default_pointers() -> Self {
+        Self {
+            current_project: None,
+            current_topic: None,
+            pending_closeout_project: None,
+            pending_closeout_topic: None,
+            max_parked_topics: DEFAULT_MAX_PARKED_TOPICS,
+            parked_topics: Vec::new(),
+        }
+    }
 }
 
 /// 项目索引文件。
@@ -242,71 +275,19 @@ pub fn ensure_stable_workspace_layout(repo_root: &Path) -> Result<()> {
 ///
 /// `current.toml` 保留完整机器状态；顶层 symlink 只保留学习者当前要点击
 /// 进入的行动入口。因此只有存在 active topic 时才展示 `current-project` /
-/// `current-topic`，等待回顾的项目只展示 `closeout-topic`。
+/// `current-topic`，等待回顾的项目只展示 `closeout-topic`，最近搁置的专题
+/// 只展示 `parked-topic`。
 pub fn sync_current_workspace(
     repo_root: &Path,
     project_dir: Option<&Path>,
     topic_dir: Option<&Path>,
 ) -> Result<()> {
-    ensure_stable_workspace_layout(repo_root)?;
-    let path = current_toml_path(repo_root);
+    let mut pointers = load_current_pointers(repo_root)?;
     let project_dir = project_dir.map(|path| normalize_repo_path(repo_root, path));
     let topic_dir = topic_dir.map(|path| normalize_repo_path(repo_root, path));
-    let pending_closeout_project = current_path(repo_root, "pending_closeout_project")?;
-    let pending_closeout_topic = current_path(repo_root, "pending_closeout_topic")?;
-    let mut doc = DocumentMut::new();
-    doc["schema_version"] = value(1);
-    doc["current_project"] = value(
-        project_dir
-            .as_deref()
-            .and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
-            .map(|path| path.to_string_lossy().to_string())
-            .unwrap_or_default(),
-    );
-    doc["current_topic"] = value(
-        topic_dir
-            .as_deref()
-            .and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
-            .map(|path| path.to_string_lossy().to_string())
-            .unwrap_or_default(),
-    );
-    doc["pending_closeout_project"] = value(
-        pending_closeout_project
-            .as_deref()
-            .and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
-            .map(|path| path.to_string_lossy().to_string())
-            .unwrap_or_default(),
-    );
-    doc["pending_closeout_topic"] = value(
-        pending_closeout_topic
-            .as_deref()
-            .and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
-            .map(|path| path.to_string_lossy().to_string())
-            .unwrap_or_default(),
-    );
-    fs::write(&path, doc.to_string()).map_err(|source| DaedalusError::Io {
-        path: path.clone(),
-        source,
-    })?;
-
-    let active_project_link = topic_dir
-        .as_ref()
-        .and(project_dir.as_ref())
-        .map(PathBuf::as_path);
-    sync_symlink(
-        &workspaces_root(repo_root).join("current-project"),
-        active_project_link,
-    )?;
-    sync_symlink(
-        &workspaces_root(repo_root).join("current-topic"),
-        topic_dir.as_deref(),
-    )?;
-    sync_symlink(&workspaces_root(repo_root).join("closeout-project"), None)?;
-    sync_symlink(
-        &workspaces_root(repo_root).join("closeout-topic"),
-        pending_closeout_topic.as_deref(),
-    )?;
-    rebuild_project_index(repo_root)
+    pointers.current_project = relative_workspace_optional(repo_root, project_dir.as_deref());
+    pointers.current_topic = relative_workspace_optional(repo_root, topic_dir.as_deref());
+    save_current_pointers(repo_root, &pointers)
 }
 
 /// 同步等待 closeout 的学习现场指针和可点击软链接。
@@ -315,31 +296,157 @@ pub fn sync_closeout_workspace(
     project_dir: Option<&Path>,
     topic_dir: Option<&Path>,
 ) -> Result<()> {
-    ensure_stable_workspace_layout(repo_root)?;
-    let path = current_toml_path(repo_root);
-    let current_project = current_project_dir(repo_root)?;
-    let current_topic = current_topic_dir(repo_root)?;
+    let mut pointers = load_current_pointers(repo_root)?;
     let project_dir = project_dir.map(|path| normalize_repo_path(repo_root, path));
     let topic_dir = topic_dir.map(|path| normalize_repo_path(repo_root, path));
-    let mut doc = DocumentMut::new();
+    pointers.pending_closeout_project =
+        relative_workspace_optional(repo_root, project_dir.as_deref());
+    pointers.pending_closeout_topic = relative_workspace_optional(repo_root, topic_dir.as_deref());
+    save_current_pointers(repo_root, &pointers)
+}
+
+/// 读取工作区指针和 parked 策略。
+pub fn load_current_pointers(repo_root: &Path) -> Result<CurrentWorkspacePointers> {
+    let path = current_toml_path(repo_root);
+    if !path.exists() {
+        return Ok(CurrentWorkspacePointers::default_pointers());
+    }
+    let content = fs::read_to_string(&path).map_err(|source| DaedalusError::Io {
+        path: path.clone(),
+        source,
+    })?;
+    let doc = content
+        .parse::<DocumentMut>()
+        .map_err(|source| DaedalusError::Toml {
+            path: path.clone(),
+            source,
+        })?;
+    let max_parked_topics = doc
+        .get("max_parked_topics")
+        .and_then(Item::as_integer)
+        .and_then(|value| u32::try_from(value).ok())
+        .unwrap_or(DEFAULT_MAX_PARKED_TOPICS);
+    Ok(CurrentWorkspacePointers {
+        current_project: optional_current_value(&doc, "current_project"),
+        current_topic: optional_current_value(&doc, "current_topic"),
+        pending_closeout_project: optional_current_value(&doc, "pending_closeout_project"),
+        pending_closeout_topic: optional_current_value(&doc, "pending_closeout_topic"),
+        max_parked_topics,
+        parked_topics: string_array_values(&doc, "parked_topics"),
+    })
+}
+
+/// 写入工作区指针、parked 策略和行动入口软链接。
+pub fn save_current_pointers(repo_root: &Path, pointers: &CurrentWorkspacePointers) -> Result<()> {
+    ensure_stable_workspace_layout(repo_root)?;
+    parse_max_parked_topics(pointers.max_parked_topics)?;
+    let path = current_toml_path(repo_root);
+    let mut doc = if path.exists() {
+        let content = fs::read_to_string(&path).map_err(|source| DaedalusError::Io {
+            path: path.clone(),
+            source,
+        })?;
+        content
+            .parse::<DocumentMut>()
+            .map_err(|source| DaedalusError::Toml {
+                path: path.clone(),
+                source,
+            })?
+    } else {
+        DocumentMut::new()
+    };
     doc["schema_version"] = value(1);
-    doc["current_project"] = value(relative_workspace_value(
-        repo_root,
-        current_project.as_deref(),
-    ));
-    doc["current_topic"] = value(relative_workspace_value(
-        repo_root,
-        current_topic.as_deref(),
-    ));
-    doc["pending_closeout_project"] =
-        value(relative_workspace_value(repo_root, project_dir.as_deref()));
+    doc["current_project"] = value(pointers.current_project.clone().unwrap_or_default());
+    doc["current_topic"] = value(pointers.current_topic.clone().unwrap_or_default());
+    doc["pending_closeout_project"] = value(
+        pointers
+            .pending_closeout_project
+            .clone()
+            .unwrap_or_default(),
+    );
     doc["pending_closeout_topic"] =
-        value(relative_workspace_value(repo_root, topic_dir.as_deref()));
+        value(pointers.pending_closeout_topic.clone().unwrap_or_default());
+    doc["max_parked_topics"] = value(i64::from(pointers.max_parked_topics));
+    let mut parked = Array::new();
+    for topic in &pointers.parked_topics {
+        parked.push(topic.as_str());
+    }
+    doc["parked_topics"] = Item::Value(parked.into());
     fs::write(&path, doc.to_string()).map_err(|source| DaedalusError::Io {
         path: path.clone(),
         source,
     })?;
+    sync_action_entry_symlinks(repo_root, pointers)?;
+    rebuild_project_index(repo_root)
+}
 
+/// 把 topic 追加到工作区 parked 列表，并刷新最近搁置入口。
+pub fn add_parked_topic(repo_root: &Path, topic_dir: &Path) -> Result<()> {
+    let mut pointers = load_current_pointers(repo_root)?;
+    let relative =
+        relative_workspace_value(repo_root, Some(&normalize_repo_path(repo_root, topic_dir)));
+    if relative.is_empty() {
+        return Err(DaedalusError::TaskLifecycleLocationMismatch(format!(
+            "cannot record parked topic outside workspaces: {}",
+            topic_dir.display()
+        )));
+    }
+    pointers.parked_topics.retain(|item| item != &relative);
+    pointers.parked_topics.push(relative);
+    save_current_pointers(repo_root, &pointers)
+}
+
+/// 从工作区 parked 列表移除 topic。
+pub fn remove_parked_topic(repo_root: &Path, topic_dir: &Path) -> Result<()> {
+    let mut pointers = load_current_pointers(repo_root)?;
+    let relative =
+        relative_workspace_value(repo_root, Some(&normalize_repo_path(repo_root, topic_dir)));
+    pointers.parked_topics.retain(|item| item != &relative);
+    save_current_pointers(repo_root, &pointers)
+}
+
+/// 设置工作区 parked 上限。
+pub fn set_max_parked_topics(repo_root: &Path, limit: u32) -> Result<u32> {
+    let limit = parse_max_parked_topics(limit)?;
+    let mut pointers = load_current_pointers(repo_root)?;
+    let parked_count = u32::try_from(pointers.parked_topics.len()).unwrap_or(u32::MAX);
+    if parked_count > limit {
+        return Err(DaedalusError::ParkedTopicLimitReached {
+            current: parked_count,
+            limit,
+        });
+    }
+    pointers.max_parked_topics = limit;
+    save_current_pointers(repo_root, &pointers)?;
+    Ok(limit)
+}
+
+/// 扫描工作区中指定 lifecycle 的 topics。
+pub fn workspace_topics_with_lifecycle(
+    repo_root: &Path,
+    lifecycle: TopicLifecycle,
+) -> Result<Vec<PathBuf>> {
+    let mut topics = Vec::new();
+    for project_dir in project_dirs(repo_root)? {
+        let doc = state_toml::load_state_doc(&state_toml::state_path(&project_dir))?;
+        for topic in state_toml::topics(&doc) {
+            if topic.lifecycle == lifecycle.as_str() {
+                topics.push(project_dir.join(topic.path));
+            }
+        }
+    }
+    Ok(topics)
+}
+
+fn sync_action_entry_symlinks(repo_root: &Path, pointers: &CurrentWorkspacePointers) -> Result<()> {
+    let current_project = resolve_workspace_path(repo_root, pointers.current_project.as_deref());
+    let current_topic = resolve_workspace_path(repo_root, pointers.current_topic.as_deref());
+    let pending_closeout_topic =
+        resolve_workspace_path(repo_root, pointers.pending_closeout_topic.as_deref());
+    let parked_topic = pointers
+        .parked_topics
+        .last()
+        .and_then(|path| resolve_workspace_path(repo_root, Some(path)));
     let active_project_link = current_topic
         .as_ref()
         .and(current_project.as_ref())
@@ -355,9 +462,12 @@ pub fn sync_closeout_workspace(
     sync_symlink(&workspaces_root(repo_root).join("closeout-project"), None)?;
     sync_symlink(
         &workspaces_root(repo_root).join("closeout-topic"),
-        topic_dir.as_deref(),
+        pending_closeout_topic.as_deref(),
     )?;
-    rebuild_project_index(repo_root)
+    sync_symlink(
+        &workspaces_root(repo_root).join("parked-topic"),
+        parked_topic.as_deref(),
+    )
 }
 
 /// 从 current.toml 读取当前 project。
@@ -378,6 +488,25 @@ pub fn pending_closeout_project_dir(repo_root: &Path) -> Result<Option<PathBuf>>
 /// 从 current.toml 读取等待 closeout 的 topic。
 pub fn pending_closeout_topic_dir(repo_root: &Path) -> Result<Option<PathBuf>> {
     current_path(repo_root, "pending_closeout_topic")
+}
+
+/// 从 current.toml 读取最近一条 parked topic。
+pub fn parked_topic_dir(repo_root: &Path) -> Result<Option<PathBuf>> {
+    let pointers = load_current_pointers(repo_root)?;
+    Ok(pointers
+        .parked_topics
+        .last()
+        .and_then(|path| resolve_workspace_path(repo_root, Some(path))))
+}
+
+/// 从 current.toml 读取全部 parked topic 路径。
+pub fn parked_topic_dirs(repo_root: &Path) -> Result<Vec<PathBuf>> {
+    let pointers = load_current_pointers(repo_root)?;
+    Ok(pointers
+        .parked_topics
+        .iter()
+        .filter_map(|path| resolve_workspace_path(repo_root, Some(path)))
+        .collect())
 }
 
 fn current_path(repo_root: &Path, key: &str) -> Result<Option<PathBuf>> {
@@ -575,9 +704,48 @@ fn normalize_repo_path(repo_root: &Path, path: &Path) -> PathBuf {
 }
 
 fn relative_workspace_value(repo_root: &Path, path: Option<&Path>) -> String {
-    path.and_then(|path| path.strip_prefix(workspaces_root(repo_root)).ok())
+    relative_workspace_optional(repo_root, path).unwrap_or_default()
+}
+
+fn relative_workspace_optional(repo_root: &Path, path: Option<&Path>) -> Option<String> {
+    let workspaces = workspaces_root(repo_root);
+    let workspaces = workspaces.canonicalize().unwrap_or(workspaces);
+    path.and_then(|path| path.strip_prefix(&workspaces).ok())
         .map(|path| path.to_string_lossy().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn optional_current_value(doc: &DocumentMut, key: &str) -> Option<String> {
+    doc.get(key)
+        .and_then(Item::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+}
+
+fn string_array_values(doc: &DocumentMut, key: &str) -> Vec<String> {
+    doc.get(key)
+        .and_then(Item::as_array)
+        .map(|array| {
+            array
+                .iter()
+                .filter_map(toml_edit::Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned)
+                .collect()
+        })
         .unwrap_or_default()
+}
+
+fn resolve_workspace_path(repo_root: &Path, value: Option<&str>) -> Option<PathBuf> {
+    let value = value.filter(|value| !value.is_empty())?;
+    let resolved = workspaces_root(repo_root).join(value);
+    if resolved.exists() {
+        Some(resolved)
+    } else {
+        None
+    }
 }
 
 fn project_dir_from_any(path: &Path) -> Result<PathBuf> {

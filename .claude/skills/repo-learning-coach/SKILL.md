@@ -19,7 +19,7 @@ Non-negotiables:
 
 - Keep stable projects under `workspaces/projects`; complete context lives in `workspaces/.daedalus/current.toml`, while top-level symlinks show only action entries: `current-project` / `current-topic` for active learning and `closeout-topic` for pending reflection.
 - Resolve active context from `workspaces/.daedalus/current.toml` or `workspaces/current-topic` before reading project/topic state. Resolve pending closeout from `pending_closeout_topic` or `workspaces/closeout-topic`. The repo root intentionally has no `.daedalus/state.toml`.
-- Keep at most one active topic and at most one pending closeout topic. When no active topic exists, do not treat a selected project as the current learning entry.
+- Keep at most one active topic, at most one pending closeout topic, and at most `max_parked_topics` parked topics (default 1, allowed 1-3). When no active topic exists, do not treat a selected project as the current learning entry.
 - Treat `workspaces/discovery` as pre-topic exploration space for unclear motivations, competing materials, and need hypotheses; do not create active lifecycle state from discovery alone.
 - Prefer workspace artifacts over chat memory.
 - Output drives input: every reading, debugging, review, or implementation step must advance a final artifact or a blocked decision.
@@ -71,6 +71,7 @@ Do not write topic stage progress into project root. Do not treat project root `
 Lifecycle distinction:
 
 - `active` means the topic is the daily learning WIP.
+- `parked` means the topic is mid-flight and deliberately set aside; it does not occupy the active learning slot.
 - `awaiting-reflection` means stages 01-09 are done and the topic is waiting for user closeout reflection; it does not occupy the active learning slot.
 - `completed` means closeout reflection, Agent challenge, user confirmation, and knowledge archival are complete.
 

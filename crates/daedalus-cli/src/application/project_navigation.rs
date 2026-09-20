@@ -45,6 +45,10 @@ pub fn validate_project_navigation(project_dir: &Path, doc: &DocumentMut) -> Res
         if !content.contains(expected_section.trim()) {
             issues.push("topic-board.md Active Topic section is stale".to_owned());
         }
+        let expected_parked = topic_board_parked_topics_section(doc);
+        if !content.contains(expected_parked.trim()) {
+            issues.push("topic-board.md Parked Topics section is stale".to_owned());
+        }
         for row in topic_rows(doc) {
             if !content.contains(&row) {
                 issues.push(format!(
@@ -81,6 +85,11 @@ fn sync_topic_board(project_dir: &Path, doc: &DocumentMut) -> Result<()> {
         "## Active Topic",
         &topic_board_active_topic_section(doc),
     );
+    content = replace_markdown_section(
+        &content,
+        "## Parked Topics",
+        &topic_board_parked_topics_section(doc),
+    );
     content = replace_markdown_section(&content, "## Topics", &topic_board_topics_section(doc));
     write_string(&path, &content)
 }
@@ -111,6 +120,22 @@ fn topic_board_active_topic_section(doc: &DocumentMut) -> String {
         "- 无 active topic。\n".to_owned()
     };
     format!("## Active Topic\n\n{body}")
+}
+
+fn topic_board_parked_topics_section(doc: &DocumentMut) -> String {
+    let parked: Vec<_> = state_toml::topics(doc)
+        .into_iter()
+        .filter(|topic| topic.lifecycle == "parked")
+        .collect();
+    let body = if parked.is_empty() {
+        "- 无 parked topic。\n".to_owned()
+    } else {
+        parked
+            .into_iter()
+            .map(|topic| format!("- `{}`：{}\n", topic.slug, topic.title))
+            .collect()
+    };
+    format!("## Parked Topics\n\n{body}")
 }
 
 fn topic_board_topics_section(doc: &DocumentMut) -> String {

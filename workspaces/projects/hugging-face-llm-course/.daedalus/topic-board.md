@@ -4,13 +4,17 @@ Topic Board 记录当前 course learning project 的专题列表、状态和继�
 
 ## Active Topic
 
+- 无 active topic。
+
+## Parked Topics
+
 - `lora-feedback-loop`：LoRA 微调与数据反馈闭环
 
 ## Topics
 
 | Topic | Title | Lifecycle | Path | Inherits |
 | --- | --- | --- | --- | --- |
-| `lora-feedback-loop` | LoRA 微调与数据反馈闭环 | active | [`topics/lora-feedback-loop`](../topics/lora-feedback-loop) | - |
+| `lora-feedback-loop` | LoRA 微调与数据反馈闭环 | parked | [`topics/lora-feedback-loop`](../topics/lora-feedback-loop) | - |
 
 ## Parking Lot
 
@@ -19,5 +23,6 @@ Topic Board 记录当前 course learning project 的专题列表、状态和继�
 ## Rules
 
 - 新增专题必须使用 `daedalus topic new <slug> --title <title>`。
-- 切换专题必须使用 `daedalus topic activate <slug>`。
+- 中途换题必须先 `daedalus topic park <slug> --reason <reason>`，再 `daedalus topic activate <slug>`。
+- `activate` 不能覆盖当前 active topic。
 - 专题完成后必须反向更新 [`shared/evidence-registry.md`](../shared/evidence-registry.md)。

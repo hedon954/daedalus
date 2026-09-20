@@ -4,6 +4,12 @@
 
 > 本文件是 Agent 生成的问题路线图，不是用户学习笔记。用户自己的观察和理解应另行写入 notes。
 
+## 恢复入口
+
+- 真实业务实践的已确认事实与待核验边界：[`05-qwen3-suggestion-sft-practice-evidence.md`](05-qwen3-suggestion-sft-practice-evidence.md)
+- 当前有效的早期 schema 候选：[`04-candidate-samples-v0.4.md`](04-candidate-samples-v0.4.md)
+- 后续掌握度验证已转入：[`../08-review-loop/README.md`](../08-review-loop/README.md)
+
 ## 当前默认方案
 
 - 业务任务：闲鱼二手买家 Agent 的 suggestion next action。
